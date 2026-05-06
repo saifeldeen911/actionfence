@@ -139,7 +139,9 @@ describe('ReceiptSigner', () => {
       timestamp: '2026-05-06T20:00:00.000Z',
     });
 
-    expect(signer.verifySignature(receipt)).toBe(true);
+    const verifier = new ReceiptSigner({ secret: FIXED_SECRET });
+
+    expect(verifier.verifySignature(receipt)).toBe(true);
 
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -160,7 +162,9 @@ describe('ReceiptSigner', () => {
       timestamp: '2026-05-06T20:00:00.000Z',
     });
 
-    expect(signer.verifySignature(receipt)).toBe(true);
+    const verifier = new ReceiptSigner();
+
+    expect(verifier.verifySignature(receipt)).toBe(true);
 
     rmSync(tempDir, { recursive: true, force: true });
   });
@@ -180,7 +184,9 @@ describe('ReceiptSigner', () => {
       timestamp: '2026-05-06T20:00:00.000Z',
     });
 
-    expect(signer.verifySignature(receipt)).toBe(true);
+    const verifier = new ReceiptSigner({ keyFilePath });
+
+    expect(verifier.verifySignature(receipt)).toBe(true);
 
     rmSync(tempDir, { recursive: true, force: true });
   });

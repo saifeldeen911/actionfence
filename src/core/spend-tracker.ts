@@ -57,7 +57,7 @@ export class SpendTracker {
    * Reset one agent or all tracked state.
    */
   reset(agentId?: string): void {
-    if (agentId) {
+    if (agentId !== undefined) {
       this.spendByAgent.delete(agentId);
       return;
     }

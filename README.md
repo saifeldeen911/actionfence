@@ -6,7 +6,7 @@
 
 ## What is Agent Bouncer?
 
-Agent Bouncer is building toward an AI action firewall for MCP servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
+Agent Bouncer is building toward an AI action firewall for MCP (Model Context Protocol) servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
 
 ```typescript
 import {

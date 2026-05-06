@@ -42,6 +42,16 @@ describe('SpendTracker', () => {
     expect(tracker.getTotals('agent-2').sessionTotal).toBe(5);
   });
 
+  it('should reset only the empty-string agent key when explicitly requested', () => {
+    tracker.record('', 10);
+    tracker.record('agent-1', 5);
+
+    tracker.reset('');
+
+    expect(tracker.getTotals('').sessionTotal).toBe(0);
+    expect(tracker.getTotals('agent-1').sessionTotal).toBe(5);
+  });
+
   it('should reset daily totals at midnight UTC while keeping session totals', () => {
     tracker.record('agent-1', 10);
     vi.setSystemTime(new Date('2026-05-07T00:00:01.000Z'));

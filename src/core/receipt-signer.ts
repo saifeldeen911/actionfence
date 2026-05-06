@@ -8,6 +8,7 @@ import {
   createHmac,
   randomBytes,
   randomUUID,
+  timingSafeEqual,
 } from 'node:crypto';
 import {
   existsSync,
@@ -131,7 +132,14 @@ export class ReceiptSigner {
    * Verify a receipt signature using the currently resolved secret.
    */
   verifySignature(receipt: ActionReceipt): boolean {
-    return this.signHash(receipt.receipt_hash) === receipt.receipt_sig;
+    const expected = Buffer.from(this.signHash(receipt.receipt_hash), 'utf8');
+    const actual = Buffer.from(receipt.receipt_sig, 'utf8');
+
+    if (expected.length !== actual.length) {
+      return false;
+    }
+
+    return timingSafeEqual(expected, actual);
   }
 
   private resolveSigningKey(explicitSecret?: string): Uint8Array {
@@ -149,8 +157,12 @@ export class ReceiptSigner {
     }
 
     const generatedSecret = randomBytes(32);
-    mkdirSync(dirname(this.keyFilePath), { recursive: true });
-    writeFileSync(this.keyFilePath, Buffer.from(generatedSecret).toString('base64url'), 'utf8');
+    mkdirSync(dirname(this.keyFilePath), { recursive: true, mode: 0o700 });
+    writeFileSync(
+      this.keyFilePath,
+      Buffer.from(generatedSecret).toString('base64url'),
+      { encoding: 'utf8', mode: 0o600 },
+    );
     return generatedSecret;
   }
 
