@@ -23,6 +23,20 @@ export type {
 
 export type { BouncerOptions } from './config.js';
 
+export type {
+  ActionReceipt,
+  CreateReceiptInput,
+  ReceiptVerificationFailure,
+  ReceiptVerificationFailureReason,
+  ReceiptVerificationResult,
+  ReceiptVerificationSuccess,
+} from './receipt.js';
+
+export type {
+  SpendSnapshot,
+  SpendRecordResult,
+} from './spend.js';
+
 export {
   PolicyValidationError,
   PolicyLoadError,

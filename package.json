@@ -1,7 +1,7 @@
 {
   "name": "agent-bouncer",
   "version": "0.1.0",
-  "description": "AI Action Firewall for MCP servers and APIs — policy enforcement, signed receipts, simulation mode",
+  "description": "TypeScript policy engine, receipt signer, and SQLite audit store for AI agent action enforcement",
   "type": "module",
   "exports": {
     ".": {
@@ -17,9 +17,6 @@
     "dist",
     "schemas"
   ],
-  "bin": {
-    "agent-bouncer": "./dist/cli/index.mjs"
-  },
   "engines": {
     "node": ">=20.0.0"
   },

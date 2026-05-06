@@ -132,7 +132,7 @@ describe('IdentityReader', () => {
 
   describe('malformed tokens', () => {
     it('should fall back to anonymous for completely invalid token', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const identity = reader.readIdentity({
         headers: { authorization: 'Bearer not-a-jwt' },
       });

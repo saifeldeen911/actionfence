@@ -1,34 +1,60 @@
 # Agent Bouncer
 
-> AI Action Firewall for MCP servers and APIs — policy enforcement, signed receipts, simulation mode.
+> TypeScript policy engine and audit trail for AI agent action enforcement.
 
 **Status:** 🚧 Under active development — not yet published to npm.
 
 ## What is Agent Bouncer?
 
-Agent Bouncer is a middleware layer that service providers install in front of their MCP servers and APIs. It intercepts every incoming AI agent request, checks it against a declared policy file, and either passes the request through with a signed receipt or blocks it with a logged reason.
+Agent Bouncer is building toward an AI action firewall for MCP servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
 
 ```typescript
-import { withBouncer } from 'agent-bouncer';
+import {
+  IdentityReader,
+  PolicyEvaluator,
+  RateLimiter,
+  ReceiptStore,
+  loadPolicy,
+} from 'agent-bouncer';
 
-// One line. That's it.
-withBouncer(server, { policy: './bouncer-policy.json' });
+const policy = loadPolicy('./bouncer-policy.json');
+const evaluator = new PolicyEvaluator(policy);
+const identityReader = new IdentityReader();
+const rateLimiter = new RateLimiter(policy.rate_limits ?? {});
+const receiptStore = new ReceiptStore();
+
+// Middleware adapters such as withBouncer() are not implemented yet.
 ```
 
-## Features (v1)
+## Implemented Today
 
 - ✅ Allow/deny actions via policy file
 - ✅ Identity tier checks (anonymous / token / verified)
 - ✅ Rate limits (requests/min, transactions/day)
-- ✅ Spend caps (per-session, per-day thresholds)
+- ✅ Internal spend tracking (session and daily totals)
 - ✅ Signed action receipts with hash chain (SQLite)
-- ✅ Simulation mode (dry-run preview)
 - ✅ Console reporter (colorized terminal output)
-- ✅ CLI tools (init, validate, simulate)
+
+## Planned Next
+
+- ⏳ MCP `withBouncer()` wrapper
+- ⏳ Express/Fastify middleware
+- ⏳ Simulation mode
+- ⏳ CLI tools
+
+## Development
+
+```bash
+npm install
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
 ## Documentation
 
-Full documentation coming soon.
+The planning docs in [`readme-plans/`](readme-plans/) track the phased roadmap and implementation details.
 
 ## License
 
