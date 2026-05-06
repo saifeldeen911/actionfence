@@ -1,0 +1,6 @@
+{
+  "service": "TestService",
+  "version": "1.0",
+  "default_rule": "maybe",
+  "actions": {}
+}

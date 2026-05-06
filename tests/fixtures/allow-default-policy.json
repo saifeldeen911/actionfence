@@ -1,0 +1,14 @@
+{
+  "service": "TestService",
+  "version": "1.0",
+  "default_rule": "allow",
+  "actions": {
+    "search_flights": {
+      "allowed": true,
+      "identity": "any"
+    },
+    "dangerous_action": {
+      "allowed": false
+    }
+  }
+}
