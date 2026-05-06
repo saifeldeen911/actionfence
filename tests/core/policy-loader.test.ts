@@ -56,14 +56,15 @@ describe('loadPolicy', () => {
     });
 
     it('should include human-readable validation errors', () => {
+      let caughtError: unknown;
       try {
         loadPolicy(resolve(FIXTURES, 'invalid-default-rule.json'));
-        throw new Error('Should have thrown');
       } catch (error) {
-        expect(error).toBeInstanceOf(PolicyValidationError);
-        const validationError = error as PolicyValidationError;
-        expect(validationError.validationErrors.length).toBeGreaterThan(0);
+        caughtError = error;
       }
+      expect(caughtError).toBeInstanceOf(PolicyValidationError);
+      const validationError = caughtError as PolicyValidationError;
+      expect(validationError.validationErrors.length).toBeGreaterThan(0);
     });
   });
 

@@ -6,7 +6,6 @@ dist/
 
 # Bouncer runtime data
 .bouncer/
-.bouncer/*.db
 
 # Coverage
 coverage/
