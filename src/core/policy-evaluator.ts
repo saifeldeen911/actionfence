@@ -130,18 +130,26 @@ export class PolicyEvaluator {
     }
 
     // Step 5: Check max_spend
-    if (
-      rule.max_spend !== undefined &&
-      spendAmount !== null &&
-      spendAmount > rule.max_spend
-    ) {
-      return {
-        ...baseDecision,
-        status: 'BLOCKED',
-        reason: `Action "${action}" spend amount $${spendAmount} exceeds cap of $${rule.max_spend}`,
-        requiresHumanApproval: false,
-        durationMs: performance.now() - startTime,
-      };
+    if (rule.max_spend !== undefined && spendAmount !== null) {
+      if (!Number.isFinite(spendAmount) || spendAmount < 0) {
+        return {
+          ...baseDecision,
+          status: 'BLOCKED',
+          reason: `Action "${action}" requires a valid, non-negative spend amount (received: ${spendAmount})`,
+          requiresHumanApproval: false,
+          durationMs: performance.now() - startTime,
+        };
+      }
+
+      if (spendAmount > rule.max_spend) {
+        return {
+          ...baseDecision,
+          status: 'BLOCKED',
+          reason: `Action "${action}" spend amount $${spendAmount} exceeds cap of $${rule.max_spend}`,
+          requiresHumanApproval: false,
+          durationMs: performance.now() - startTime,
+        };
+      }
     }
 
     // Step 6: All checks passed

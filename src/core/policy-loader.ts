@@ -65,6 +65,11 @@ export function watchPolicy(
     }, 300);
   });
 
+  watcher.on('error', (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[agent-bouncer] Policy watcher error: ${message}`);
+  });
+
   return () => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);

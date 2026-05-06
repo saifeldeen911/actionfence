@@ -58,7 +58,7 @@ describe('loadPolicy', () => {
     it('should include human-readable validation errors', () => {
       try {
         loadPolicy(resolve(FIXTURES, 'invalid-default-rule.json'));
-        expect.fail('Should have thrown');
+        throw new Error('Should have thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(PolicyValidationError);
         const validationError = error as PolicyValidationError;
