@@ -59,3 +59,37 @@ export type { ReceiptStoreOptions } from './core/receipt-store.js';
 export { SpendTracker } from './core/spend-tracker.js';
 export { ConsoleReporter } from './reporters/console.js';
 export type { ConsoleReporterOptions, ConsoleReportInput } from './reporters/console.js';
+
+// --- Middleware ---
+export { withGuard } from './middleware/mcp.js';
+export type {
+  GuardableMcpServer,
+  McpTextContent,
+  McpToolHandler,
+  McpToolResult,
+} from './middleware/mcp.js';
+
+export { guard } from './middleware/express.js';
+export type {
+  GuardHttpMiddleware,
+  GuardHttpPayload,
+  GuardHttpRequest,
+  GuardHttpResponse,
+  GuardNextFunction,
+} from './middleware/express.js';
+
+export { GuardEngine } from './middleware/engine.js';
+export type {
+  GuardErrorBody,
+  GuardErrorCode,
+  GuardEvaluationInput,
+  GuardEvaluationResult,
+  GuardInstance,
+  GuardMode,
+} from './middleware/engine.js';
+
+export { createSimulationPreview } from './middleware/simulation.js';
+export type {
+  RateLimitPreview,
+  SimulationPreview,
+} from './middleware/simulation.js';

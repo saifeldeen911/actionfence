@@ -78,6 +78,24 @@ export class RateLimiter {
       key,
       this.config.requests_per_minute,
       ONE_MINUTE_MS,
+      true,
+    );
+  }
+
+  /**
+   * Preview a request-rate check without recording it.
+   */
+  previewRequestRate(key: string): RateLimitResult {
+    if (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) {
+      return UNLIMITED_RESULT;
+    }
+
+    return this.checkWindow(
+      this.requestWindows,
+      key,
+      this.config.requests_per_minute,
+      ONE_MINUTE_MS,
+      false,
     );
   }
 
@@ -97,6 +115,24 @@ export class RateLimiter {
       key,
       this.config.transactions_per_day,
       ONE_DAY_MS,
+      true,
+    );
+  }
+
+  /**
+   * Preview a transaction-rate check without recording it.
+   */
+  previewTransactionRate(key: string): RateLimitResult {
+    if (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) {
+      return UNLIMITED_RESULT;
+    }
+
+    return this.checkWindow(
+      this.transactionWindows,
+      key,
+      this.config.transactions_per_day,
+      ONE_DAY_MS,
+      false,
     );
   }
 
@@ -135,6 +171,7 @@ export class RateLimiter {
     key: string,
     limit: number,
     windowMs: number,
+    record: boolean,
   ): RateLimitResult {
     const now = Date.now();
     const cutoff = now - windowMs;
@@ -165,13 +202,16 @@ export class RateLimiter {
       };
     }
 
-    // Record the new timestamp
-    timestamps.push(now);
+    const projectedCount = timestamps.length + 1;
+
+    if (record) {
+      timestamps.push(now);
+    }
 
     return {
       allowed: true,
       limit,
-      remaining: limit - timestamps.length,
+      remaining: limit - projectedCount,
       resetMs: (timestamps[0] ?? now) + windowMs - now,
     };
   }

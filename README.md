@@ -6,24 +6,27 @@
 
 ## What is AgentGuard?
 
-AgentGuard is building toward an AI action firewall for MCP (Model Context Protocol) servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
+AgentGuard is building toward an AI action firewall for MCP (Model Context Protocol) servers and APIs. The current repo includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, console reporter, MCP middleware, Express-compatible middleware, and simulation mode. CLI tooling is planned next.
 
 ```typescript
-import {
-  IdentityReader,
-  PolicyEvaluator,
-  RateLimiter,
-  ReceiptStore,
-  loadPolicy,
-} from 'agentguard';
+import { withGuard } from 'agentguard';
 
-const policy = loadPolicy('./guard-policy.json');
-const evaluator = new PolicyEvaluator(policy);
-const identityReader = new IdentityReader();
-const rateLimiter = new RateLimiter(policy.rate_limits ?? {});
-const receiptStore = new ReceiptStore();
+withGuard(server, { policy: './guard-policy.json' });
+server.registerTool('search_flights', { inputSchema }, async (params) => {
+  return { content: [{ type: 'text', text: 'ok' }] };
+});
+```
 
-// Middleware adapters such as withGuard() are not implemented yet.
+```typescript
+import { guard } from 'agentguard';
+
+app.use(guard({
+  policy: './guard-policy.json',
+  actionResolver: (requestName) => {
+    if (requestName === 'POST /bookings') return 'book_flight';
+    return requestName;
+  },
+}));
 ```
 
 ## Implemented Today
@@ -34,13 +37,14 @@ const receiptStore = new ReceiptStore();
 - ✅ Internal spend tracking (session and daily totals)
 - ✅ Signed action receipts with hash chain (SQLite)
 - ✅ Console reporter (colorized terminal output)
+- ✅ MCP `withGuard()` wrapper
+- ✅ Express-compatible `guard()` middleware
+- ✅ Simulation mode for MCP and HTTP
 
 ## Planned Next
 
-- ⏳ MCP `withGuard()` wrapper
-- ⏳ Express/Fastify middleware
-- ⏳ Simulation mode
 - ⏳ CLI tools
+- ⏳ Examples and expanded quickstart docs
 
 ## Development
 

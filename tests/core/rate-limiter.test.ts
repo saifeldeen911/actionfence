@@ -70,6 +70,17 @@ describe('RateLimiter', () => {
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(4);
     });
+
+    it('should preview request limits without consuming capacity', () => {
+      const preview = limiter.previewRequestRate('agent-1');
+      expect(preview.allowed).toBe(true);
+      expect(preview.remaining).toBe(4);
+
+      for (let i = 0; i < 5; i++) {
+        expect(limiter.checkRequestRate('agent-1').allowed).toBe(true);
+      }
+      expect(limiter.checkRequestRate('agent-1').allowed).toBe(false);
+    });
   });
 
   describe('transaction rate limiting', () => {
@@ -99,6 +110,17 @@ describe('RateLimiter', () => {
       // Transaction limit should still be available
       const result = limiter.checkTransactionRate('agent-1');
       expect(result.allowed).toBe(true);
+    });
+
+    it('should preview transaction limits without consuming capacity', () => {
+      const preview = limiter.previewTransactionRate('agent-1');
+      expect(preview.allowed).toBe(true);
+      expect(preview.remaining).toBe(2);
+
+      for (let i = 0; i < 3; i++) {
+        expect(limiter.checkTransactionRate('agent-1').allowed).toBe(true);
+      }
+      expect(limiter.checkTransactionRate('agent-1').allowed).toBe(false);
     });
   });
 

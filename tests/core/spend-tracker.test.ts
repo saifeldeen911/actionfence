@@ -26,6 +26,19 @@ describe('SpendTracker', () => {
     expect(() => tracker.record('agent-1', -1)).toThrow(/non-negative/);
   });
 
+  it('should preview spend without mutating totals', () => {
+    tracker.record('agent-1', 10);
+
+    const preview = tracker.previewRecord('agent-1', 15);
+    expect(preview.recorded).toBe(true);
+    expect(preview.snapshot.sessionTotal).toBe(25);
+    expect(preview.snapshot.dailyTotal).toBe(25);
+
+    const totals = tracker.getTotals('agent-1');
+    expect(totals.sessionTotal).toBe(10);
+    expect(totals.dailyTotal).toBe(10);
+  });
+
   it('should accumulate session and daily totals', () => {
     tracker.record('agent-1', 10);
     const result = tracker.record('agent-1', 15.5);

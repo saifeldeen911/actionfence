@@ -18,6 +18,34 @@ export class SpendTracker {
   private readonly spendByAgent = new Map<string, SpendEntry>();
 
   /**
+   * Preview spend recording without mutating tracked totals.
+   */
+  previewRecord(agentId: string, amount: number | null): SpendRecordResult {
+    const current = this.getCurrentEntry(agentId);
+
+    if (amount === null) {
+      return {
+        recorded: false,
+        amount: null,
+        snapshot: toSnapshot(agentId, current),
+      };
+    }
+
+    assertValidAmount(amount);
+
+    return {
+      recorded: true,
+      amount,
+      snapshot: Object.freeze({
+        agentId,
+        sessionTotal: current.sessionTotal + amount,
+        dailyTotal: current.dailyTotal + amount,
+        dayKeyUtc: current.dayKeyUtc,
+      }),
+    };
+  }
+
+  /**
    * Record a spend amount for one agent.
    */
   record(agentId: string, amount: number | null): SpendRecordResult {
@@ -31,9 +59,7 @@ export class SpendTracker {
       };
     }
 
-    if (!Number.isFinite(amount) || amount < 0) {
-      throw new RangeError(`Spend amount must be a finite, non-negative number. Received: ${amount}`);
-    }
+    assertValidAmount(amount);
 
     entry.sessionTotal += amount;
     entry.dailyTotal += amount;
@@ -86,6 +112,33 @@ export class SpendTracker {
 
     return existing;
   }
+
+  private getCurrentEntry(agentId: string): SpendEntry {
+    const dayKeyUtc = getUtcDayKey();
+    const existing = this.spendByAgent.get(agentId);
+
+    if (!existing) {
+      return {
+        sessionTotal: 0,
+        dailyTotal: 0,
+        dayKeyUtc,
+      };
+    }
+
+    if (existing.dayKeyUtc !== dayKeyUtc) {
+      return {
+        sessionTotal: existing.sessionTotal,
+        dailyTotal: 0,
+        dayKeyUtc,
+      };
+    }
+
+    return {
+      sessionTotal: existing.sessionTotal,
+      dailyTotal: existing.dailyTotal,
+      dayKeyUtc,
+    };
+  }
 }
 
 function toSnapshot(agentId: string, entry: SpendEntry): SpendSnapshot {
@@ -99,4 +152,10 @@ function toSnapshot(agentId: string, entry: SpendEntry): SpendSnapshot {
 
 function getUtcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function assertValidAmount(amount: number): void {
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new RangeError(`Spend amount must be a finite, non-negative number. Received: ${amount}`);
+  }
 }

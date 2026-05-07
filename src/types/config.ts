@@ -5,6 +5,11 @@
 
 import type { GuardPolicy } from './policy.js';
 import type { EvaluationDecision } from './decision.js';
+import type { IdentityReader } from '../core/identity-reader.js';
+import type { RateLimiter } from '../core/rate-limiter.js';
+import type { ReceiptStore, ReceiptStoreOptions } from '../core/receipt-store.js';
+import type { SpendTracker } from '../core/spend-tracker.js';
+import type { ConsoleReporter } from '../reporters/console.js';
 
 /**
  * Options passed to `withGuard()` or `guard()` middleware.
@@ -37,6 +42,30 @@ export interface GuardOptions {
    * Return null if the action has no spend component.
    */
   readonly spendExtractor?: (params: unknown) => number | null;
+
+  /**
+   * Classify whether a passed action should count toward transaction-per-day limits.
+   * Defaults to true when spend was extracted or human approval is required.
+   */
+  readonly transactionResolver?: (
+    toolName: string,
+    params: unknown,
+    decision: EvaluationDecision,
+  ) => boolean;
+
+  /**
+   * Custom receipt store. Useful for tests and applications that need an explicit DB path.
+   */
+  readonly receiptStore?: ReceiptStore;
+
+  /** Options used when AgentGuard creates its default ReceiptStore. */
+  readonly receiptStoreOptions?: ReceiptStoreOptions;
+
+  /** Dependency injection hooks for tests or advanced integrations. */
+  readonly identityReader?: IdentityReader;
+  readonly rateLimiter?: RateLimiter;
+  readonly spendTracker?: SpendTracker;
+  readonly reporter?: ConsoleReporter;
 
   /**
    * Callback fired after every evaluation decision.
