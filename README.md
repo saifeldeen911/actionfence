@@ -1,74 +1,79 @@
 # ActionFence
 
-> **AI Action Firewall for MCP servers and APIs.**
-> One line of code. Signed receipts. Simulation mode.
+AI Action Firewall for MCP servers and APIs.
+
+One line of code. Signed receipts. Simulation mode.
 
 [![CI](https://github.com/saifeldeen911/actionfence/actions/workflows/ci.yml/badge.svg)](https://github.com/saifeldeen911/actionfence/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org)
 
----
-
 ## Why ActionFence?
 
-AI agents can now browse, book, buy, and delete things on behalf of humans. But a rogue or misconfigured agent can book 200 hotel rooms, charge the wrong card, or bulk-delete records — with no way to catch it before it happens.
+ActionFence sits in front of your MCP tools or HTTP routes and decides whether an incoming agent action is allowed before your real handler runs.
 
-ActionFence sits at your **service's door** and enforces what any incoming AI agent is allowed to do:
+It gives you:
 
-- 🛡️ **Policy enforcement** — Allow/deny actions via a simple JSON policy file
-- 🔐 **Identity tiers** — Classify agents as `anonymous` or bearer-token based; use a custom identity reader for verified identities
-- 💰 **Spend caps** — Set per-action spending limits
-- ⏱️ **Rate limiting** — Sliding window request + transaction limits
-- 📝 **Signed receipts** — HMAC-SHA256 hash-chained audit trail in SQLite
-- ⚡ **Simulation mode** — See what would happen before it does
-- 🎯 **Zero-config** — Works out of the box. No database to provision, no keys to manage.
+- Policy enforcement from `guard-policy.json`
+- Identity tiers: `anonymous`, `token`, `verified`
+- Built-in verified JWT support via JWKS
+- Capability scope checks from JWT `capabilities`
+- Per-action spend caps plus session/day spend limits
+- Request and transaction rate limiting
+- Signed, hash-chained receipts in SQLite
+- Simulation mode for dry-run previews
 
----
-
-## Quick Start
-
-### Install
+## Install
 
 ```bash
 npm install actionfence
 ```
 
-### MCP Server (one-liner)
+## Quick Start
 
-```typescript
+### MCP Server
+
+```ts
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { withGuard } from 'actionfence';
 
 const server = new McpServer({ name: 'my-server', version: '1.0.0' });
 
-// One line — all tools registered after this are protected
-withGuard(server, { policy: './guard-policy.json' });
+withGuard(server, {
+  policy: './guard-policy.json',
+  identityReaderOptions: {
+    jwksUri: 'https://issuer.example/.well-known/jwks.json',
+    issuer: 'https://issuer.example',
+    audience: 'bookflight-mcp',
+  },
+});
 
-server.registerTool(
-  'search_flights',
-  {
-    /* schema */
-  },
-  async (params) => {
-    // This handler only runs if ActionFence allows it
-    return { content: [{ type: 'text', text: 'results...' }] };
-  },
-);
+server.registerTool('search_flights', {}, async () => {
+  return { content: [{ type: 'text', text: 'results...' }] };
+});
 ```
 
 ### Express / Fastify
 
-```typescript
+```ts
 import express from 'express';
 import { guard } from 'actionfence';
 
 const app = express();
+app.use(express.json());
 
 app.use(
   guard({
     policy: './guard-policy.json',
+    identityReaderOptions: {
+      jwksUri: 'https://issuer.example/.well-known/jwks.json',
+      issuer: 'https://issuer.example',
+      audience: 'bookflight-api',
+    },
     actionResolver: (toolName) => {
-      if (/^GET \/bookings\/[^/]+$/.test(toolName)) return 'GET /bookings/:id';
+      if (/^GET \/bookings\/[^/]+$/.test(toolName)) {
+        return 'GET /bookings/:id';
+      }
       return toolName;
     },
     spendExtractor: (params) => {
@@ -77,30 +82,19 @@ app.use(
     },
   }),
 );
-
-app.get('/flights', (req, res) => {
-  /* only reachable if allowed */
-});
 ```
 
 ### CLI
 
 ```bash
-# Scaffold a starter policy file
 npx actionfence init
-
-# Validate a policy against the schema
 npx actionfence validate guard-policy.json
-
-# Dry-run a single action
-npx actionfence simulate guard-policy.json --action book_flight --identity anonymous
+npx actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
 ```
-
----
 
 ## Policy File
 
-ActionFence uses a `guard-policy.json` file to define what agents can do. Think of it as `robots.txt` for AI actions.
+`guard-policy.json` defines what agents can do in your system.
 
 ```json
 {
@@ -117,6 +111,7 @@ ActionFence uses a `guard-policy.json` file to define what agents can do. Think 
       "allowed": true,
       "identity": "verified",
       "max_spend": 500,
+      "currency": "USD",
       "requires_human_approval": true
     },
     "bulk_booking": {
@@ -127,229 +122,215 @@ ActionFence uses a `guard-policy.json` file to define what agents can do. Think 
     "requests_per_minute": 30,
     "transactions_per_day": 5
   },
+  "spend_limits": {
+    "session_max": 1000,
+    "daily_max": 2500,
+    "currency": "USD"
+  },
   "regulations": ["EU_AI_Act_Art50"]
 }
 ```
 
 ### Policy Reference
 
-| Field          | Type                | Required | Description                                                 |
-| -------------- | ------------------- | -------- | ----------------------------------------------------------- |
-| `service`      | `string`            | ✅       | Service name this policy belongs to                         |
-| `version`      | `string`            | ✅       | Policy version string                                       |
-| `default_rule` | `"allow" \| "deny"` | No       | Default behavior for unlisted actions. Defaults to `"deny"` |
-| `actions`      | `object`            | ✅       | Map of action names to permission rules                     |
-| `rate_limits`  | `object`            | No       | Rate limiting configuration                                 |
-| `regulations`  | `string[]`          | No       | Regulatory frameworks (stored only, not enforced in v1)     |
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `service` | `string` | Yes | Service name |
+| `version` | `string` | Yes | Policy version |
+| `default_rule` | `"allow" \| "deny"` | No | Defaults to `"deny"` |
+| `actions` | `object` | Yes | Action rules keyed by action name |
+| `rate_limits` | `object` | No | Request and transaction limits |
+| `spend_limits` | `object` | No | Global session/day spend limits in major units |
+| `regulations` | `string[]` | No | Stored only in `0.1.0` |
 
 ### Action Rule Fields
 
-| Field                     | Type                             | Default | Description                                           |
-| ------------------------- | -------------------------------- | ------- | ----------------------------------------------------- |
-| `allowed`                 | `boolean`                        | —       | Whether this action is permitted (required)           |
-| `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier required                        |
-| `max_spend`               | `integer`                        | —       | Maximum spend per invocation (smallest currency unit) |
-| `requires_human_approval` | `boolean`                        | `false` | Informational flag for human-in-the-loop              |
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `allowed` | `boolean` | - | Required |
+| `identity` | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier |
+| `max_spend` | `number` | - | Per-invocation cap in major units |
+| `currency` | `string` | - | ISO 4217 currency code |
+| `requires_human_approval` | `boolean` | `false` | Informational in `0.1.0` |
 
 ### Identity Tiers
 
-| Tier        | Meaning                                 | How it's determined                           |
-| ----------- | --------------------------------------- | --------------------------------------------- |
-| `anonymous` | No credentials presented                | No `Authorization` header                     |
-| `token`     | Bearer token present but unverified     | `Authorization: Bearer <token>` present       |
-| `verified`  | Trusted identity from your own verifier | Returned by a custom `identityReader` in v0.1 |
+| Tier | Meaning |
+| --- | --- |
+| `anonymous` | No credentials presented |
+| `token` | Bearer token present but not signature-verified |
+| `verified` | JWT passed JWKS verification |
 
-The built-in v0.1 identity reader is intentionally conservative: it decodes bearer JWTs to extract metadata, but it does not verify signatures or JWKS. Policies can still require `verified`, but runtime requests only satisfy that tier when you inject an identity reader that returns `classification: 'verified'`. The CLI simulator can model `verified` requests for policy testing.
+Verified identity is built in when you configure `identityReaderOptions.jwksUri`. If JWKS verification fails, ActionFence falls back to `token` instead of treating the request as anonymous.
 
----
+### Scope Enforcement
+
+If a decoded or verified token includes a `capabilities` claim, ActionFence treats it as an exact allowlist of policy action names. A request that passes policy checks but is not listed in `capabilities` is blocked.
 
 ## Simulation Mode
 
-Preview what ActionFence would do without executing any actions:
+Simulation mode runs the full policy pipeline without executing the handler or storing a receipt.
 
-### MCP Server
+### MCP
 
-```typescript
+```ts
 withGuard(server, {
   policy: './guard-policy.json',
   simulate: true,
 });
-// Tool calls return a JSON preview instead of executing
 ```
 
 ### Express
 
-```typescript
+```ts
 app.use(
   guard({
     policy: './guard-policy.json',
     simulate: true,
   }),
 );
-// Returns 200 + X-ActionFence-Simulation: true + JSON preview
 ```
 
-### CLI
+### CLI output
 
 ```bash
-npx actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
+actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
 
-# ⚡ SIMULATION — actionfence
-#
-#   Action:          book_flight
-#   Identity:        verified
-#   Status:          ✓ WOULD PASS
-#   Spend:           $250.00
-#   Human approval:  required
-#   Rate limit:      29/30 remaining
+SIMULATION - actionfence
+
+  Action:          book_flight
+  Tool:            book_flight
+  Identity:        verified
+  Status:          PASS
+  Spend:           250.00
+  Session total:   250.00
+  Daily total:     250.00
+  Human approval:  required
+  Rate limit:      29/30 remaining
 ```
-
----
 
 ## Action Receipts
 
-Every action (passed or blocked) generates a signed, tamper-proof receipt:
+Every enforced decision stores a signed receipt in SQLite.
 
-```
+```text
 receipt_id:     a1b2c3d4-...
 timestamp:      2026-05-07T14:02:11Z
 agent_id:       agt_7x9f2k...
 action:         book_flight
 status:         PASSED
 payload_hash:   0x8f3a...
-prev_hash:      0x7e2d...     ← hash chain link
-receipt_sig:    0x4f9b...     ← HMAC-SHA256 signature
+prev_hash:      0x7e2d...
+receipt_sig:    0x4f9b...
 ```
 
 Receipts are:
 
-- **Hash-chained** — each receipt includes the hash of the previous one
-- **Signed** — HMAC-SHA256 with a secret key
-- **Append-only** — stored in SQLite, never updated or deleted
-- **Verifiable** — `ReceiptStore.verifyChain()` detects any tampering
+- Hash-chained
+- HMAC-SHA256 signed
+- Append-only
+- Verifiable with `ReceiptStore.verifyChain()`
 
-### Signing Key Resolution
+Signing key resolution order:
 
-1. `options.secret` (programmatic override)
-2. `ACTIONFENCE_SECRET` environment variable
-3. `.actionfence/key` file (auto-generated on first run)
-
----
+1. `options.secret`
+2. `ACTIONFENCE_SECRET`
+3. `.actionfence/key`
 
 ## API Reference
 
-### `withGuard(server, options)` — MCP Middleware
+### `withGuard(server, options)`
 
-```typescript
-import { withGuard } from 'actionfence';
-
-const guard = withGuard(server, {
+```ts
+const guardInstance = withGuard(server, {
   policy: './guard-policy.json',
   simulate: false,
   silent: false,
   secret: process.env.ACTIONFENCE_SECRET,
+  identityReaderOptions: {
+    jwksUri: 'https://issuer.example/.well-known/jwks.json',
+    issuer: 'https://issuer.example',
+    audience: 'bookflight-mcp',
+  },
   actionResolver: (toolName, params) => toolName,
   spendExtractor: (params) => null,
-  onDecision: (decision) => {
-    /* custom logging */
-  },
+  onDecision: (decision) => {},
   watchPolicy: true,
 });
 
-// Later:
-guard.dispose();
+guardInstance.dispose();
 ```
 
-### `guard(options)` — Express Middleware
+### `guard(options)`
 
-```typescript
-import { guard } from 'actionfence';
-
+```ts
 const middleware = guard({
   policy: './guard-policy.json',
-  actionResolver: (toolName) => toolName,
-  spendExtractor: (params) => null,
+  identityReaderOptions: {
+    jwksUri: 'https://issuer.example/.well-known/jwks.json',
+  },
 });
-
-app.use(middleware);
-
-// Later:
-middleware.dispose();
 ```
 
 ### `GuardOptions`
 
-| Option                | Type                                      | Default | Description                                            |
-| --------------------- | ----------------------------------------- | ------- | ------------------------------------------------------ |
-| `policy`              | `string \| GuardPolicy`                   | —       | Path to policy file or inline policy object (required) |
-| `simulate`            | `boolean`                                 | `false` | Enable simulation mode                                 |
-| `silent`              | `boolean`                                 | `false` | Suppress console output                                |
-| `secret`              | `string`                                  | —       | HMAC signing secret override                           |
-| `actionResolver`      | `(toolName, params) => string`            | —       | Map tool names to policy action names                  |
-| `spendExtractor`      | `(params) => number \| null`              | —       | Extract spend amount from request params               |
-| `transactionResolver` | `(toolName, params, decision) => boolean` | —       | Classify actions as transactions for daily limits      |
-| `onDecision`          | `(decision) => void`                      | —       | Callback fired after every evaluation                  |
-| `watchPolicy`         | `boolean`                                 | `false` | Enable hot-reload on policy file changes               |
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `policy` | `string \| GuardPolicy` | - | Required |
+| `simulate` | `boolean` | `false` | Dry-run mode |
+| `silent` | `boolean` | `false` | Suppress console output |
+| `secret` | `string` | - | HMAC secret override |
+| `identityReaderOptions` | `IdentityReaderOptions` | - | Built-in JWKS verification config |
+| `identityReader` | `IdentityReaderLike` | - | Full custom identity resolution override |
+| `actionResolver` | `(toolName, params) => string` | - | Map tool names to policy actions |
+| `spendExtractor` | `(params) => number \| null` | - | Extract spend in major units |
+| `transactionResolver` | `(toolName, params, decision) => boolean` | - | Override transaction classification |
+| `onDecision` | `(decision) => void` | - | Metrics, logging, hooks |
+| `watchPolicy` | `boolean` | `false` | Hot-reload file-backed policies |
 
-### v0.1 Limits
+### `IdentityReaderOptions`
 
-- Built-in JWT handling is decode-only. Use `identityReader` for signature-verified identities.
-- Spend enforcement is per invocation through `max_spend`; session and daily spend totals are tracked for reporting, but not enforced by policy in v0.1.
-- `requires_human_approval` is reported in decisions and simulations; v0.1 does not implement an approval workflow.
-- The Express adapter sees concrete paths in globally mounted middleware. Use `actionResolver` to map paths such as `/bookings/BK-123` to policy actions such as `GET /bookings/:id`.
+| Field | Type | Notes |
+| --- | --- | --- |
+| `jwksUri` | `string` | Remote JWKS endpoint |
+| `issuer` | `string \| string[]` | Optional issuer check |
+| `audience` | `string \| string[]` | Optional audience check |
 
----
+## `0.1.0` Limits
+
+- Capability checks are exact string matches only
+- No APoP / LAS-WG adapters yet
+- No wildcard scope patterns or path-policy DSL
+- `requires_human_approval` is reported only; no approval workflow is implemented
+- Money is major-unit only; mixed-currency accounting is out of scope for one policy
 
 ## CLI Reference
 
 ### `actionfence init`
 
-Scaffold a starter `guard-policy.json`:
-
 ```bash
-actionfence init                        # Creates ./guard-policy.json
-actionfence init --service MyAPI        # Custom service name
-actionfence init --output ./policies/   # Custom output path
+actionfence init
+actionfence init --service MyAPI
+actionfence init --output ./policies/guard-policy.json
 ```
 
 ### `actionfence validate <path>`
 
-Validate a policy file against the JSON Schema:
-
 ```bash
 actionfence validate guard-policy.json
-# ✓ Valid policy: guard-policy.json
-#   Service:         BookFlight.com
-#   Version:         1.0
-#   Default rule:    deny
-#   Actions:         4 defined
 ```
 
 ### `actionfence simulate <path>`
 
-Dry-run a policy evaluation:
-
 ```bash
 actionfence simulate guard-policy.json --action search_flights
 actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
-actionfence simulate guard-policy.json --action bulk_booking  # exits with code 1
 ```
-
-| Flag         | Required | Default        | Description                                      |
-| ------------ | -------- | -------------- | ------------------------------------------------ |
-| `--action`   | ✅       | —              | Policy action name to evaluate                   |
-| `--identity` | No       | `anonymous`    | Identity tier (`anonymous`, `token`, `verified`) |
-| `--spend`    | No       | —              | Spend amount for spend cap checks                |
-| `--tool`     | No       | Same as action | Original tool name (if different from action)    |
-
----
 
 ## Examples
 
-- **[MCP Server Example](examples/mcp-server/)** — Flight booking MCP server with 4 protected tools
-- **[Express API Example](examples/express-api/)** — REST API with route-based policy enforcement
-
----
+- [MCP Server Example](examples/mcp-server/)
+- [Express API Example](examples/express-api/)
 
 ## Development
 
@@ -357,43 +338,12 @@ actionfence simulate guard-policy.json --action bulk_booking  # exits with code 
 git clone https://github.com/saifeldeen911/actionfence.git
 cd actionfence
 npm install
-npm run typecheck    # Type-check
-npm run lint         # Lint
-npm test             # Run tests
-npm run build        # Build ESM + CJS + types
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
-
----
-
-## Architecture
-
-```
-┌───────────────────────────────────────────────────────┐
-│  Your MCP Server / Express API                        │
-│                                                       │
-│  withGuard(server, { policy: './guard-policy.json' }) │
-│                                                       │
-│  ┌──────────────────────────────────────────────┐    │
-│  │  ActionFence Pipeline (per tool call)          │    │
-│  │                                               │    │
-│  │  1. Identity Read  → anonymous/token/custom    │    │
-│  │  2. Policy Match   → allow/deny + reason      │    │
-│  │  3. Rate Limit     → sliding window check     │    │
-│  │  4. Spend Cap      → per-action max_spend      │    │
-│  │  5. Receipt Sign   → HMAC-SHA256 + hash chain │    │
-│  │  6. Receipt Store  → SQLite append-only       │    │
-│  │  7. Console Report → colorized output         │    │
-│  └──────────────────────────────────────────────┘    │
-│                                                       │
-│  PASS → signed receipt + handler executes             │
-│  BLOCK → error response + receipt logged              │
-└───────────────────────────────────────────────────────┘
-```
-
----
 
 ## License
 
-[MIT](LICENSE) © [Saifeldeen](https://github.com/saifeldeen911)
+[MIT](LICENSE) (c) [Saifeldeen](https://github.com/saifeldeen911)

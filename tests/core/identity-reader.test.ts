@@ -1,12 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { createServer, type Server } from 'node:http';
+import { generateKeyPairSync } from 'node:crypto';
+import {
+  exportJWK,
+  SignJWT,
+  type JWK,
+  type KeyLike,
+} from 'jose';
 import { IdentityReader } from '../../src/core/identity-reader.js';
 import type { RequestContext } from '../../src/core/identity-reader.js';
 
-/**
- * Helper: create a minimal unsigned JWT with the given payload.
- * This is NOT a secure JWT — it's decode-only for testing.
- * Format: header.payload.signature (signature is empty).
- */
 function makeUnsignedJwt(payload: Record<string, unknown>): string {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -17,21 +20,21 @@ describe('IdentityReader', () => {
   const reader = new IdentityReader();
 
   describe('anonymous identity', () => {
-    it('should return anonymous when context is empty', () => {
-      const identity = reader.readIdentity({});
+    it('should return anonymous when context is empty', async () => {
+      const identity = await reader.readIdentity({});
       expect(identity.classification).toBe('anonymous');
       expect(identity.agentId).toBe('anonymous');
       expect(identity.ownerId).toBeNull();
       expect(identity.rawToken).toBeNull();
     });
 
-    it('should return anonymous when no auth headers are present', () => {
-      const identity = reader.readIdentity({ headers: {} });
+    it('should return anonymous when no auth headers are present', async () => {
+      const identity = await reader.readIdentity({ headers: {} });
       expect(identity.classification).toBe('anonymous');
     });
 
-    it('should return anonymous when authorization header is not Bearer', () => {
-      const identity = reader.readIdentity({
+    it('should return anonymous when authorization header is not Bearer', async () => {
+      const identity = await reader.readIdentity({
         headers: { authorization: 'Basic abc123' },
       });
       expect(identity.classification).toBe('anonymous');
@@ -39,9 +42,9 @@ describe('IdentityReader', () => {
   });
 
   describe('token identity (Bearer token)', () => {
-    it('should decode JWT from Authorization header', () => {
+    it('should decode JWT from Authorization header', async () => {
       const token = makeUnsignedJwt({ sub: 'agent-abc', azp: 'owner-xyz' });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -51,52 +54,52 @@ describe('IdentityReader', () => {
       expect(identity.rawToken).toBe(token);
     });
 
-    it('should extract owner from custom "owner" claim if azp is absent', () => {
+    it('should extract owner from custom "owner" claim if azp is absent', async () => {
       const token = makeUnsignedJwt({ sub: 'agent-1', owner: 'owner-custom' });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
       expect(identity.ownerId).toBe('owner-custom');
     });
 
-    it('should prefer azp over owner claim', () => {
+    it('should prefer azp over owner claim', async () => {
       const token = makeUnsignedJwt({
         sub: 'agent-1',
         azp: 'azp-owner',
         owner: 'custom-owner',
       });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
       expect(identity.ownerId).toBe('azp-owner');
     });
 
-    it('should extract capabilities from JWT', () => {
+    it('should extract capabilities from JWT', async () => {
       const token = makeUnsignedJwt({
         sub: 'agent-1',
         capabilities: ['search', 'book'],
       });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
       expect(identity.capabilities).toEqual(['search', 'book']);
     });
 
-    it('should return empty capabilities if not present', () => {
+    it('should return empty capabilities if not present', async () => {
       const token = makeUnsignedJwt({ sub: 'agent-1' });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
       expect(identity.capabilities).toEqual([]);
     });
 
-    it('should handle case-insensitive Bearer prefix', () => {
+    it('should handle case-insensitive Bearer prefix', async () => {
       const token = makeUnsignedJwt({ sub: 'agent-case' });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `bearer ${token}` },
       });
 
@@ -106,34 +109,34 @@ describe('IdentityReader', () => {
   });
 
   describe('MCP authInfo', () => {
-    it('should extract token from MCP authInfo', () => {
+    it('should extract token from MCP authInfo', async () => {
       const token = makeUnsignedJwt({ sub: 'mcp-agent' });
       const context: RequestContext = {
         authInfo: { token },
       };
-      const identity = reader.readIdentity(context);
+      const identity = await reader.readIdentity(context);
 
       expect(identity.classification).toBe('token');
       expect(identity.agentId).toBe('mcp-agent');
     });
 
-    it('should prefer authInfo.token over Authorization header', () => {
+    it('should prefer authInfo.token over Authorization header', async () => {
       const mcpToken = makeUnsignedJwt({ sub: 'mcp-agent' });
       const httpToken = makeUnsignedJwt({ sub: 'http-agent' });
       const context: RequestContext = {
         authInfo: { token: mcpToken },
         headers: { authorization: `Bearer ${httpToken}` },
       };
-      const identity = reader.readIdentity(context);
+      const identity = await reader.readIdentity(context);
 
       expect(identity.agentId).toBe('mcp-agent');
     });
   });
 
   describe('malformed tokens', () => {
-    it('should fall back to anonymous for completely invalid token', () => {
+    it('should fall back to anonymous for completely invalid token', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: 'Bearer not-a-jwt' },
       });
 
@@ -144,23 +147,22 @@ describe('IdentityReader', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should still decode an expired JWT (decode-only, no verification)', () => {
+    it('should still decode an expired JWT when not verifying signatures', async () => {
       const token = makeUnsignedJwt({
         sub: 'expired-agent',
-        exp: Math.floor(Date.now() / 1000) - 3600, // expired 1 hour ago
+        exp: Math.floor(Date.now() / 1000) - 3600,
       });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
-      // decodeJwt does NOT check expiration — that's jwtVerify's job
       expect(identity.classification).toBe('token');
       expect(identity.agentId).toBe('expired-agent');
     });
 
-    it('should return agentId as "unknown" if sub claim is missing', () => {
+    it('should return agentId as "unknown" if sub claim is missing', async () => {
       const token = makeUnsignedJwt({ azp: 'some-owner' });
-      const identity = reader.readIdentity({
+      const identity = await reader.readIdentity({
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -168,3 +170,147 @@ describe('IdentityReader', () => {
     });
   });
 });
+
+describe('IdentityReader with JWKS', () => {
+  const issuer = 'https://issuer.example';
+  const audience = 'actionfence-tests';
+  const primaryKeys = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const secondaryKeys = generateKeyPairSync('rsa', { modulusLength: 2048 });
+
+  let server: Server;
+  let serverUrl = '';
+  let jwk: JWK;
+
+  beforeAll(async () => {
+    jwk = await exportJWK(primaryKeys.publicKey);
+    jwk.kid = 'primary-key';
+    jwk.use = 'sig';
+    jwk.alg = 'RS256';
+
+    server = createServer((req, res) => {
+      if (req.url !== '/.well-known/jwks.json') {
+        res.statusCode = 404;
+        res.end('not found');
+        return;
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ keys: [jwk] }));
+    });
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', () => resolve());
+    });
+
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      throw new Error('Failed to resolve JWKS test server address');
+    }
+
+    serverUrl = `http://127.0.0.1:${address.port}/.well-known/jwks.json`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should classify a valid JWT as verified', async () => {
+    const token = await signJwt(primaryKeys.privateKey, {
+      sub: 'verified-agent',
+      azp: 'owner-1',
+      capabilities: ['book_flight'],
+    });
+    const reader = new IdentityReader({
+      jwksUri: serverUrl,
+      issuer,
+      audience,
+    });
+
+    const identity = await reader.readIdentity({
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(identity.classification).toBe('verified');
+    expect(identity.agentId).toBe('verified-agent');
+    expect(identity.capabilities).toEqual(['book_flight']);
+  });
+
+  it('should fall back to token when the signature is invalid', async () => {
+    const token = await signJwt(secondaryKeys.privateKey, {
+      sub: 'fallback-agent',
+      azp: 'owner-2',
+      capabilities: ['book_flight'],
+    });
+    const reader = new IdentityReader({
+      jwksUri: serverUrl,
+      issuer,
+      audience,
+    });
+
+    const identity = await reader.readIdentity({
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(identity.classification).toBe('token');
+    expect(identity.agentId).toBe('fallback-agent');
+  });
+
+  it('should fall back to token when issuer validation fails', async () => {
+    const token = await signJwt(primaryKeys.privateKey, { sub: 'issuer-agent' }, {
+      issuer: 'https://wrong-issuer.example',
+    });
+    const reader = new IdentityReader({
+      jwksUri: serverUrl,
+      issuer,
+      audience,
+    });
+
+    const identity = await reader.readIdentity({
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(identity.classification).toBe('token');
+    expect(identity.agentId).toBe('issuer-agent');
+  });
+
+  it('should fall back to token when audience validation fails', async () => {
+    const token = await signJwt(primaryKeys.privateKey, { sub: 'audience-agent' }, {
+      audience: 'wrong-audience',
+    });
+    const reader = new IdentityReader({
+      jwksUri: serverUrl,
+      issuer,
+      audience,
+    });
+
+    const identity = await reader.readIdentity({
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(identity.classification).toBe('token');
+    expect(identity.agentId).toBe('audience-agent');
+  });
+});
+
+async function signJwt(
+  key: KeyLike,
+  payload: Record<string, unknown>,
+  overrides: {
+    issuer?: string;
+    audience?: string | readonly string[];
+  } = {},
+): Promise<string> {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'RS256', kid: 'primary-key', typ: 'JWT' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .setIssuer(overrides.issuer ?? 'https://issuer.example')
+    .setAudience(overrides.audience ?? 'actionfence-tests')
+    .sign(key);
+}

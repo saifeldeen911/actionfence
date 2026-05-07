@@ -22,3 +22,8 @@ export interface AgentIdentity {
   /** The raw token string, if one was presented. Null for anonymous. */
   readonly rawToken: string | null;
 }
+
+/** An identity reader may resolve identity synchronously or asynchronously. */
+export interface IdentityReaderLike {
+  readIdentity(context: unknown): AgentIdentity | Promise<AgentIdentity>;
+}

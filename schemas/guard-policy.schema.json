@@ -59,9 +59,9 @@
             "description": "Minimum identity tier required. Defaults to 'any' if omitted."
           },
           "max_spend": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Maximum spend amount allowed for this action, expressed in the smallest currency unit (for example, cents)."
+            "description": "Maximum spend amount allowed for this action in major units."
           },
           "currency": {
             "type": "string",
@@ -88,6 +88,27 @@
           "type": "integer",
           "minimum": 0,
           "description": "Maximum transactions per day per agent. Set to 0 for unlimited."
+        }
+      }
+    },
+    "spend_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "session_max": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum projected session spend per agent in major units."
+        },
+        "daily_max": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum projected UTC-day spend per agent in major units."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code for spend reporting."
         }
       }
     },

@@ -5,6 +5,7 @@ node_modules/
 dist/
 
 # Guard runtime data
+.actionfence/
 .agentguard/
 
 # Coverage

@@ -59,6 +59,11 @@ describe('cli/init', () => {
     const content = JSON.parse(readFileSync(filePath, 'utf-8'));
     expect(content.service).toBe('my-service');
     expect(content.default_rule).toBe('deny');
+    expect(content.spend_limits).toEqual({
+      session_max: 1000,
+      daily_max: 2500,
+      currency: 'USD',
+    });
     expect(content.$schema).toContain('guard-policy.schema.json');
     expect(ctx.stdoutLines.join('')).toContain('Created');
   });

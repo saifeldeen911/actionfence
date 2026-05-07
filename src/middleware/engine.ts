@@ -13,10 +13,10 @@ import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import type { GuardOptions } from '../types/config.js';
 import type { EvaluationDecision } from '../types/decision.js';
-import type { AgentIdentity } from '../types/identity.js';
+import type { AgentIdentity, IdentityReaderLike } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
-import type { GuardPolicy } from '../types/policy.js';
+import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
 import { createSimulationPreview, type SimulationPreview } from './simulation.js';
 
 /** Whether a guard evaluation is enforcing or dry-running. */
@@ -72,7 +72,7 @@ export interface GuardInstance {
 export class GuardEngine {
   private policy: GuardPolicy;
   private readonly evaluator: PolicyEvaluator;
-  private readonly identityReader: IdentityReader;
+  private readonly identityReader: IdentityReaderLike;
   private readonly rateLimiter: RateLimiter;
   private readonly spendTracker: SpendTracker;
   private readonly receiptStore: ReceiptStore;
@@ -88,7 +88,7 @@ export class GuardEngine {
     this.policy = loadPolicy(options.policy);
     this.policyRefBase = getPolicyRefBase(options.policy, this.policy);
     this.evaluator = new PolicyEvaluator(this.policy);
-    this.identityReader = options.identityReader ?? new IdentityReader();
+    this.identityReader = options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker();
     this.receiptStore =
@@ -109,10 +109,10 @@ export class GuardEngine {
         : null;
   }
 
-  evaluate(input: GuardEvaluationInput): GuardEvaluationResult {
+  async evaluate(input: GuardEvaluationInput): Promise<GuardEvaluationResult> {
     const mode = input.mode ?? (this.options.simulate ? 'simulate' : 'enforce');
     const context = input.context ?? {};
-    const identity = this.identityReader.readIdentity(context);
+    const identity = await this.identityReader.readIdentity(context);
     const action = this.resolveAction(input.toolName, input.params);
     const spendAmount = this.extractSpend(input.params);
     const requestRate = this.checkRequestRate(identity.agentId, mode);
@@ -136,9 +136,15 @@ export class GuardEngine {
     }
 
     let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
+    decision = this.enforceCapabilities(action, decision, identity);
+
     let statusCode = decision.status === 'PASSED' ? 200 : 403;
     let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
     let effectiveRateLimit: RateLimitResult | null = requestRate;
+
+    if (decision.status === 'PASSED') {
+      decision = this.enforceSpendLimits(action, decision, identity);
+    }
 
     if (
       decision.status === 'PASSED' &&
@@ -198,10 +204,11 @@ export class GuardEngine {
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
   }): GuardEvaluationResult {
-    const spendSnapshot =
-      input.decision.status === 'PASSED'
-        ? this.recordSpend(input.identity.agentId, input.decision.spendAmount, input.mode)
-        : null;
+    const spendSnapshot = this.resolveSpendSnapshot(
+      input.identity.agentId,
+      input.decision,
+      input.mode,
+    );
     const preview =
       input.mode === 'simulate'
         ? createSimulationPreview({
@@ -314,6 +321,71 @@ export class GuardEngine {
     return result.recorded ? result.snapshot : null;
   }
 
+  private resolveSpendSnapshot(
+    agentId: string,
+    decision: EvaluationDecision,
+    mode: GuardMode,
+  ): SpendSnapshot | null {
+    if (decision.status !== 'PASSED') {
+      return decision.spendAmount !== null ? this.previewSpend(agentId, decision.spendAmount) : null;
+    }
+
+    return this.recordSpend(agentId, decision.spendAmount, mode);
+  }
+
+  private previewSpend(agentId: string, amount: number): SpendSnapshot | null {
+    const result = this.spendTracker.previewRecord(agentId, amount);
+    return result.recorded ? result.snapshot : null;
+  }
+
+  private enforceCapabilities(
+    action: string,
+    decision: EvaluationDecision,
+    identity: AgentIdentity,
+  ): EvaluationDecision {
+    if (decision.status !== 'PASSED' || identity.capabilities.length === 0) {
+      return decision;
+    }
+
+    if (identity.capabilities.includes(action)) {
+      return decision;
+    }
+
+    return createBlockedDecision({
+      action,
+      toolName: decision.toolName,
+      identity,
+      spendAmount: decision.spendAmount,
+      reason: `Action "${action}" is outside the agent's declared capabilities`,
+    });
+  }
+
+  private enforceSpendLimits(
+    action: string,
+    decision: EvaluationDecision,
+    identity: AgentIdentity,
+  ): EvaluationDecision {
+    const amount = decision.spendAmount;
+    if (decision.status !== 'PASSED' || amount === null) {
+      return decision;
+    }
+
+    const projected = this.spendTracker.previewRecord(identity.agentId, amount);
+    const blockedReason = resolveSpendLimitReason(this.policy.spend_limits, projected.snapshot);
+
+    if (!blockedReason) {
+      return decision;
+    }
+
+    return createBlockedDecision({
+      action,
+      toolName: decision.toolName,
+      identity,
+      spendAmount: amount,
+      reason: blockedReason,
+    });
+  }
+
   private isTransaction(toolName: string, params: unknown, decision: EvaluationDecision): boolean {
     if (this.options.transactionResolver) {
       try {
@@ -364,6 +436,29 @@ function createBlockedDecision(input: {
     timestamp: new Date().toISOString(),
     durationMs: 0,
   });
+}
+
+function resolveSpendLimitReason(
+  config: SpendLimitsConfig | undefined,
+  snapshot: SpendSnapshot,
+): string | null {
+  if (!config) {
+    return null;
+  }
+
+  if (config.session_max !== undefined && snapshot.sessionTotal > config.session_max) {
+    return `Action would exceed session spend limit of ${formatMoney(config.session_max, config.currency)}`;
+  }
+
+  if (config.daily_max !== undefined && snapshot.dailyTotal > config.daily_max) {
+    return `Action would exceed daily spend limit of ${formatMoney(config.daily_max, config.currency)}`;
+  }
+
+  return null;
+}
+
+function formatMoney(amount: number, currency: string | undefined): string {
+  return currency ? `${amount.toFixed(2)} ${currency}` : amount.toFixed(2);
 }
 
 function createErrorBody(input: {

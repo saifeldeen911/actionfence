@@ -31,6 +31,12 @@ const server = new McpServer({
 
 const guard = withGuard(server, {
   policy: './guard-policy.json',
+  // Configure JWKS verification to allow actions that require `identity: "verified"`.
+  // identityReaderOptions: {
+  //   jwksUri: process.env.ACTIONFENCE_JWKS_URI!,
+  //   issuer: 'https://issuer.example',
+  //   audience: 'bookflight-mcp',
+  // },
   // Uncomment to run in simulation mode (dry-run, no real actions):
   // simulate: true,
 });

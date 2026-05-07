@@ -5,7 +5,8 @@
 
 import type { GuardPolicy } from './policy.js';
 import type { EvaluationDecision } from './decision.js';
-import type { IdentityReader } from '../core/identity-reader.js';
+import type { IdentityReaderLike } from './identity.js';
+import type { IdentityReaderOptions } from '../core/identity-reader.js';
 import type { RateLimiter } from '../core/rate-limiter.js';
 import type { ReceiptStore, ReceiptStoreOptions } from '../core/receipt-store.js';
 import type { SpendTracker } from '../core/spend-tracker.js';
@@ -63,7 +64,8 @@ export interface GuardOptions {
   readonly receiptStoreOptions?: ReceiptStoreOptions;
 
   /** Dependency injection hooks for tests or advanced integrations. */
-  readonly identityReader?: IdentityReader;
+  readonly identityReader?: IdentityReaderLike;
+  readonly identityReaderOptions?: IdentityReaderOptions;
   readonly rateLimiter?: RateLimiter;
   readonly spendTracker?: SpendTracker;
   readonly reporter?: ConsoleReporter;

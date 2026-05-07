@@ -174,5 +174,5 @@ function resolveDefaultRule(
 }
 
 function formatSpendLabel(amount: number, currency: string | undefined): string {
-  return currency ? `${amount} minor units ${currency}` : `${amount} minor units`;
+  return currency ? `${amount.toFixed(2)} ${currency}` : amount.toFixed(2);
 }

@@ -30,91 +30,91 @@ const POLICY = resolve('tests', 'fixtures', 'valid-policy.json');
 // ---------------------------------------------------------------------------
 
 describe('cli/simulate', () => {
-  it('shows WOULD PASS for allowed action (exit code 0)', () => {
+  it('shows PASS for allowed action (exit code 0)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
+    const exitCode = await runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('WOULD PASS');
+    expect(output).toContain('PASS');
     expect(output).toContain('search_flights');
   });
 
-  it('shows WOULD BLOCK for denied action (exit code 1)', () => {
+  it('shows BLOCK for denied action (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(makeArgs([POLICY], { action: 'bulk_booking' }), ctx);
+    const exitCode = await runSimulate(makeArgs([POLICY], { action: 'bulk_booking' }), ctx);
 
     expect(exitCode).toBe(1);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('WOULD BLOCK');
+    expect(output).toContain('BLOCK');
     expect(output).toContain('bulk_booking');
   });
 
-  it('respects --identity flag (blocks when verified required but anonymous given)', () => {
+  it('respects --identity flag (blocks when verified required but anonymous given)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(
+    const exitCode = await runSimulate(
       makeArgs([POLICY], { action: 'book_flight', identity: 'anonymous' }),
       ctx,
     );
 
     expect(exitCode).toBe(1);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('WOULD BLOCK');
+    expect(output).toContain('BLOCK');
   });
 
-  it('passes when --identity matches the required tier', () => {
+  it('passes when --identity matches the required tier', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(
+    const exitCode = await runSimulate(
       makeArgs([POLICY], { action: 'book_flight', identity: 'verified', spend: '100' }),
       ctx,
     );
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('WOULD PASS');
+    expect(output).toContain('PASS');
   });
 
-  it('respects --spend flag (blocks when over max_spend)', () => {
+  it('respects --spend flag (blocks when over max_spend)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(
+    const exitCode = await runSimulate(
       makeArgs([POLICY], { action: 'book_flight', identity: 'verified', spend: '1000' }),
       ctx,
     );
 
     expect(exitCode).toBe(1);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('WOULD BLOCK');
+    expect(output).toContain('BLOCK');
     expect(output).toContain('spend');
   });
 
-  it('defaults to anonymous identity when --identity is not specified', () => {
+  it('defaults to anonymous identity when --identity is not specified', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
+    const exitCode = await runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
     expect(output).toContain('anonymous');
   });
 
-  it('errors on missing --action flag (exit code 1)', () => {
+  it('errors on missing --action flag (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(makeArgs([POLICY]), ctx);
+    const exitCode = await runSimulate(makeArgs([POLICY]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Missing required flag: --action');
   });
 
-  it('errors on missing policy path (exit code 1)', () => {
+  it('errors on missing policy path (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(makeArgs([]), ctx);
+    const exitCode = await runSimulate(makeArgs([]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Missing policy file path');
   });
 
-  it('shows the correct tool name when --tool flag is provided', () => {
+  it('shows the correct tool name when --tool flag is provided', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(
+    const exitCode = await runSimulate(
       makeArgs([POLICY], { action: 'search_flights', tool: 'do_search_v2' }),
       ctx,
     );
@@ -124,15 +124,16 @@ describe('cli/simulate', () => {
     expect(output).toContain('do_search_v2');
   });
 
-  it('shows spend amount when --spend is provided and action passes', () => {
+  it('shows spend amount when --spend is provided and action passes', async () => {
     const ctx = createTestContext();
-    const exitCode = runSimulate(
+    const exitCode = await runSimulate(
       makeArgs([POLICY], { action: 'book_flight', identity: 'verified', spend: '250' }),
       ctx,
     );
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('$250.00');
+    expect(output).toContain('250.00');
+    expect(output).toContain('Session total:   250.00');
   });
 });

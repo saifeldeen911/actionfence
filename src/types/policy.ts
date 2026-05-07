@@ -18,12 +18,22 @@ export interface ActionRule {
   readonly allowed: boolean;
   /** Minimum identity tier required. Defaults to 'any' if omitted. */
   readonly identity?: IdentityTier;
-  /** Maximum spend amount allowed for this action (smallest currency unit, e.g. cents). */
+  /** Maximum spend amount allowed for this action in major units (for example, 299.99 USD). */
   readonly max_spend?: number;
   /** ISO 4217 currency code for max_spend, if provided. */
   readonly currency?: string;
   /** Whether human approval is required before execution. */
   readonly requires_human_approval?: boolean;
+}
+
+/** Global spend limits for one policy in major units. */
+export interface SpendLimitsConfig {
+  /** Maximum projected session spend per agent. */
+  readonly session_max?: number;
+  /** Maximum projected UTC-day spend per agent. */
+  readonly daily_max?: number;
+  /** ISO 4217 currency code for spend reporting, if known. */
+  readonly currency?: string;
 }
 
 /** Rate limiting configuration. */
@@ -51,6 +61,8 @@ export interface GuardPolicy {
   readonly actions: Readonly<Record<string, ActionRule>>;
   /** Optional rate limiting configuration. */
   readonly rate_limits?: RateLimitsConfig;
+  /** Optional global spend limits in major units. */
+  readonly spend_limits?: SpendLimitsConfig;
   /** Regulatory frameworks (stored only, not enforced in v1). */
   readonly regulations?: readonly string[];
 }

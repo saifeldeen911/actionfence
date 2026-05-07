@@ -72,6 +72,8 @@ describe('cli/validate', () => {
     expect(output).toContain('4 defined');
     expect(output).toContain('30 req/min');
     expect(output).toContain('5 txn/day');
+    expect(output).toContain('session 1000.00 USD');
+    expect(output).toContain('daily 2500.75 USD');
     expect(output).toContain('EU_AI_Act_Art50');
   });
 

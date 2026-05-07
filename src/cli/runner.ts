@@ -183,7 +183,7 @@ ${chalk.yellow('Options:')}
 ${chalk.yellow('Examples:')}
   actionfence init --service MyAPI
   actionfence validate guard-policy.json
-  actionfence simulate guard-policy.json --action book_flight --identity anonymous --tool do_search_v2
+  actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250 --tool do_search_v2
 
 ${chalk.dim('Documentation: README.md')}
 `);

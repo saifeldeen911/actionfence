@@ -108,6 +108,12 @@ function makeUnsignedJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.`;
 }
 
+function flushMiddleware(): Promise<void> {
+  return new Promise((resolve) => {
+    setImmediate(() => resolve());
+  });
+}
+
 describe('guard Express middleware', () => {
   let cleanupDirs: string[] = [];
 
@@ -134,7 +140,7 @@ describe('guard Express middleware', () => {
     const next = vi.fn();
 
     middleware(req, res, next);
-    await Promise.resolve();
+    await flushMiddleware();
 
     expect(next).toHaveBeenCalledWith();
     expect(res.headersSent).toBe(false);
@@ -162,7 +168,7 @@ describe('guard Express middleware', () => {
     const next = vi.fn();
 
     middleware(makeRequest(), res, next);
-    await Promise.resolve();
+    await flushMiddleware();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(403);
@@ -192,7 +198,7 @@ describe('guard Express middleware', () => {
     const next = vi.fn();
 
     middleware(makeRequest(), res, next);
-    await Promise.resolve();
+    await flushMiddleware();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(200);
@@ -221,7 +227,7 @@ describe('guard Express middleware', () => {
     const next = vi.fn();
 
     middleware(makeRequest(), res, next);
-    await Promise.resolve();
+    await flushMiddleware();
 
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(403);
@@ -257,7 +263,7 @@ describe('guard Express middleware', () => {
       res,
       next,
     );
-    await Promise.resolve();
+    await flushMiddleware();
 
     expect(next).toHaveBeenCalledWith();
     expect(res.headersSent).toBe(false);

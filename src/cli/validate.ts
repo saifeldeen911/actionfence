@@ -1,6 +1,6 @@
 /**
  * @module cli/validate
- * `actionfence validate <path>` — validates a policy file against the JSON Schema.
+ * `actionfence validate <path>` - validates a policy file against the JSON Schema.
  */
 
 import chalk from 'chalk';
@@ -9,32 +9,25 @@ import { PolicyLoadError, PolicyValidationError } from '../types/errors.js';
 import type { GuardPolicy } from '../types/policy.js';
 import type { ParsedArgs, CliContext } from './runner.js';
 
-// ---------------------------------------------------------------------------
-// Command handler
-// ---------------------------------------------------------------------------
-
 /**
  * Validate a guard-policy.json file and print a summary.
  *
- * Usage:
- *   actionfence validate <policy-path>
- *
  * Exit codes:
- *   0 — policy is valid
- *   1 — policy is invalid or file cannot be loaded
+ *   0 - policy is valid
+ *   1 - policy is invalid or file cannot be loaded
  */
 export function runValidate(args: ParsedArgs, ctx: CliContext): number {
   const filePath = args.positionals[0];
 
   if (!filePath) {
     ctx.stderr(
-      `${chalk.red('✗')} Missing policy file path\n` +
-      `\n` +
-      `${chalk.yellow('Usage:')}\n` +
-      `  actionfence validate <path>\n` +
-      `\n` +
-      `${chalk.yellow('Example:')}\n` +
-      `  actionfence validate guard-policy.json\n`,
+      `${chalk.red('x')} Missing policy file path\n` +
+        `\n` +
+        `${chalk.yellow('Usage:')}\n` +
+        `  actionfence validate <path>\n` +
+        `\n` +
+        `${chalk.yellow('Example:')}\n` +
+        `  actionfence validate guard-policy.json\n`,
     );
     return 1;
   }
@@ -45,39 +38,36 @@ export function runValidate(args: ParsedArgs, ctx: CliContext): number {
   } catch (error: unknown) {
     if (error instanceof PolicyValidationError) {
       ctx.stderr(
-        `${chalk.red('✗')} Invalid policy: ${chalk.bold(filePath)}\n\n` +
-        formatValidationErrors(error.validationErrors) + '\n',
+        `${chalk.red('x')} Invalid policy: ${chalk.bold(filePath)}\n\n` +
+          formatValidationErrors(error.validationErrors) + '\n',
       );
       return 1;
     }
 
     if (error instanceof PolicyLoadError) {
-      ctx.stderr(`${chalk.red('✗')} Cannot load policy: ${error.message}\n`);
+      ctx.stderr(`${chalk.red('x')} Cannot load policy: ${error.message}\n`);
       return 1;
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    ctx.stderr(`${chalk.red('✗')} Unexpected error: ${message}\n`);
+    ctx.stderr(`${chalk.red('x')} Unexpected error: ${message}\n`);
     return 1;
   }
 
   ctx.stdout(
-    `${chalk.green('✓')} Valid policy: ${chalk.bold(filePath)}\n` +
-    `\n` +
-    formatPolicySummary(policy),
+    `${chalk.green('ok')} Valid policy: ${chalk.bold(filePath)}\n` +
+      `\n` +
+      formatPolicySummary(policy),
   );
 
   return 0;
 }
 
-// ---------------------------------------------------------------------------
-// Formatters
-// ---------------------------------------------------------------------------
-
 function formatPolicySummary(policy: GuardPolicy): string {
   const actionCount = Object.keys(policy.actions).length;
   const rpmLabel = policy.rate_limits?.requests_per_minute ?? 'unlimited';
   const tpdLabel = policy.rate_limits?.transactions_per_day ?? 'unlimited';
+  const spendLabel = formatSpendLimits(policy);
   const regLabel = policy.regulations?.length
     ? policy.regulations.join(', ')
     : chalk.dim('none');
@@ -88,6 +78,7 @@ function formatPolicySummary(policy: GuardPolicy): string {
     `  ${chalk.dim('Default rule:')}    ${policy.default_rule}`,
     `  ${chalk.dim('Actions:')}         ${actionCount} defined`,
     `  ${chalk.dim('Rate limits:')}     ${rpmLabel} req/min, ${tpdLabel} txn/day`,
+    `  ${chalk.dim('Spend limits:')}    ${spendLabel}`,
     `  ${chalk.dim('Regulations:')}     ${regLabel}`,
   ];
 
@@ -95,5 +86,29 @@ function formatPolicySummary(policy: GuardPolicy): string {
 }
 
 function formatValidationErrors(errors: readonly string[]): string {
-  return errors.map((err) => `  ${chalk.red('•')} ${err}`).join('\n');
+  return errors.map((error) => `  - ${error}`).join('\n');
+}
+
+function formatSpendLimits(policy: GuardPolicy): string {
+  const sessionMax = policy.spend_limits?.session_max;
+  const dailyMax = policy.spend_limits?.daily_max;
+  const currency = policy.spend_limits?.currency;
+
+  if (sessionMax === undefined && dailyMax === undefined) {
+    return chalk.dim('unlimited');
+  }
+
+  const parts: string[] = [];
+  if (sessionMax !== undefined) {
+    parts.push(`session ${formatMoney(sessionMax, currency)}`);
+  }
+  if (dailyMax !== undefined) {
+    parts.push(`daily ${formatMoney(dailyMax, currency)}`);
+  }
+
+  return parts.join(', ');
+}
+
+function formatMoney(amount: number, currency: string | undefined): string {
+  return currency ? `${amount.toFixed(2)} ${currency}` : amount.toFixed(2);
 }

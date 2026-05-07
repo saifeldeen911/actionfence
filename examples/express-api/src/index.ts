@@ -60,6 +60,12 @@ app.use(express.json());
 
 const actionfence = guard({
   policy: './guard-policy.json',
+  // Configure JWKS verification to allow actions that require `identity: "verified"`.
+  // identityReaderOptions: {
+  //   jwksUri: process.env.ACTIONFENCE_JWKS_URI!,
+  //   issuer: 'https://issuer.example',
+  //   audience: 'bookflight-api',
+  // },
 
   // Map Express route patterns to policy action names.
   // The guard middleware provides `METHOD /route` as the default tool name.

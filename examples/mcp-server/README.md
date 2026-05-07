@@ -1,17 +1,15 @@
-# MCP Server Example — ActionFence
+# MCP Server Example
 
-A working MCP server protected by ActionFence. Demonstrates policy enforcement, identity tier checks, spend caps, and rate limiting on a flight booking API.
-
-ActionFence is the product name; the example code and filenames still use guard identifiers such as `guard-policy.json` and `withGuard`.
+This example shows an MCP server protected by ActionFence.
 
 ## Tools
 
-| Tool             | Policy     | Identity   | Spend Cap |
-| ---------------- | ---------- | ---------- | --------- |
-| `search_flights` | ✅ Allowed | `token`    | —         |
-| `book_flight`    | ✅ Allowed | `verified` | $500      |
-| `check_status`   | ✅ Allowed | `token`    | —         |
-| `bulk_booking`   | ❌ Blocked | —          | —         |
+| Tool | Policy | Identity | Spend Cap |
+| --- | --- | --- | --- |
+| `search_flights` | Allowed | `token` | - |
+| `book_flight` | Allowed | `verified` | `500.00 USD` |
+| `check_status` | Allowed | `token` | - |
+| `bulk_booking` | Blocked | - | - |
 
 ## Quick Start
 
@@ -21,38 +19,18 @@ npm install
 npx tsx src/index.ts
 ```
 
-## Policy File
+## Notes
 
-The [`guard-policy.json`](./guard-policy.json) enforces:
-
-- **Default deny** — any unlisted tool is blocked
-- **Rate limits** — 30 requests/min, 5 transactions/day
-- **Spend cap** — max $500 per booking action
-- **Identity tiers** — public, token, and verified access levels
-
-## Connecting with Claude Desktop
-
-Add this to your Claude Desktop MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "bookflight": {
-      "command": "npx",
-      "args": ["tsx", "src/index.ts"],
-      "cwd": "/path/to/examples/mcp-server"
-    }
-  }
-}
-```
+- Unlisted tools are blocked by default.
+- The policy enforces `30` requests/minute and `5` transactions/day.
+- Global spend limits are configured in [`guard-policy.json`](./guard-policy.json).
+- To allow `identity: "verified"` actions, configure `identityReaderOptions` in [`src/index.ts`](./src/index.ts).
 
 ## Simulation Mode
 
-Enable simulation mode to preview decisions without executing actions:
-
-```typescript
-const guard = withGuard(server, {
+```ts
+withGuard(server, {
   policy: './guard-policy.json',
-  simulate: true, // ← dry-run mode
+  simulate: true,
 });
 ```

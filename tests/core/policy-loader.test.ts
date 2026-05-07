@@ -20,8 +20,13 @@ describe('loadPolicy', () => {
       expect(policy.actions.book_flight).toEqual({
         allowed: true,
         identity: 'verified',
-        max_spend: 500,
+        max_spend: 500.5,
         requires_human_approval: true,
+      });
+      expect(policy.spend_limits).toEqual({
+        session_max: 1000,
+        daily_max: 2500.75,
+        currency: 'USD',
       });
     });
 
@@ -115,6 +120,22 @@ describe('loadPolicy', () => {
           default_rule: 'deny',
           actions: {},
         }),
+      ).toThrow(PolicyValidationError);
+    });
+
+    it('should reject an inline policy with invalid spend_limits schema', () => {
+      expect(() =>
+        loadPolicy({
+          service: 'Test',
+          version: '1.0',
+          default_rule: 'deny',
+          actions: {
+            test_action: { allowed: true },
+          },
+          spend_limits: {
+            session_max: -1,
+          },
+        } as never),
       ).toThrow(PolicyValidationError);
     });
   });

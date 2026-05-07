@@ -68,7 +68,7 @@ export function withGuard<TServer extends GuardableMcpServer>(
     ): Promise<unknown> {
       let result;
       try {
-        result = engine.evaluate({
+        result = await engine.evaluate({
           toolName: name,
           params,
           context,

@@ -11,7 +11,7 @@
     "book_flight": {
       "allowed": true,
       "identity": "verified",
-      "max_spend": 500,
+      "max_spend": 500.5,
       "requires_human_approval": true
     },
     "read_prices": {
@@ -25,6 +25,11 @@
   "rate_limits": {
     "requests_per_minute": 30,
     "transactions_per_day": 5
+  },
+  "spend_limits": {
+    "session_max": 1000,
+    "daily_max": 2500.75,
+    "currency": "USD"
   },
   "regulations": [
     "EU_AI_Act_Art50"

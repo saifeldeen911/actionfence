@@ -10,12 +10,14 @@ export type {
   DefaultRule,
   ActionRule,
   RateLimitsConfig,
+  SpendLimitsConfig,
   GuardPolicy,
 } from './types/policy.js';
 
 export type {
   IdentityClassification,
   AgentIdentity,
+  IdentityReaderLike,
 } from './types/identity.js';
 
 export type {

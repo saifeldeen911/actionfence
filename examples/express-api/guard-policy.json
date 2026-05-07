@@ -27,6 +27,11 @@
     "requests_per_minute": 60,
     "transactions_per_day": 10
   },
+  "spend_limits": {
+    "session_max": 2000,
+    "daily_max": 5000,
+    "currency": "USD"
+  },
   "regulations": [
     "EU_AI_Act_Art50"
   ]

@@ -85,7 +85,7 @@ async function runGuardMiddleware(
 ): Promise<void> {
   try {
     const payload = createHttpPayload(req);
-    const result = engine.evaluate({
+    const result = await engine.evaluate({
       toolName: `${payload.method} ${payload.path}`,
       params: payload,
       context: {

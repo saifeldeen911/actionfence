@@ -34,6 +34,7 @@ function createStarterPolicy(serviceName: string): string {
       example_write: {
         allowed: true,
         identity: 'verified',
+        max_spend: 500,
         requires_human_approval: true,
       },
       example_blocked: {
@@ -43,6 +44,11 @@ function createStarterPolicy(serviceName: string): string {
     rate_limits: {
       requests_per_minute: 60,
       transactions_per_day: 10,
+    },
+    spend_limits: {
+      session_max: 1000,
+      daily_max: 2500,
+      currency: 'USD',
     },
   };
 
