@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://agentbouncer.dev/schema/v1/bouncer-policy.schema.json",
-  "title": "Bouncer Policy",
-  "description": "Policy file for Agent Bouncer — defines what AI agents are allowed to do.",
+  "$id": "https://agentguard.dev/schema/v1/guard-policy.schema.json",
+  "title": "Guard Policy",
+  "description": "Policy file for AgentGuard — defines what AI agents are allowed to do.",
   "type": "object",
   "required": ["service", "version", "default_rule", "actions"],
   "additionalProperties": false,

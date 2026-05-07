@@ -1,6 +1,6 @@
 /**
  * @module types/identity
- * Agent identity types used throughout the bouncer evaluation pipeline.
+ * Agent identity types used throughout the guard evaluation pipeline.
  */
 
 /** Classification of an agent's identity based on presented credentials. */

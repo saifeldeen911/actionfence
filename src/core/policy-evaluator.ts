@@ -1,6 +1,6 @@
 /**
  * @module core/policy-evaluator
- * Evaluates an action request against the loaded bouncer policy.
+ * Evaluates an action request against the loaded guard policy.
  *
  * Evaluation order:
  * 1. Look up action in policy.actions
@@ -11,7 +11,7 @@
  * 6. Set requires_human_approval flag
  */
 
-import type { BouncerPolicy, IdentityTier } from '../types/policy.js';
+import type { GuardPolicy, IdentityTier } from '../types/policy.js';
 import type { AgentIdentity, IdentityClassification } from '../types/identity.js';
 import type { EvaluationDecision } from '../types/decision.js';
 
@@ -36,18 +36,18 @@ const REQUIRED_TIER_LEVEL: Record<IdentityTier, number> = {
 } as const;
 
 /**
- * PolicyEvaluator checks actions against the bouncer policy and produces decisions.
+ * PolicyEvaluator checks actions against the guard policy and produces decisions.
  * It is stateless with respect to the evaluation itself — all state comes from the policy.
  */
 export class PolicyEvaluator {
-  private policy: BouncerPolicy;
+  private policy: GuardPolicy;
 
-  constructor(policy: BouncerPolicy) {
+  constructor(policy: GuardPolicy) {
     this.policy = policy;
   }
 
   /** Hot-swap the active policy (used by watchPolicy). */
-  updatePolicy(policy: BouncerPolicy): void {
+  updatePolicy(policy: GuardPolicy): void {
     this.policy = policy;
   }
 

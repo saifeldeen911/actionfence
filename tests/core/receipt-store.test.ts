@@ -41,7 +41,7 @@ function createTempStore(): {
   databasePath: string;
   store: ReceiptStore;
 } {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agent-bouncer-store-'));
+  const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-store-'));
   const databasePath = join(tempDir, 'receipts.db');
   const store = new ReceiptStore({
     databasePath,
@@ -67,7 +67,7 @@ describe('ReceiptStore', () => {
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
-      policyRef: 'bouncer-policy.json v1.0',
+      policyRef: 'guard-policy.json v1.0',
       receiptId: 'receipt-1',
       timestamp: '2026-05-06T20:00:00.000Z',
     });

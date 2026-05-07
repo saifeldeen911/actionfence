@@ -48,7 +48,7 @@ describe('ReceiptSigner', () => {
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR', seats: 2 },
-      policyRef: 'bouncer-policy.json v1.0',
+      policyRef: 'guard-policy.json v1.0',
       receiptId: 'receipt-1',
       timestamp: '2026-05-06T20:00:00.000Z',
       prevHash: '',
@@ -73,7 +73,7 @@ describe('ReceiptSigner', () => {
       }),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
-      policyRef: 'bouncer-policy.json v1.0',
+      policyRef: 'guard-policy.json v1.0',
       receiptId: 'receipt-2',
       timestamp: '2026-05-06T20:00:00.000Z',
       prevHash: 'prev-hash',
@@ -91,7 +91,7 @@ describe('ReceiptSigner', () => {
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR', meta: { seats: 2, cabin: 'economy' } },
-      policyRef: 'bouncer-policy.json v1.0',
+      policyRef: 'guard-policy.json v1.0',
       receiptId: 'receipt-fixed',
       timestamp: '2026-05-06T20:00:00.000Z',
       prevHash: 'prev-fixed',
@@ -121,10 +121,10 @@ describe('ReceiptSigner', () => {
   });
 
   it('should prefer an explicit secret over env and file secrets', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agent-bouncer-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
-    vi.stubEnv('BOUNCER_SECRET', ENV_SECRET);
+    vi.stubEnv('AGENTGUARD_SECRET', ENV_SECRET);
 
     const signer = new ReceiptSigner({
       secret: FIXED_SECRET,
@@ -147,10 +147,10 @@ describe('ReceiptSigner', () => {
   });
 
   it('should prefer the env secret over the stored key file', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agent-bouncer-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
-    vi.stubEnv('BOUNCER_SECRET', ENV_SECRET);
+    vi.stubEnv('AGENTGUARD_SECRET', ENV_SECRET);
 
     const signer = new ReceiptSigner({ keyFilePath });
     const receipt = signer.createReceipt({
@@ -170,7 +170,7 @@ describe('ReceiptSigner', () => {
   });
 
   it('should load the stored secret file when no explicit or env secret exists', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agent-bouncer-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
 
@@ -192,7 +192,7 @@ describe('ReceiptSigner', () => {
   });
 
   it('should generate and persist a new secret when none exists', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agent-bouncer-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
     const keyFilePath = join(tempDir, 'key');
 
     const signer = new ReceiptSigner({ keyFilePath });

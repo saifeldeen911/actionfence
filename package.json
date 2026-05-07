@@ -1,5 +1,5 @@
 {
-  "name": "agent-bouncer",
+  "name": "agentguard",
   "version": "0.1.0",
   "description": "TypeScript policy engine, receipt signer, and SQLite audit store for AI agent action enforcement",
   "type": "module",
@@ -65,16 +65,16 @@
     "security",
     "middleware",
     "receipts",
-    "bouncer"
+    "guard"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/saifeldeen911/agents-bouncer.git"
+    "url": "https://github.com/saifeldeen911/agentguard.git"
   },
   "author": "Saifeldeen",
-  "homepage": "https://github.com/saifeldeen911/agents-bouncer#readme",
+  "homepage": "https://github.com/saifeldeen911/agentguard#readme",
   "bugs": {
-    "url": "https://github.com/saifeldeen911/agents-bouncer/issues"
+    "url": "https://github.com/saifeldeen911/agentguard/issues"
   }
 }

@@ -1,6 +1,6 @@
 /**
  * @module index
- * Public API surface for Agent Bouncer.
+ * Public API surface for AgentGuard.
  * Re-exports all types and core modules.
  */
 
@@ -10,7 +10,7 @@ export type {
   DefaultRule,
   ActionRule,
   RateLimitsConfig,
-  BouncerPolicy,
+  GuardPolicy,
 } from './types/policy.js';
 
 export type {
@@ -23,7 +23,7 @@ export type {
   EvaluationDecision,
 } from './types/decision.js';
 
-export type { BouncerOptions } from './types/config.js';
+export type { GuardOptions } from './types/config.js';
 
 export type {
   ActionReceipt,

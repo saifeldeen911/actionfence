@@ -38,7 +38,7 @@ interface CanonicalJsonObject {
   readonly [key: string]: CanonicalJsonValue;
 }
 
-const DEFAULT_KEY_PATH = resolve('.bouncer/key');
+const DEFAULT_KEY_PATH = resolve('.agentguard/key');
 
 /**
  * ReceiptSigner signs and verifies immutable action receipts.
@@ -147,8 +147,8 @@ export class ReceiptSigner {
       return parseSecretMaterial(explicitSecret, 'options.secret');
     }
 
-    if (process.env.BOUNCER_SECRET) {
-      return parseSecretMaterial(process.env.BOUNCER_SECRET, 'BOUNCER_SECRET');
+    if (process.env.AGENTGUARD_SECRET) {
+      return parseSecretMaterial(process.env.AGENTGUARD_SECRET, 'AGENTGUARD_SECRET');
     }
 
     if (existsSync(this.keyFilePath)) {

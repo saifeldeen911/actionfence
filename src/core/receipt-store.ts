@@ -39,7 +39,7 @@ interface ReceiptRow {
   readonly receipt_sig: string;
 }
 
-const DEFAULT_DATABASE_PATH = resolve('.bouncer/receipts.db');
+const DEFAULT_DATABASE_PATH = resolve('.agentguard/receipts.db');
 
 /**
  * ReceiptStore provides append-only persistence and chain verification.

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { PolicyEvaluator } from '../../src/core/policy-evaluator.js';
-import type { BouncerPolicy } from '../../src/types/policy.js';
+import type { GuardPolicy } from '../../src/types/policy.js';
 import type { AgentIdentity } from '../../src/types/identity.js';
 
-const TEST_POLICY: BouncerPolicy = {
+const TEST_POLICY: GuardPolicy = {
   service: 'TestService',
   version: '1.0',
   default_rule: 'deny',
@@ -21,7 +21,7 @@ const TEST_POLICY: BouncerPolicy = {
   rate_limits: { requests_per_minute: 30, transactions_per_day: 5 },
 };
 
-const ALLOW_DEFAULT_POLICY: BouncerPolicy = {
+const ALLOW_DEFAULT_POLICY: GuardPolicy = {
   service: 'TestService',
   version: '1.0',
   default_rule: 'allow',

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://agentbouncer.dev/schema/v1/bouncer-policy.schema.json",
+  "$schema": "https://agentguard.dev/schema/v1/guard-policy.schema.json",
   "service": "TestService",
   "version": "1.0",
   "default_rule": "deny",

@@ -8,7 +8,7 @@ export type {
   DefaultRule,
   ActionRule,
   RateLimitsConfig,
-  BouncerPolicy,
+  GuardPolicy,
 } from './policy.js';
 
 export type {
@@ -21,7 +21,7 @@ export type {
   EvaluationDecision,
 } from './decision.js';
 
-export type { BouncerOptions } from './config.js';
+export type { GuardOptions } from './config.js';
 
 export type {
   ActionReceipt,

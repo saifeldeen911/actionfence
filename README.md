@@ -1,12 +1,12 @@
-# Agent Bouncer
+# AgentGuard
 
 > TypeScript policy engine and audit trail for AI agent action enforcement.
 
 **Status:** 🚧 Under active development — not yet published to npm.
 
-## What is Agent Bouncer?
+## What is AgentGuard?
 
-Agent Bouncer is building toward an AI action firewall for MCP (Model Context Protocol) servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
+AgentGuard is building toward an AI action firewall for MCP (Model Context Protocol) servers and APIs. The current repo already includes the core policy engine, identity reader, rate limiter, spend tracker, signed receipts, append-only SQLite storage, and a console reporter. Middleware adapters, simulation mode, and CLI tooling are planned next.
 
 ```typescript
 import {
@@ -15,15 +15,15 @@ import {
   RateLimiter,
   ReceiptStore,
   loadPolicy,
-} from 'agent-bouncer';
+} from 'agentguard';
 
-const policy = loadPolicy('./bouncer-policy.json');
+const policy = loadPolicy('./guard-policy.json');
 const evaluator = new PolicyEvaluator(policy);
 const identityReader = new IdentityReader();
 const rateLimiter = new RateLimiter(policy.rate_limits ?? {});
 const receiptStore = new ReceiptStore();
 
-// Middleware adapters such as withBouncer() are not implemented yet.
+// Middleware adapters such as withGuard() are not implemented yet.
 ```
 
 ## Implemented Today
@@ -37,7 +37,7 @@ const receiptStore = new ReceiptStore();
 
 ## Planned Next
 
-- ⏳ MCP `withBouncer()` wrapper
+- ⏳ MCP `withGuard()` wrapper
 - ⏳ Express/Fastify middleware
 - ⏳ Simulation mode
 - ⏳ CLI tools

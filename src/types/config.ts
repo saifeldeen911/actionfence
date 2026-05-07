@@ -1,17 +1,17 @@
 /**
  * @module types/config
- * Configuration options for the bouncer middleware and engine.
+ * Configuration options for the guard middleware and engine.
  */
 
-import type { BouncerPolicy } from './policy.js';
+import type { GuardPolicy } from './policy.js';
 import type { EvaluationDecision } from './decision.js';
 
 /**
- * Options passed to `withBouncer()` or `bouncer()` middleware.
+ * Options passed to `withGuard()` or `guard()` middleware.
  */
-export interface BouncerOptions {
-  /** Path to a bouncer-policy.json file, or an inline policy object. */
-  readonly policy: string | BouncerPolicy;
+export interface GuardOptions {
+  /** Path to a guard-policy.json file, or an inline policy object. */
+  readonly policy: string | GuardPolicy;
 
   /** If true, run in simulation mode — evaluate but don't execute. */
   readonly simulate?: boolean;
@@ -21,7 +21,7 @@ export interface BouncerOptions {
 
   /**
    * HMAC signing secret override.
-   * If not set, falls back to BOUNCER_SECRET env var, then auto-generated key.
+   * If not set, falls back to AGENTGUARD_SECRET env var, then auto-generated key.
    */
   readonly secret?: string;
 

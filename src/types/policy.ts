@@ -1,6 +1,6 @@
 /**
  * @module types/policy
- * Core policy types for the bouncer-policy.json schema.
+ * Core policy types for the guard-policy.json schema.
  *
  * These types are the internal representation of a loaded and validated policy.
  * All properties are readonly to enforce immutability after loading.
@@ -33,10 +33,10 @@ export interface RateLimitsConfig {
 }
 
 /**
- * The top-level bouncer policy object.
- * This is the normalized internal representation — parsed from bouncer-policy.json.
+ * The top-level guard policy object.
+ * This is the normalized internal representation — parsed from guard-policy.json.
  */
-export interface BouncerPolicy {
+export interface GuardPolicy {
   /** Optional JSON Schema reference. */
   readonly $schema?: string;
   /** Service name this policy belongs to. */

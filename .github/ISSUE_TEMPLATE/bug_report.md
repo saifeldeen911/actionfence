@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible defect in Agent Bouncer
+about: Report a reproducible defect in AgentGuard
 title: "[Bug] "
 labels: bug
 assignees: ""
@@ -26,7 +26,7 @@ Describe what happened instead.
 
 ## Environment
 
-- Agent Bouncer version:
+- AgentGuard version:
 - Node.js version:
 - OS:
 

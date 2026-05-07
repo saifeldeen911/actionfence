@@ -1,6 +1,6 @@
-# Contributing to Agent Bouncer
+# Contributing to AgentGuard
 
-Thank you for your interest in contributing to Agent Bouncer! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to AgentGuard! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing to Agent Bouncer! This document prov
 
 ```bash
 # Clone the repository
-git clone https://github.com/saifeldeen911/agents-bouncer.git
-cd agents-bouncer
+git clone https://github.com/saifeldeen911/agentguard.git
+cd agentguard
 
 # Install dependencies
 npm install
