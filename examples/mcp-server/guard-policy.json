@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agentguard.dev/schema/v1/guard-policy.schema.json",
+  "service": "BookFlight.com",
+  "version": "1.0",
+  "default_rule": "deny",
+  "actions": {
+    "search_flights": {
+      "allowed": true,
+      "identity": "any"
+    },
+    "book_flight": {
+      "allowed": true,
+      "identity": "verified",
+      "max_spend": 500,
+      "requires_human_approval": true
+    },
+    "check_status": {
+      "allowed": true,
+      "identity": "token"
+    },
+    "bulk_booking": {
+      "allowed": false
+    }
+  },
+  "rate_limits": {
+    "requests_per_minute": 30,
+    "transactions_per_day": 5
+  },
+  "regulations": ["EU_AI_Act_Art50"]
+}

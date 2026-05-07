@@ -1,0 +1,24 @@
+{
+  "name": "agentguard-express-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Example Express API protected by AgentGuard",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "start:built": "node dist/index.js"
+  },
+  "dependencies": {
+    "agentguard": "file:../../",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
