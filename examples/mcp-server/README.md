@@ -6,12 +6,12 @@ ActionFence is the product name; the example code and filenames still use guard 
 
 ## Tools
 
-| Tool | Policy | Identity | Spend Cap |
-|------|--------|----------|-----------|
-| `search_flights` | ✅ Allowed | `token` | — |
-| `book_flight` | ✅ Allowed | `verified` | $500 |
-| `check_status` | ✅ Allowed | `token` | — |
-| `bulk_booking` | ❌ Blocked | — | — |
+| Tool             | Policy     | Identity   | Spend Cap |
+| ---------------- | ---------- | ---------- | --------- |
+| `search_flights` | ✅ Allowed | `token`    | —         |
+| `book_flight`    | ✅ Allowed | `verified` | $500      |
+| `check_status`   | ✅ Allowed | `token`    | —         |
+| `bulk_booking`   | ❌ Blocked | —          | —         |
 
 ## Quick Start
 
@@ -53,6 +53,6 @@ Enable simulation mode to preview decisions without executing actions:
 ```typescript
 const guard = withGuard(server, {
   policy: './guard-policy.json',
-  simulate: true,  // ← dry-run mode
+  simulate: true, // ← dry-run mode
 });
 ```

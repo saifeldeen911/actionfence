@@ -26,5 +26,7 @@
     "requests_per_minute": 30,
     "transactions_per_day": 5
   },
-  "regulations": ["EU_AI_Act_Art50"]
+  "regulations": [
+    "EU_AI_Act_Art50"
+  ]
 }

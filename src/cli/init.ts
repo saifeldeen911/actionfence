@@ -21,7 +21,8 @@ const DEFAULT_SERVICE_NAME = 'my-service';
 
 function createStarterPolicy(serviceName: string): string {
   const policy = {
-    $schema: 'https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json',
+    $schema:
+      'https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json',
     service: serviceName,
     version: '1.0',
     default_rule: 'deny',

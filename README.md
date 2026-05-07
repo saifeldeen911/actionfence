@@ -44,10 +44,16 @@ const server = new McpServer({ name: 'my-server', version: '1.0.0' });
 // One line — all tools registered after this are protected
 withGuard(server, { policy: './guard-policy.json' });
 
-server.registerTool('search_flights', { /* schema */ }, async (params) => {
-  // This handler only runs if ActionFence allows it
-  return { content: [{ type: 'text', text: 'results...' }] };
-});
+server.registerTool(
+  'search_flights',
+  {
+    /* schema */
+  },
+  async (params) => {
+    // This handler only runs if ActionFence allows it
+    return { content: [{ type: 'text', text: 'results...' }] };
+  },
+);
 ```
 
 ### Express / Fastify
@@ -58,19 +64,23 @@ import { guard } from 'actionfence';
 
 const app = express();
 
-app.use(guard({
-  policy: './guard-policy.json',
-  actionResolver: (toolName) => {
-    if (/^GET \/bookings\/[^/]+$/.test(toolName)) return 'GET /bookings/:id';
-    return toolName;
-  },
-  spendExtractor: (params) => {
-    const body = (params as { body?: { amount?: number } })?.body;
-    return body?.amount ?? null;
-  },
-}));
+app.use(
+  guard({
+    policy: './guard-policy.json',
+    actionResolver: (toolName) => {
+      if (/^GET \/bookings\/[^/]+$/.test(toolName)) return 'GET /bookings/:id';
+      return toolName;
+    },
+    spendExtractor: (params) => {
+      const body = (params as { body?: { amount?: number } })?.body;
+      return body?.amount ?? null;
+    },
+  }),
+);
 
-app.get('/flights', (req, res) => { /* only reachable if allowed */ });
+app.get('/flights', (req, res) => {
+  /* only reachable if allowed */
+});
 ```
 
 ### CLI
@@ -123,31 +133,31 @@ ActionFence uses a `guard-policy.json` file to define what agents can do. Think 
 
 ### Policy Reference
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `service` | `string` | ✅ | Service name this policy belongs to |
-| `version` | `string` | ✅ | Policy version string |
-| `default_rule` | `"allow" \| "deny"` | No | Default behavior for unlisted actions. Defaults to `"deny"` |
-| `actions` | `object` | ✅ | Map of action names to permission rules |
-| `rate_limits` | `object` | No | Rate limiting configuration |
-| `regulations` | `string[]` | No | Regulatory frameworks (stored only, not enforced in v1) |
+| Field          | Type                | Required | Description                                                 |
+| -------------- | ------------------- | -------- | ----------------------------------------------------------- |
+| `service`      | `string`            | ✅       | Service name this policy belongs to                         |
+| `version`      | `string`            | ✅       | Policy version string                                       |
+| `default_rule` | `"allow" \| "deny"` | No       | Default behavior for unlisted actions. Defaults to `"deny"` |
+| `actions`      | `object`            | ✅       | Map of action names to permission rules                     |
+| `rate_limits`  | `object`            | No       | Rate limiting configuration                                 |
+| `regulations`  | `string[]`          | No       | Regulatory frameworks (stored only, not enforced in v1)     |
 
 ### Action Rule Fields
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `allowed` | `boolean` | — | Whether this action is permitted (required) |
-| `identity` | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier required |
-| `max_spend` | `integer` | — | Maximum spend per invocation (smallest currency unit) |
-| `requires_human_approval` | `boolean` | `false` | Informational flag for human-in-the-loop |
+| Field                     | Type                             | Default | Description                                           |
+| ------------------------- | -------------------------------- | ------- | ----------------------------------------------------- |
+| `allowed`                 | `boolean`                        | —       | Whether this action is permitted (required)           |
+| `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier required                        |
+| `max_spend`               | `integer`                        | —       | Maximum spend per invocation (smallest currency unit) |
+| `requires_human_approval` | `boolean`                        | `false` | Informational flag for human-in-the-loop              |
 
 ### Identity Tiers
 
-| Tier | Meaning | How it's determined |
-|------|---------|-------------------|
-| `anonymous` | No credentials presented | No `Authorization` header |
-| `token` | Bearer token present but unverified | `Authorization: Bearer <token>` present |
-| `verified` | Trusted identity from your own verifier | Returned by a custom `identityReader` in v0.1 |
+| Tier        | Meaning                                 | How it's determined                           |
+| ----------- | --------------------------------------- | --------------------------------------------- |
+| `anonymous` | No credentials presented                | No `Authorization` header                     |
+| `token`     | Bearer token present but unverified     | `Authorization: Bearer <token>` present       |
+| `verified`  | Trusted identity from your own verifier | Returned by a custom `identityReader` in v0.1 |
 
 The built-in v0.1 identity reader is intentionally conservative: it decodes bearer JWTs to extract metadata, but it does not verify signatures or JWKS. Policies can still require `verified`, but runtime requests only satisfy that tier when you inject an identity reader that returns `classification: 'verified'`. The CLI simulator can model `verified` requests for policy testing.
 
@@ -170,10 +180,12 @@ withGuard(server, {
 ### Express
 
 ```typescript
-app.use(guard({
-  policy: './guard-policy.json',
-  simulate: true,
-}));
+app.use(
+  guard({
+    policy: './guard-policy.json',
+    simulate: true,
+  }),
+);
 // Returns 200 + X-ActionFence-Simulation: true + JSON preview
 ```
 
@@ -210,6 +222,7 @@ receipt_sig:    0x4f9b...     ← HMAC-SHA256 signature
 ```
 
 Receipts are:
+
 - **Hash-chained** — each receipt includes the hash of the previous one
 - **Signed** — HMAC-SHA256 with a secret key
 - **Append-only** — stored in SQLite, never updated or deleted
@@ -237,7 +250,9 @@ const guard = withGuard(server, {
   secret: process.env.ACTIONFENCE_SECRET,
   actionResolver: (toolName, params) => toolName,
   spendExtractor: (params) => null,
-  onDecision: (decision) => { /* custom logging */ },
+  onDecision: (decision) => {
+    /* custom logging */
+  },
   watchPolicy: true,
 });
 
@@ -264,17 +279,17 @@ middleware.dispose();
 
 ### `GuardOptions`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `policy` | `string \| GuardPolicy` | — | Path to policy file or inline policy object (required) |
-| `simulate` | `boolean` | `false` | Enable simulation mode |
-| `silent` | `boolean` | `false` | Suppress console output |
-| `secret` | `string` | — | HMAC signing secret override |
-| `actionResolver` | `(toolName, params) => string` | — | Map tool names to policy action names |
-| `spendExtractor` | `(params) => number \| null` | — | Extract spend amount from request params |
-| `transactionResolver` | `(toolName, params, decision) => boolean` | — | Classify actions as transactions for daily limits |
-| `onDecision` | `(decision) => void` | — | Callback fired after every evaluation |
-| `watchPolicy` | `boolean` | `false` | Enable hot-reload on policy file changes |
+| Option                | Type                                      | Default | Description                                            |
+| --------------------- | ----------------------------------------- | ------- | ------------------------------------------------------ |
+| `policy`              | `string \| GuardPolicy`                   | —       | Path to policy file or inline policy object (required) |
+| `simulate`            | `boolean`                                 | `false` | Enable simulation mode                                 |
+| `silent`              | `boolean`                                 | `false` | Suppress console output                                |
+| `secret`              | `string`                                  | —       | HMAC signing secret override                           |
+| `actionResolver`      | `(toolName, params) => string`            | —       | Map tool names to policy action names                  |
+| `spendExtractor`      | `(params) => number \| null`              | —       | Extract spend amount from request params               |
+| `transactionResolver` | `(toolName, params, decision) => boolean` | —       | Classify actions as transactions for daily limits      |
+| `onDecision`          | `(decision) => void`                      | —       | Callback fired after every evaluation                  |
+| `watchPolicy`         | `boolean`                                 | `false` | Enable hot-reload on policy file changes               |
 
 ### v0.1 Limits
 
@@ -320,12 +335,12 @@ actionfence simulate guard-policy.json --action book_flight --identity verified 
 actionfence simulate guard-policy.json --action bulk_booking  # exits with code 1
 ```
 
-| Flag | Required | Default | Description |
-|------|----------|---------|-------------|
-| `--action` | ✅ | — | Policy action name to evaluate |
-| `--identity` | No | `anonymous` | Identity tier (`anonymous`, `token`, `verified`) |
-| `--spend` | No | — | Spend amount for spend cap checks |
-| `--tool` | No | Same as action | Original tool name (if different from action) |
+| Flag         | Required | Default        | Description                                      |
+| ------------ | -------- | -------------- | ------------------------------------------------ |
+| `--action`   | ✅       | —              | Policy action name to evaluate                   |
+| `--identity` | No       | `anonymous`    | Identity tier (`anonymous`, `token`, `verified`) |
+| `--spend`    | No       | —              | Spend amount for spend cap checks                |
+| `--tool`     | No       | Same as action | Original tool name (if different from action)    |
 
 ---
 

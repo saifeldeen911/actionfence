@@ -19,9 +19,7 @@ function makeIdentity(agentId = 'agent-123'): AgentIdentity {
   };
 }
 
-function makeDecision(
-  overrides: Partial<EvaluationDecision> = {},
-): EvaluationDecision {
+function makeDecision(overrides: Partial<EvaluationDecision> = {}): EvaluationDecision {
   return {
     status: 'PASSED',
     action: 'book_flight',
@@ -235,8 +233,10 @@ describe('ReceiptStore', () => {
     store.close();
 
     const db = new Database(databasePath);
-    db.prepare('UPDATE receipts SET payload_json = ? WHERE receipt_id = ?')
-      .run('{"itinerary":"CAI-JFK"}', receipt.receipt_id);
+    db.prepare('UPDATE receipts SET payload_json = ? WHERE receipt_id = ?').run(
+      '{"itinerary":"CAI-JFK"}',
+      receipt.receipt_id,
+    );
     db.close();
 
     const reopenedStore = new ReceiptStore({

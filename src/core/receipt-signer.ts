@@ -3,13 +3,7 @@
  * Creates and verifies signed action receipts.
  */
 
-import {
-  createHash,
-  createHmac,
-  randomBytes,
-  randomUUID,
-  timingSafeEqual,
-} from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import {
   existsSync,
   chmodSync,
@@ -22,10 +16,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type {
-  ActionReceipt,
-  CreateReceiptInput,
-} from '../types/receipt.js';
+import type { ActionReceipt, CreateReceiptInput } from '../types/receipt.js';
 
 /** Configuration for receipt signing secret resolution. */
 export interface ReceiptSignerOptions {
@@ -33,10 +24,7 @@ export interface ReceiptSignerOptions {
   readonly keyFilePath?: string;
 }
 
-type CanonicalJsonValue =
-  | CanonicalJsonPrimitive
-  | CanonicalJsonArray
-  | CanonicalJsonObject;
+type CanonicalJsonValue = CanonicalJsonPrimitive | CanonicalJsonArray | CanonicalJsonObject;
 type CanonicalJsonPrimitive = null | boolean | number | string;
 type CanonicalJsonArray = readonly CanonicalJsonValue[];
 interface CanonicalJsonObject {
@@ -112,9 +100,7 @@ export class ReceiptSigner {
   /**
    * Compute the stable receipt hash for a receipt or receipt draft.
    */
-  computeReceiptHash(
-    receipt: Omit<ActionReceipt, 'receipt_hash' | 'receipt_sig'>,
-  ): string {
+  computeReceiptHash(receipt: Omit<ActionReceipt, 'receipt_hash' | 'receipt_sig'>): string {
     const signable = canonicalJsonStringify({
       receipt_id: receipt.receipt_id,
       timestamp: receipt.timestamp,
@@ -219,9 +205,7 @@ export class ReceiptSigner {
   }
 
   private signHash(receiptHash: string): string {
-    return createHmac('sha256', this.keyBytes)
-      .update(receiptHash, 'utf8')
-      .digest('hex');
+    return createHmac('sha256', this.keyBytes).update(receiptHash, 'utf8').digest('hex');
   }
 }
 
@@ -244,17 +228,14 @@ function parseSecretMaterial(value: string, source: string): Uint8Array {
 
 function persistGeneratedSecret(filePath: string, secretBytes: Uint8Array): void {
   mkdirSync(dirname(filePath), { recursive: true, mode: 0o700 });
-  writeFileSync(
-    filePath,
-    Buffer.from(secretBytes).toString('base64url'),
-    { encoding: 'utf8', mode: 0o600 },
-  );
+  writeFileSync(filePath, Buffer.from(secretBytes).toString('base64url'), {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
 }
 
 function sha256Hex(value: string): string {
-  return createHash('sha256')
-    .update(value, 'utf8')
-    .digest('hex');
+  return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 function canonicalJsonStringify(value: unknown): string {
