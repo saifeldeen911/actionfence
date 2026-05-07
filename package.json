@@ -1,6 +1,6 @@
 {
   "name": "actionfence",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Embeddable AI action firewall for MCP servers and APIs with JSON policies, signed receipts, spend caps, and simulation mode",
   "type": "module",
   "exports": {
