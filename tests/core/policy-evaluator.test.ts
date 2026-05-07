@@ -62,6 +62,21 @@ describe('PolicyEvaluator', () => {
       expect(decision.status).toBe('PASSED');
     });
 
+    it('should fall back to deny for an invalid default_rule at evaluation time', () => {
+      const invalidDefaultRulePolicy = {
+        ...TEST_POLICY,
+        default_rule: 'unexpected',
+      } as unknown as GuardPolicy;
+
+      const evaluator = new PolicyEvaluator(invalidDefaultRulePolicy);
+      const decision = evaluator.evaluate(
+        'unknown_action', 'unknown_action', makeIdentity('verified'),
+      );
+
+      expect(decision.status).toBe('BLOCKED');
+      expect(decision.reason).toContain('default: deny');
+    });
+
     it('should block explicitly denied actions regardless of default_rule', () => {
       const allowEvaluator = new PolicyEvaluator(ALLOW_DEFAULT_POLICY);
       const decision = allowEvaluator.evaluate(

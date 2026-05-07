@@ -78,12 +78,13 @@ export class PolicyEvaluator {
 
     // Step 1: Look up action in policy
     const rule = this.policy.actions[action];
+    const defaultRule = resolveDefaultRule(this.policy.default_rule);
 
     // Step 2: Action not found → apply default_rule
     if (!rule) {
       const durationMs = performance.now() - startTime;
 
-      if (this.policy.default_rule === 'deny') {
+      if (defaultRule === 'deny') {
         return {
           ...baseDecision,
           status: 'BLOCKED',
@@ -161,4 +162,8 @@ export class PolicyEvaluator {
       durationMs: performance.now() - startTime,
     };
   }
+}
+
+function resolveDefaultRule(value: GuardPolicy['default_rule'] | string | undefined): IdentityTier | 'allow' | 'deny' {
+  return value === 'allow' ? 'allow' : 'deny';
 }

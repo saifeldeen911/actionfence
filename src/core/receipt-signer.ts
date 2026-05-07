@@ -157,12 +157,7 @@ export class ReceiptSigner {
     }
 
     const generatedSecret = randomBytes(32);
-    mkdirSync(dirname(this.keyFilePath), { recursive: true, mode: 0o700 });
-    writeFileSync(
-      this.keyFilePath,
-      Buffer.from(generatedSecret).toString('base64url'),
-      { encoding: 'utf8', mode: 0o600 },
-    );
+    persistGeneratedSecret(this.keyFilePath, generatedSecret);
     return generatedSecret;
   }
 
@@ -188,6 +183,15 @@ function parseSecretMaterial(value: string, source: string): Uint8Array {
   }
 
   return decoded;
+}
+
+function persistGeneratedSecret(filePath: string, secretBytes: Uint8Array): void {
+  mkdirSync(dirname(filePath), { recursive: true, mode: 0o700 });
+  writeFileSync(
+    filePath,
+    Buffer.from(secretBytes).toString('base64url'),
+    { encoding: 'utf8', mode: 0o600 },
+  );
 }
 
 function sha256Hex(value: string): string {

@@ -35,6 +35,31 @@ describe('loadPolicy', () => {
       expect(policy.default_rule).toBe('allow');
     });
 
+    it('should default missing default_rule to deny', () => {
+      const policy = loadPolicy({
+        service: 'InlineService',
+        version: '1.0',
+        actions: {
+          test_action: { allowed: true },
+        },
+      } as never);
+
+      expect(policy.default_rule).toBe('deny');
+    });
+
+    it('should normalize invalid default_rule to deny', () => {
+      const policy = loadPolicy({
+        service: 'InlineService',
+        version: '1.0',
+        default_rule: 'invalid_value',
+        actions: {
+          test_action: { allowed: true },
+        },
+      } as never);
+
+      expect(policy.default_rule).toBe('deny');
+    });
+
     it('should throw PolicyLoadError for non-existent file', () => {
       expect(() => loadPolicy('/does/not/exist.json')).toThrow(PolicyLoadError);
     });
@@ -43,10 +68,9 @@ describe('loadPolicy', () => {
       expect(() => loadPolicy(resolve(FIXTURES, 'malformed.json'))).toThrow(PolicyLoadError);
     });
 
-    it('should throw PolicyValidationError for invalid default_rule', () => {
-      expect(() => loadPolicy(resolve(FIXTURES, 'invalid-default-rule.json'))).toThrow(
-        PolicyValidationError,
-      );
+    it('should normalize an invalid default_rule fixture to deny', () => {
+      const policy = loadPolicy(resolve(FIXTURES, 'invalid-default-rule.json'));
+      expect(policy.default_rule).toBe('deny');
     });
 
     it('should throw PolicyValidationError for missing required fields', () => {
@@ -58,7 +82,7 @@ describe('loadPolicy', () => {
     it('should include human-readable validation errors', () => {
       let caughtError: unknown;
       try {
-        loadPolicy(resolve(FIXTURES, 'invalid-default-rule.json'));
+        loadPolicy(resolve(FIXTURES, 'missing-service.json'));
       } catch (error) {
         caughtError = error;
       }
@@ -88,7 +112,7 @@ describe('loadPolicy', () => {
         loadPolicy({
           service: 'Test',
           version: '1.0',
-          default_rule: 'invalid_value' as 'deny',
+          default_rule: 'deny',
           actions: {},
         }),
       ).toThrow(PolicyValidationError);

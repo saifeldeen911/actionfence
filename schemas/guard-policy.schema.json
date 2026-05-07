@@ -4,7 +4,7 @@
   "title": "Guard Policy",
   "description": "Policy file for AgentGuard — defines what AI agents are allowed to do.",
   "type": "object",
-  "required": ["service", "version", "default_rule", "actions"],
+  "required": ["service", "version", "actions"],
   "additionalProperties": false,
   "properties": {
     "$schema": {
@@ -24,12 +24,13 @@
     "default_rule": {
       "type": "string",
       "enum": ["allow", "deny"],
-      "description": "Default behavior for actions not listed in 'actions'. 'deny' is recommended."
+      "default": "deny",
+      "description": "Default behavior for actions not listed in 'actions'. Defaults to 'deny' when omitted."
     },
     "actions": {
       "type": "object",
       "description": "Map of action names to their permission rules.",
-      "minProperties": 0,
+      "minProperties": 1,
       "additionalProperties": {
         "type": "object",
         "required": ["allowed"],
@@ -45,9 +46,9 @@
             "description": "Minimum identity tier required. Defaults to 'any' if omitted."
           },
           "max_spend": {
-            "type": "number",
+            "type": "integer",
             "minimum": 0,
-            "description": "Maximum spend amount allowed for this action."
+            "description": "Maximum spend amount allowed for this action, expressed in the smallest currency unit (for example, cents)."
           },
           "requires_human_approval": {
             "type": "boolean",
@@ -62,13 +63,13 @@
       "properties": {
         "requests_per_minute": {
           "type": "integer",
-          "minimum": 1,
-          "description": "Maximum requests per minute per agent."
+          "minimum": 0,
+          "description": "Maximum requests per minute per agent. Set to 0 for unlimited."
         },
         "transactions_per_day": {
           "type": "integer",
-          "minimum": 1,
-          "description": "Maximum transactions per day per agent."
+          "minimum": 0,
+          "description": "Maximum transactions per day per agent. Set to 0 for unlimited."
         }
       }
     },

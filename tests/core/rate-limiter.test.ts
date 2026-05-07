@@ -143,6 +143,22 @@ describe('RateLimiter', () => {
       expect(result.limit).toBe(Infinity);
       unlimitedLimiter.dispose();
     });
+
+    it('should treat requests_per_minute: 0 as unlimited', () => {
+      const unlimitedLimiter = new RateLimiter({ requests_per_minute: 0 });
+      const result = unlimitedLimiter.checkRequestRate('agent-1');
+      expect(result.allowed).toBe(true);
+      expect(result.limit).toBe(Infinity);
+      unlimitedLimiter.dispose();
+    });
+
+    it('should treat transactions_per_day: 0 as unlimited', () => {
+      const unlimitedLimiter = new RateLimiter({ transactions_per_day: 0 });
+      const result = unlimitedLimiter.checkTransactionRate('agent-1');
+      expect(result.allowed).toBe(true);
+      expect(result.limit).toBe(Infinity);
+      unlimitedLimiter.dispose();
+    });
   });
 
   describe('dispose', () => {

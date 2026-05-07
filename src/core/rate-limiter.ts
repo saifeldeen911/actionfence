@@ -69,7 +69,7 @@ export class RateLimiter {
    * @returns The rate limit check result.
    */
   checkRequestRate(key: string): RateLimitResult {
-    if (this.config.requests_per_minute === undefined) {
+    if (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) {
       return UNLIMITED_RESULT;
     }
 
@@ -88,7 +88,7 @@ export class RateLimiter {
    * @returns The rate limit check result.
    */
   checkTransactionRate(key: string): RateLimitResult {
-    if (this.config.transactions_per_day === undefined) {
+    if (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) {
       return UNLIMITED_RESULT;
     }
 

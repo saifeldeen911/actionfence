@@ -18,7 +18,7 @@ export interface ActionRule {
   readonly allowed: boolean;
   /** Minimum identity tier required. Defaults to 'any' if omitted. */
   readonly identity?: IdentityTier;
-  /** Maximum spend amount allowed for this action (in base currency unit). */
+  /** Maximum spend amount allowed for this action (smallest currency unit, e.g. cents). */
   readonly max_spend?: number;
   /** Whether human approval is required before execution. */
   readonly requires_human_approval?: boolean;
@@ -26,9 +26,9 @@ export interface ActionRule {
 
 /** Rate limiting configuration. */
 export interface RateLimitsConfig {
-  /** Maximum requests per minute per agent. */
+  /** Maximum requests per minute per agent. 0 disables the limit. */
   readonly requests_per_minute?: number;
-  /** Maximum transactions (write operations) per day per agent. */
+  /** Maximum transactions (write operations) per day per agent. 0 disables the limit. */
   readonly transactions_per_day?: number;
 }
 

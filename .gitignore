@@ -6,7 +6,6 @@ dist/
 
 # Guard runtime data
 .agentguard/
-.bouncer/
 
 # Coverage
 coverage/

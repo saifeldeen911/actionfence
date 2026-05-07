@@ -21,7 +21,7 @@ export interface GuardOptions {
 
   /**
    * HMAC signing secret override.
-   * If not set, falls back to AGENTGUARD_SECRET env var, then auto-generated key.
+   * If not set, falls back to AGENTGUARD_SECRET, then file-based key resolution.
    */
   readonly secret?: string;
 

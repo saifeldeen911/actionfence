@@ -28,8 +28,9 @@ export function loadPolicy(pathOrObject: string | GuardPolicy): GuardPolicy {
     ? readPolicyFile(pathOrObject)
     : pathOrObject;
 
-  validatePolicyObject(raw);
-  return Object.freeze(raw) as GuardPolicy;
+  const normalized = normalizePolicyObject(raw);
+  validatePolicyObject(normalized);
+  return Object.freeze(normalized) as GuardPolicy;
 }
 
 /**
@@ -128,4 +129,20 @@ function validatePolicyObject(data: unknown): asserts data is GuardPolicy {
       errors,
     );
   }
+}
+
+function normalizePolicyObject(data: unknown): unknown {
+  if (!isRecord(data)) {
+    return data;
+  }
+
+  const defaultRule = data.default_rule === 'allow' ? 'allow' : 'deny';
+  return {
+    ...data,
+    default_rule: defaultRule,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
