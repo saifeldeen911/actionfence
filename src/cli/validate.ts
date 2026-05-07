@@ -1,6 +1,6 @@
 /**
  * @module cli/validate
- * `agentguard validate <path>` — validates a policy file against the JSON Schema.
+ * `actionfence validate <path>` — validates a policy file against the JSON Schema.
  */
 
 import chalk from 'chalk';
@@ -17,7 +17,7 @@ import type { ParsedArgs, CliContext } from './runner.js';
  * Validate a guard-policy.json file and print a summary.
  *
  * Usage:
- *   agentguard validate <policy-path>
+ *   actionfence validate <policy-path>
  *
  * Exit codes:
  *   0 — policy is valid
@@ -31,10 +31,10 @@ export function runValidate(args: ParsedArgs, ctx: CliContext): number {
       `${chalk.red('✗')} Missing policy file path\n` +
       `\n` +
       `${chalk.yellow('Usage:')}\n` +
-      `  agentguard validate <path>\n` +
+      `  actionfence validate <path>\n` +
       `\n` +
       `${chalk.yellow('Example:')}\n` +
-      `  agentguard validate guard-policy.json\n`,
+      `  actionfence validate guard-policy.json\n`,
     );
     return 1;
   }

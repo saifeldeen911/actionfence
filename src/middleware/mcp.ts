@@ -1,13 +1,13 @@
 /**
  * @module middleware/mcp
- * MCP server adapter for AgentGuard.
+ * MCP server adapter for ActionFence.
  */
 
 import type { GuardOptions } from '../types/config.js';
 import type { RequestContext } from '../core/identity-reader.js';
 import { GuardEngine, type GuardErrorBody, type GuardInstance } from './engine.js';
 
-/** Minimal MCP tool result shape used by AgentGuard responses. */
+/** Minimal MCP tool result shape used by ActionFence responses. */
 export interface McpToolResult {
   readonly content: readonly McpTextContent[];
   readonly structuredContent?: unknown;
@@ -37,7 +37,7 @@ interface PatchedMcpServer extends GuardableMcpServer {
   };
 }
 
-const PATCH_STATE: unique symbol = Symbol('agentguard.mcp.patch');
+const PATCH_STATE: unique symbol = Symbol('actionfence.mcp.patch');
 
 /**
  * Wrap server.registerTool so subsequently registered tools are protected.
@@ -49,7 +49,7 @@ export function withGuard<TServer extends GuardableMcpServer>(
   const patchedServer = server as PatchedMcpServer;
 
   if (patchedServer[PATCH_STATE]) {
-    throw new Error('AgentGuard is already installed on this MCP server');
+    throw new Error('ActionFence is already installed on this MCP server');
   }
 
   const engine = new GuardEngine(options);
@@ -125,8 +125,8 @@ function toMcpErrorResult(body: GuardErrorBody | null): McpToolResult {
   return toMcpJsonResult(
     body ?? {
       error: {
-        code: 'AGENTGUARD_INTERNAL_ERROR',
-        message: 'AgentGuard blocked execution because enforcement failed',
+        code: 'ACTIONFENCE_INTERNAL_ERROR',
+        message: 'ActionFence blocked execution because enforcement failed',
         action: 'unknown',
         toolName: 'unknown',
         policyRef: 'unknown',
@@ -141,8 +141,8 @@ function createInternalErrorBody(toolName: string, error: unknown): GuardErrorBo
   const message = error instanceof Error ? error.message : String(error);
   return {
     error: {
-      code: 'AGENTGUARD_INTERNAL_ERROR',
-      message: `AgentGuard enforcement failed closed: ${message}`,
+      code: 'ACTIONFENCE_INTERNAL_ERROR',
+      message: `ActionFence enforcement failed closed: ${message}`,
       action: toolName,
       toolName,
       policyRef: 'unknown',

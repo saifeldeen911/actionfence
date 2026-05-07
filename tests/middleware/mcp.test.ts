@@ -35,7 +35,7 @@ function createStore(): {
   readonly tempDir: string;
   readonly store: ReceiptStore;
 } {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-mcp-'));
+  const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-mcp-'));
   const store = new ReceiptStore({
     databasePath: join(tempDir, 'receipts.db'),
     signerOptions: {
@@ -103,7 +103,7 @@ describe('withGuard', () => {
     const body = parseResult(result) as { error: { code: string; receiptId: string } };
 
     expect((result as McpToolResult).isError).toBe(true);
-    expect(body.error.code).toBe('AGENTGUARD_BLOCKED');
+    expect(body.error.code).toBe('ACTIONFENCE_BLOCKED');
     expect(body.error.receiptId).toBeTruthy();
     expect(handler).not.toHaveBeenCalled();
     expect(store.getById(body.error.receiptId)?.status).toBe('BLOCKED');

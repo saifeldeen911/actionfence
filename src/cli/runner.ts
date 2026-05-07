@@ -1,6 +1,6 @@
 /**
  * @module cli/runner
- * Command dispatcher and argument parser for the AgentGuard CLI.
+ * Command dispatcher and argument parser for the ActionFence CLI.
  * No external CLI framework — the surface is small enough for hand-rolled parsing.
  */
 
@@ -47,7 +47,7 @@ function defaultContext(): CliContext {
 // ---------------------------------------------------------------------------
 
 /**
- * Run the AgentGuard CLI with the given argv tokens.
+ * Run the ActionFence CLI with the given argv tokens.
  * Returns an exit code (0 = success, 1 = error).
  */
 export async function run(argv: readonly string[], context?: Partial<CliContext>): Promise<number> {
@@ -162,14 +162,14 @@ function isFlagToken(value: string): boolean {
 // ---------------------------------------------------------------------------
 
 function printHelp(ctx: CliContext): void {
-  const title = chalk.bold('AgentGuard');
+  const title = chalk.bold('ActionFence');
   const tagline = chalk.dim('AI Action Firewall for MCP servers and APIs');
 
   ctx.stdout(`
 ${title} — ${tagline}
 
 ${chalk.yellow('Usage:')}
-  agentguard <command> [options]
+  actionfence <command> [options]
 
 ${chalk.yellow('Commands:')}
   ${chalk.cyan('init')}                  Generate a starter guard-policy.json
@@ -181,16 +181,16 @@ ${chalk.yellow('Options:')}
   --version, -v         Show version number
 
 ${chalk.yellow('Examples:')}
-  agentguard init --service MyAPI
-  agentguard validate guard-policy.json
-  agentguard simulate guard-policy.json --action book_flight --identity anonymous --tool do_search_v2
+  actionfence init --service MyAPI
+  actionfence validate guard-policy.json
+  actionfence simulate guard-policy.json --action book_flight --identity anonymous --tool do_search_v2
 
-${chalk.dim('Documentation: https://github.com/saifeldeen911/agentguard')}
+${chalk.dim('Documentation: https://github.com/saifeldeen911/actionfence')}
 `);
 }
 
 function printVersion(ctx: CliContext): void {
-  ctx.stdout(`agentguard ${getVersion()}\n`);
+  ctx.stdout(`actionfence ${getVersion()}\n`);
 }
 
 function getVersion(): string {

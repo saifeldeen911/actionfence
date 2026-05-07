@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We are committed to making participation in the AgentGuard community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
+We are committed to making participation in the ActionFence community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
 
 ## Our Standards
 

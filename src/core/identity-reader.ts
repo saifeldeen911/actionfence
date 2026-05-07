@@ -118,7 +118,7 @@ export class IdentityReader {
       });
     } catch {
       // Malformed JWT — fail gracefully to anonymous
-      console.warn('[agentguard] Failed to decode JWT, falling back to anonymous identity');
+      console.warn('[actionfence] Failed to decode JWT, falling back to anonymous identity');
       return ANONYMOUS_IDENTITY;
     }
   }

@@ -26,7 +26,7 @@ export interface GuardOptions {
 
   /**
    * HMAC signing secret override.
-   * If not set, falls back to AGENTGUARD_SECRET, then file-based key resolution.
+   * If not set, falls back to ACTIONFENCE_SECRET, then file-based key resolution.
    */
   readonly secret?: string;
 
@@ -58,7 +58,7 @@ export interface GuardOptions {
    */
   readonly receiptStore?: ReceiptStore;
 
-  /** Options used when AgentGuard creates its default ReceiptStore. */
+  /** Options used when ActionFence creates its default ReceiptStore. */
   readonly receiptStoreOptions?: ReceiptStoreOptions;
 
   /** Dependency injection hooks for tests or advanced integrations. */

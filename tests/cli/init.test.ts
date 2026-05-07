@@ -12,7 +12,7 @@ import type { CliContext, ParsedArgs } from '../../src/cli/runner.js';
 // ---------------------------------------------------------------------------
 
 function createTempDir(): string {
-  const dir = join(tmpdir(), `agentguard-test-${randomUUID()}`);
+  const dir = join(tmpdir(), `actionfence-test-${randomUUID()}`);
   mkdirSync(dir, { recursive: true });
   return dir;
 }

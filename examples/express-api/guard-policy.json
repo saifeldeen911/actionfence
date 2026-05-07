@@ -1,5 +1,5 @@
 {
-  "$schema": "https://agentguard.dev/schema/v1/guard-policy.schema.json",
+  "$schema": "https://actionfence.dev/schema/v1/guard-policy.schema.json",
   "service": "BookFlight.com API",
   "version": "1.0",
   "default_rule": "deny",

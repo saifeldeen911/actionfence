@@ -1,6 +1,6 @@
 /**
  * @module index
- * Public API surface for AgentGuard.
+ * Public API surface for ActionFence.
  * Re-exports all types and core modules.
  */
 

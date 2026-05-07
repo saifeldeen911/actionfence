@@ -1,9 +1,9 @@
 /**
- * Example MCP Server with AgentGuard
+ * Example MCP Server with ActionFence
  *
- * Demonstrates how to protect an MCP server with AgentGuard's policy engine.
+ * Demonstrates how to protect an MCP server with ActionFence's policy engine.
  * This example creates a flight booking MCP server with four tools:
- *   - search_flights: token identity
+ *   - search_flights: any identity
  *   - book_flight:    requires verified identity + spend cap
  *   - check_status:   requires token identity
  *   - bulk_booking:   explicitly blocked by policy
@@ -14,8 +14,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { withGuard } from 'agentguard';
-import { z } from 'zod';
+import { withGuard } from 'actionfence';
 
 // ---------------------------------------------------------------------------
 // 1. Create the MCP server
@@ -27,7 +26,7 @@ const server = new McpServer({
 });
 
 // ---------------------------------------------------------------------------
-// 2. Install AgentGuard — one line
+// 2. Install ActionFence — one line
 // ---------------------------------------------------------------------------
 
 const guard = withGuard(server, {
@@ -37,7 +36,7 @@ const guard = withGuard(server, {
 });
 
 // ---------------------------------------------------------------------------
-// 3. Register tools — AgentGuard intercepts automatically
+// 3. Register tools — ActionFence intercepts automatically
 // ---------------------------------------------------------------------------
 
 server.registerTool(

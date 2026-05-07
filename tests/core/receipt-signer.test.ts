@@ -121,10 +121,10 @@ describe('ReceiptSigner', () => {
   });
 
   it('should prefer an explicit secret over env and file secrets', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
-    vi.stubEnv('AGENTGUARD_SECRET', ENV_SECRET);
+    vi.stubEnv('ACTIONFENCE_SECRET', ENV_SECRET);
 
     const signer = new ReceiptSigner({
       secret: FIXED_SECRET,
@@ -147,10 +147,10 @@ describe('ReceiptSigner', () => {
   });
 
   it('should prefer the env secret over the stored key file', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
-    vi.stubEnv('AGENTGUARD_SECRET', ENV_SECRET);
+    vi.stubEnv('ACTIONFENCE_SECRET', ENV_SECRET);
 
     const signer = new ReceiptSigner({ keyFilePath });
     const receipt = signer.createReceipt({
@@ -170,7 +170,7 @@ describe('ReceiptSigner', () => {
   });
 
   it('should load the stored secret file when no explicit or env secret exists', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
     const keyFilePath = join(tempDir, 'key');
     writeFileSync(keyFilePath, FILE_SECRET, 'utf8');
 
@@ -192,7 +192,7 @@ describe('ReceiptSigner', () => {
   });
 
   it('should generate and persist a new secret when none exists', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-signer-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
     const keyFilePath = join(tempDir, 'key');
 
     const signer = new ReceiptSigner({ keyFilePath });

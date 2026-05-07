@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to AgentGuard will be documented in this file.
+All notable changes to ActionFence will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -15,15 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Hot-reload policy file watching via `fs.watch`
 
 - **Identity System**
-  - Identity reader with JWT decode + optional verification via `jose`
-  - Three-tier classification: `anonymous`, `token`, `verified`
+  - Identity reader with JWT decode for bearer-token metadata
+  - Built-in classification for `anonymous` and `token`
+  - Custom identity reader hook for applications that need verified identities
 
 - **Rate Limiting**
   - Sliding window rate limiter (requests/min, transactions/day)
   - Per-agent tracking with lazy eviction
 
 - **Spend Tracking**
-  - Session and daily spend caps with automatic midnight UTC reset
+  - Per-action spend caps via `max_spend`
+  - Session and daily spend totals with automatic midnight UTC reset
 
 - **Action Receipts**
   - HMAC-SHA256 signed receipts with hash chain integrity
@@ -37,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Express Middleware**
   - `guard(options)` — drop-in Express/Fastify-compatible middleware
-  - `X-Agentguard-Simulation` header for HTTP simulation mode
+  - `X-ActionFence-Simulation` header for HTTP simulation mode
   - Structured error responses with machine-readable error codes
 
 - **Simulation Mode**
@@ -49,9 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ALLOW/BLOCK status with timing, receipt IDs, and spend totals
 
 - **CLI Tools**
-  - `agentguard init` — scaffold a starter `guard-policy.json`
-  - `agentguard validate <path>` — validate policy against JSON Schema
-  - `agentguard simulate <path> --action <name>` — dry-run policy evaluation
+  - `actionfence init` — scaffold a starter `guard-policy.json`
+  - `actionfence validate <path>` — validate policy against JSON Schema
+  - `actionfence simulate <path> --action <name>` — dry-run policy evaluation
 
 - **Examples**
   - MCP server example (flight booking with 4 tools)
@@ -62,4 +64,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Full TypeScript declarations
   - Node.js 20+ target
 
-[0.1.0]: https://github.com/saifeldeen911/agentguard/releases/tag/v0.1.0
+[0.1.0]: https://github.com/saifeldeen911/actionfence/releases/tag/v0.1.0

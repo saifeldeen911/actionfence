@@ -77,7 +77,7 @@ describe('run', () => {
     const ctx = createTestContext();
     const exitCode = await run(['--help'], ctx);
     expect(exitCode).toBe(0);
-    expect(ctx.stdoutLines.join('')).toContain('AgentGuard');
+    expect(ctx.stdoutLines.join('')).toContain('ActionFence');
   });
 
   it('returns exit code 0 for -h', async () => {
@@ -90,7 +90,7 @@ describe('run', () => {
     const ctx = createTestContext();
     const exitCode = await run(['--version'], ctx);
     expect(exitCode).toBe(0);
-    expect(ctx.stdoutLines.join('')).toContain('agentguard');
+    expect(ctx.stdoutLines.join('')).toContain('actionfence');
   });
 
   it('returns exit code 1 for unknown command', async () => {
@@ -104,6 +104,6 @@ describe('run', () => {
     const ctx = createTestContext();
     const exitCode = await run([], ctx);
     expect(exitCode).toBe(0);
-    expect(ctx.stdoutLines.join('')).toContain('AgentGuard');
+    expect(ctx.stdoutLines.join('')).toContain('ActionFence');
   });
 });

@@ -1,7 +1,7 @@
 /**
- * Example Express API with AgentGuard
+ * Example Express API with ActionFence
  *
- * Demonstrates how to protect an Express REST API with AgentGuard's
+ * Demonstrates how to protect an Express REST API with ActionFence's
  * guard() middleware. This example creates a flight booking API with:
  *   - GET  /flights          — public search (any identity)
  *   - POST /bookings         — book a flight (verified identity, spend cap)
@@ -19,7 +19,7 @@
  */
 
 import express from 'express';
-import { guard } from 'agentguard';
+import { guard } from 'actionfence';
 import type { Request } from 'express';
 
 const app = express();
@@ -55,18 +55,24 @@ const bookings = new Map<
 app.use(express.json());
 
 // ---------------------------------------------------------------------------
-// 2. Install AgentGuard middleware
+// 2. Install ActionFence middleware
 // ---------------------------------------------------------------------------
 
-const agentguard = guard({
+const actionfence = guard({
   policy: './guard-policy.json',
 
   // Map Express route patterns to policy action names.
   // The guard middleware provides `METHOD /route` as the default tool name.
   // actionResolver lets you map that to your policy's action keys.
   actionResolver: (toolName: string, _params: unknown) => {
-    // toolName is "GET /flights", "POST /bookings", etc.
-    // Our policy uses the same format, so pass through as-is.
+    if (/^GET \/bookings\/[^/]+$/.test(toolName)) {
+      return 'GET /bookings/:id';
+    }
+
+    if (/^DELETE \/bookings\/[^/]+$/.test(toolName)) {
+      return 'DELETE /bookings/:id';
+    }
+
     return toolName;
   },
 
@@ -84,10 +90,10 @@ const agentguard = guard({
   // simulate: true,
 });
 
-app.use(agentguard);
+app.use(actionfence);
 
 // ---------------------------------------------------------------------------
-// 3. Define routes — AgentGuard protects all of them
+// 3. Define routes — ActionFence protects all of them
 // ---------------------------------------------------------------------------
 
 app.get('/flights', (_req, res) => {
@@ -178,7 +184,7 @@ app.delete('/bookings/:id', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n🛫 BookFlight.com API running at http://localhost:${PORT}`);
-  console.log(`🛡️  AgentGuard is protecting all routes\n`);
+  console.log(`🛡️  ActionFence is protecting all routes\n`);
   console.log(`Try these commands:`);
   console.log(`  curl http://localhost:${PORT}/flights`);
   console.log(
@@ -189,7 +195,7 @@ app.listen(PORT, () => {
 
 // Cleanup on shutdown
 process.on('SIGINT', () => {
-  agentguard.dispose();
+  actionfence.dispose();
   process.exit(0);
 });
 

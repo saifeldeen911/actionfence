@@ -1,6 +1,6 @@
 /**
  * @module middleware/express
- * Express-compatible HTTP middleware adapter for AgentGuard.
+ * Express-compatible HTTP middleware adapter for ActionFence.
  */
 
 import type { GuardOptions } from '../types/config.js';
@@ -54,7 +54,7 @@ export interface GuardHttpPayload {
 }
 
 /**
- * Create Express-compatible AgentGuard middleware.
+ * Create Express-compatible ActionFence middleware.
  */
 export function guard(options: GuardOptions): GuardHttpMiddleware {
   const engine = new GuardEngine(options);
@@ -95,7 +95,7 @@ async function runGuardMiddleware(
     });
 
     if (result.mode === 'simulate') {
-      setHeader(res, 'X-Agentguard-Simulation', 'true');
+      setHeader(res, 'X-ActionFence-Simulation', 'true');
       sendJson(res, 200, result.preview);
       return;
     }
@@ -118,7 +118,7 @@ async function runGuardMiddleware(
 
 function createHttpPayload(req: GuardHttpRequest): GuardHttpPayload {
   const method = (req.method ?? 'GET').toUpperCase();
-  const path = req.route?.path ?? req.path ?? req.originalUrl ?? req.url ?? '/';
+  const path = normalizeHttpPath(req.route?.path ?? req.path ?? req.originalUrl ?? req.url ?? '/');
 
   return Object.freeze({
     method,
@@ -127,6 +127,15 @@ function createHttpPayload(req: GuardHttpRequest): GuardHttpPayload {
     query: req.query ?? {},
     body: req.body ?? null,
   });
+}
+
+function normalizeHttpPath(path: string): string {
+  const queryStart = path.indexOf('?');
+  const hashStart = path.indexOf('#');
+  const endCandidates = [queryStart, hashStart].filter((index) => index >= 0);
+  const end = endCandidates.length > 0 ? Math.min(...endCandidates) : path.length;
+  const normalized = path.slice(0, end);
+  return normalized.length > 0 ? normalized : '/';
 }
 
 function normalizeHeaders(headers: GuardHttpRequest['headers']): RequestContext['headers'] {
@@ -174,8 +183,8 @@ function createInternalErrorBody(error: unknown): GuardErrorBody {
   const message = error instanceof Error ? error.message : String(error);
   return {
     error: {
-      code: 'AGENTGUARD_INTERNAL_ERROR',
-      message: `AgentGuard enforcement failed closed: ${message}`,
+      code: 'ACTIONFENCE_INTERNAL_ERROR',
+      message: `ActionFence enforcement failed closed: ${message}`,
       action: 'unknown',
       toolName: 'unknown',
       policyRef: 'unknown',

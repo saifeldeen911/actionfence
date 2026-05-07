@@ -43,9 +43,9 @@ export interface GuardErrorBody {
 }
 
 export type GuardErrorCode =
-  | 'AGENTGUARD_BLOCKED'
-  | 'AGENTGUARD_RATE_LIMITED'
-  | 'AGENTGUARD_INTERNAL_ERROR';
+  | 'ACTIONFENCE_BLOCKED'
+  | 'ACTIONFENCE_RATE_LIMITED'
+  | 'ACTIONFENCE_INTERNAL_ERROR';
 
 /** Result returned by the shared guard pipeline. */
 export interface GuardEvaluationResult {
@@ -130,14 +130,14 @@ export class GuardEngine {
         identity,
         params: input.params,
         statusCode: 429,
-        errorCode: 'AGENTGUARD_RATE_LIMITED',
+        errorCode: 'ACTIONFENCE_RATE_LIMITED',
         rateLimit: requestRate,
       });
     }
 
     let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
     let statusCode = decision.status === 'PASSED' ? 200 : 403;
-    let errorCode: GuardErrorCode = 'AGENTGUARD_BLOCKED';
+    let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
     let effectiveRateLimit: RateLimitResult | null = requestRate;
 
     if (
@@ -156,7 +156,7 @@ export class GuardEngine {
           reason: `Transaction rate limit exceeded for agent "${identity.agentId}"`,
         });
         statusCode = 429;
-        errorCode = 'AGENTGUARD_RATE_LIMITED';
+        errorCode = 'ACTIONFENCE_RATE_LIMITED';
       }
     }
 
@@ -232,7 +232,7 @@ export class GuardEngine {
       input.decision.status === 'BLOCKED'
         ? createErrorBody({
             code: input.errorCode,
-            message: input.decision.reason ?? 'Action blocked by AgentGuard',
+            message: input.decision.reason ?? 'Action blocked by ActionFence',
             action: input.decision.action,
             toolName: input.decision.toolName,
             policyRef: this.policyRef,
@@ -266,7 +266,7 @@ export class GuardEngine {
       return action;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`AgentGuard actionResolver failed closed: ${message}`);
+      throw new Error(`ActionFence actionResolver failed closed: ${message}`);
     }
   }
 
@@ -286,7 +286,7 @@ export class GuardEngine {
       return amount;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`AgentGuard spendExtractor failed closed: ${message}`);
+      throw new Error(`ActionFence spendExtractor failed closed: ${message}`);
     }
   }
 
@@ -320,7 +320,7 @@ export class GuardEngine {
         return this.options.transactionResolver(toolName, params, decision);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`[agentguard] transactionResolver failed closed: ${message}`);
+        console.error(`[actionfence] transactionResolver failed closed: ${message}`);
         return true;
       }
     }
@@ -333,7 +333,7 @@ export class GuardEngine {
       this.options.onDecision?.(decision);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[agentguard] onDecision callback failed: ${message}`);
+      console.error(`[actionfence] onDecision callback failed: ${message}`);
     }
   }
 

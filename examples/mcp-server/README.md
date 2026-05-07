@@ -1,6 +1,6 @@
-# MCP Server Example — AgentGuard
+# MCP Server Example — ActionFence
 
-A working MCP server protected by AgentGuard. Demonstrates policy enforcement, identity tier checks, spend caps, and rate limiting on a flight booking API.
+A working MCP server protected by ActionFence. Demonstrates policy enforcement, identity tier checks, spend caps, and rate limiting on a flight booking API.
 
 ## Tools
 

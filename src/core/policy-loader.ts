@@ -61,14 +61,14 @@ export function watchPolicy(
       } catch (error: unknown) {
         // Log but don't crash — the old policy remains active.
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`[agentguard] Policy reload failed: ${message}`);
+        console.error(`[actionfence] Policy reload failed: ${message}`);
       }
     }, 300);
   });
 
   watcher.on('error', (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[agentguard] Policy watcher error: ${message}`);
+    console.error(`[actionfence] Policy watcher error: ${message}`);
   });
 
   return () => {

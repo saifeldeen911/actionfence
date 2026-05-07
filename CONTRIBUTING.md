@@ -1,6 +1,6 @@
-# Contributing to AgentGuard
+# Contributing to ActionFence
 
-Thank you for your interest in contributing to AgentGuard! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to ActionFence! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing to AgentGuard! This document provide
 
 ```bash
 # Clone the repository
-git clone https://github.com/saifeldeen911/agentguard.git
-cd agentguard
+git clone https://github.com/saifeldeen911/actionfence.git
+cd actionfence
 
 # Install dependencies
 npm install

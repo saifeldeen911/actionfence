@@ -1,6 +1,6 @@
 /**
  * @module cli/init
- * `agentguard init` — scaffolds a starter guard-policy.json.
+ * `actionfence init` — scaffolds a starter guard-policy.json.
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
@@ -21,7 +21,7 @@ const DEFAULT_SERVICE_NAME = 'my-service';
 
 function createStarterPolicy(serviceName: string): string {
   const policy = {
-    $schema: 'https://agentguard.dev/schema/v1/guard-policy.schema.json',
+    $schema: 'https://actionfence.dev/schema/v1/guard-policy.schema.json',
     service: serviceName,
     version: '1.0',
     default_rule: 'deny',
@@ -100,9 +100,9 @@ export function runInit(args: ParsedArgs, ctx: CliContext): number {
       `${chalk.yellow('Next steps:')}\n` +
       `  1. Edit the policy to match your tool names\n` +
       `  2. Add to your MCP server:\n` +
-      `     ${chalk.cyan("import { withGuard } from 'agentguard';")}\n` +
+      `     ${chalk.cyan("import { withGuard } from 'actionfence';")}\n` +
       `     ${chalk.cyan(`withGuard(server, { policy: '${examplePath}' });`)}\n` +
-      `  3. Validate: ${chalk.cyan(`npx agentguard validate ${examplePath}`)}\n`,
+      `  3. Validate: ${chalk.cyan(`npx actionfence validate ${examplePath}`)}\n`,
   );
 
   return 0;

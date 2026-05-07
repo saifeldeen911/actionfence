@@ -1,16 +1,16 @@
 {
-  "name": "agentguard-express-example",
+  "name": "actionfence-express-example",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Example Express API protected by AgentGuard",
+  "description": "Example Express API protected by ActionFence",
   "scripts": {
     "start": "tsx src/index.ts",
     "build": "tsc",
     "start:built": "node dist/index.js"
   },
   "dependencies": {
-    "agentguard": "file:../../",
+    "actionfence": "file:../../",
     "express": "^5.1.0"
   },
   "devDependencies": {

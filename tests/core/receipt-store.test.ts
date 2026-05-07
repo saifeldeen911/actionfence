@@ -41,7 +41,7 @@ function createTempStore(): {
   databasePath: string;
   store: ReceiptStore;
 } {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-store-'));
+  const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-store-'));
   const databasePath = join(tempDir, 'receipts.db');
   const store = new ReceiptStore({
     databasePath,

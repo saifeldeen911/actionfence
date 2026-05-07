@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * @module cli/index
- * CLI entry point for AgentGuard.
- * Invoked via `npx agentguard <command>` or `agentguard <command>`.
+ * CLI entry point for ActionFence.
+ * Invoked via `npx actionfence <command>` or `actionfence <command>`.
  */
 
 import { run } from './runner.js';

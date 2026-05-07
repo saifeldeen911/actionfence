@@ -1,7 +1,7 @@
 {
-  "name": "agentguard",
+  "name": "actionfence",
   "version": "0.1.0",
-  "description": "TypeScript policy engine, receipt signer, and SQLite audit store for AI agent action enforcement",
+  "description": "Embeddable AI action firewall for MCP servers and APIs with JSON policies, signed receipts, spend caps, and simulation mode",
   "type": "module",
   "exports": {
     ".": {
@@ -14,11 +14,12 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agentguard": "./dist/cli.js"
+    "actionfence": "dist/cli.js"
   },
   "files": [
     "dist",
     "schemas",
+    "examples",
     "CHANGELOG.md"
   ],
   "engines": {
@@ -65,20 +66,24 @@
     "agent",
     "mcp",
     "firewall",
+    "action-firewall",
+    "ai-security",
+    "actionfence",
     "policy",
     "security",
     "middleware",
     "receipts",
-    "guard"
+    "spend-caps",
+    "simulation"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/saifeldeen911/agentguard.git"
+    "url": "git+https://github.com/saifeldeen911/actionfence.git"
   },
   "author": "Saifeldeen",
-  "homepage": "https://github.com/saifeldeen911/agentguard#readme",
+  "homepage": "https://github.com/saifeldeen911/actionfence#readme",
   "bugs": {
-    "url": "https://github.com/saifeldeen911/agentguard/issues"
+    "url": "https://github.com/saifeldeen911/actionfence/issues"
   }
 }

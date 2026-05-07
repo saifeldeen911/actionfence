@@ -1,23 +1,23 @@
-# AgentGuard
+# ActionFence
 
 > **AI Action Firewall for MCP servers and APIs.**
 > One line of code. Signed receipts. Simulation mode.
 
-[![CI](https://github.com/saifeldeen911/agentguard/actions/workflows/ci.yml/badge.svg)](https://github.com/saifeldeen911/agentguard/actions/workflows/ci.yml)
+[![CI](https://github.com/saifeldeen911/actionfence/actions/workflows/ci.yml/badge.svg)](https://github.com/saifeldeen911/actionfence/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org)
 
 ---
 
-## Why AgentGuard?
+## Why ActionFence?
 
 AI agents can now browse, book, buy, and delete things on behalf of humans. But a rogue or misconfigured agent can book 200 hotel rooms, charge the wrong card, or bulk-delete records — with no way to catch it before it happens.
 
-AgentGuard sits at your **service's door** and enforces what any incoming AI agent is allowed to do:
+ActionFence sits at your **service's door** and enforces what any incoming AI agent is allowed to do:
 
 - 🛡️ **Policy enforcement** — Allow/deny actions via a simple JSON policy file
-- 🔐 **Identity tiers** — Classify agents as `anonymous`, `token`, or `verified`
-- 💰 **Spend caps** — Set per-action and daily spending limits
+- 🔐 **Identity tiers** — Classify agents as `anonymous` or bearer-token based; use a custom identity reader for verified identities
+- 💰 **Spend caps** — Set per-action spending limits
 - ⏱️ **Rate limiting** — Sliding window request + transaction limits
 - 📝 **Signed receipts** — HMAC-SHA256 hash-chained audit trail in SQLite
 - ⚡ **Simulation mode** — See what would happen before it does
@@ -30,14 +30,14 @@ AgentGuard sits at your **service's door** and enforces what any incoming AI age
 ### Install
 
 ```bash
-npm install agentguard
+npm install actionfence
 ```
 
 ### MCP Server (one-liner)
 
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { withGuard } from 'agentguard';
+import { withGuard } from 'actionfence';
 
 const server = new McpServer({ name: 'my-server', version: '1.0.0' });
 
@@ -45,7 +45,7 @@ const server = new McpServer({ name: 'my-server', version: '1.0.0' });
 withGuard(server, { policy: './guard-policy.json' });
 
 server.registerTool('search_flights', { /* schema */ }, async (params) => {
-  // This handler only runs if AgentGuard allows it
+  // This handler only runs if ActionFence allows it
   return { content: [{ type: 'text', text: 'results...' }] };
 });
 ```
@@ -54,13 +54,16 @@ server.registerTool('search_flights', { /* schema */ }, async (params) => {
 
 ```typescript
 import express from 'express';
-import { guard } from 'agentguard';
+import { guard } from 'actionfence';
 
 const app = express();
 
 app.use(guard({
   policy: './guard-policy.json',
-  actionResolver: (toolName) => toolName, // "GET /flights" → policy action
+  actionResolver: (toolName) => {
+    if (/^GET \/bookings\/[^/]+$/.test(toolName)) return 'GET /bookings/:id';
+    return toolName;
+  },
   spendExtractor: (params) => {
     const body = (params as { body?: { amount?: number } })?.body;
     return body?.amount ?? null;
@@ -74,24 +77,24 @@ app.get('/flights', (req, res) => { /* only reachable if allowed */ });
 
 ```bash
 # Scaffold a starter policy file
-npx agentguard init
+npx actionfence init
 
 # Validate a policy against the schema
-npx agentguard validate guard-policy.json
+npx actionfence validate guard-policy.json
 
 # Dry-run a single action
-npx agentguard simulate guard-policy.json --action book_flight --identity anonymous
+npx actionfence simulate guard-policy.json --action book_flight --identity anonymous
 ```
 
 ---
 
 ## Policy File
 
-AgentGuard uses a `guard-policy.json` file to define what agents can do. Think of it as `robots.txt` for AI actions.
+ActionFence uses a `guard-policy.json` file to define what agents can do. Think of it as `robots.txt` for AI actions.
 
 ```json
 {
-  "$schema": "https://agentguard.dev/schema/v1/guard-policy.schema.json",
+  "$schema": "https://actionfence.dev/schema/v1/guard-policy.schema.json",
   "service": "BookFlight.com",
   "version": "1.0",
   "default_rule": "deny",
@@ -144,13 +147,15 @@ AgentGuard uses a `guard-policy.json` file to define what agents can do. Think o
 |------|---------|-------------------|
 | `anonymous` | No credentials presented | No `Authorization` header |
 | `token` | Bearer token present but unverified | `Authorization: Bearer <token>` present |
-| `verified` | Valid JWT with signature verified | JWT passes `jose.jwtVerify()` with configured JWKS |
+| `verified` | Trusted identity from your own verifier | Returned by a custom `identityReader` in v0.1 |
+
+The built-in v0.1 identity reader is intentionally conservative: it decodes bearer JWTs to extract metadata, but it does not verify signatures or JWKS. Policies can still require `verified`, but runtime requests only satisfy that tier when you inject an identity reader that returns `classification: 'verified'`. The CLI simulator can model `verified` requests for policy testing.
 
 ---
 
 ## Simulation Mode
 
-Preview what AgentGuard would do without executing any actions:
+Preview what ActionFence would do without executing any actions:
 
 ### MCP Server
 
@@ -169,15 +174,15 @@ app.use(guard({
   policy: './guard-policy.json',
   simulate: true,
 }));
-// Returns 200 + X-Agentguard-Simulation: true + JSON preview
+// Returns 200 + X-ActionFence-Simulation: true + JSON preview
 ```
 
 ### CLI
 
 ```bash
-npx agentguard simulate guard-policy.json --action book_flight --identity verified --spend 250
+npx actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
 
-# ⚡ SIMULATION — agentguard
+# ⚡ SIMULATION — actionfence
 #
 #   Action:          book_flight
 #   Identity:        verified
@@ -213,8 +218,8 @@ Receipts are:
 ### Signing Key Resolution
 
 1. `options.secret` (programmatic override)
-2. `AGENTGUARD_SECRET` environment variable
-3. `.agentguard/key` file (auto-generated on first run)
+2. `ACTIONFENCE_SECRET` environment variable
+3. `.actionfence/key` file (auto-generated on first run)
 
 ---
 
@@ -223,13 +228,13 @@ Receipts are:
 ### `withGuard(server, options)` — MCP Middleware
 
 ```typescript
-import { withGuard } from 'agentguard';
+import { withGuard } from 'actionfence';
 
 const guard = withGuard(server, {
   policy: './guard-policy.json',
   simulate: false,
   silent: false,
-  secret: process.env.AGENTGUARD_SECRET,
+  secret: process.env.ACTIONFENCE_SECRET,
   actionResolver: (toolName, params) => toolName,
   spendExtractor: (params) => null,
   onDecision: (decision) => { /* custom logging */ },
@@ -243,7 +248,7 @@ guard.dispose();
 ### `guard(options)` — Express Middleware
 
 ```typescript
-import { guard } from 'agentguard';
+import { guard } from 'actionfence';
 
 const middleware = guard({
   policy: './guard-policy.json',
@@ -271,26 +276,33 @@ middleware.dispose();
 | `onDecision` | `(decision) => void` | — | Callback fired after every evaluation |
 | `watchPolicy` | `boolean` | `false` | Enable hot-reload on policy file changes |
 
+### v0.1 Limits
+
+- Built-in JWT handling is decode-only. Use `identityReader` for signature-verified identities.
+- Spend enforcement is per invocation through `max_spend`; session and daily spend totals are tracked for reporting, but not enforced by policy in v0.1.
+- `requires_human_approval` is reported in decisions and simulations; v0.1 does not implement an approval workflow.
+- The Express adapter sees concrete paths in globally mounted middleware. Use `actionResolver` to map paths such as `/bookings/BK-123` to policy actions such as `GET /bookings/:id`.
+
 ---
 
 ## CLI Reference
 
-### `agentguard init`
+### `actionfence init`
 
 Scaffold a starter `guard-policy.json`:
 
 ```bash
-agentguard init                        # Creates ./guard-policy.json
-agentguard init --service MyAPI        # Custom service name
-agentguard init --output ./policies/   # Custom output path
+actionfence init                        # Creates ./guard-policy.json
+actionfence init --service MyAPI        # Custom service name
+actionfence init --output ./policies/   # Custom output path
 ```
 
-### `agentguard validate <path>`
+### `actionfence validate <path>`
 
 Validate a policy file against the JSON Schema:
 
 ```bash
-agentguard validate guard-policy.json
+actionfence validate guard-policy.json
 # ✓ Valid policy: guard-policy.json
 #   Service:         BookFlight.com
 #   Version:         1.0
@@ -298,14 +310,14 @@ agentguard validate guard-policy.json
 #   Actions:         4 defined
 ```
 
-### `agentguard simulate <path>`
+### `actionfence simulate <path>`
 
 Dry-run a policy evaluation:
 
 ```bash
-agentguard simulate guard-policy.json --action search_flights
-agentguard simulate guard-policy.json --action book_flight --identity verified --spend 250
-agentguard simulate guard-policy.json --action bulk_booking  # exits with code 1
+actionfence simulate guard-policy.json --action search_flights
+actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
+actionfence simulate guard-policy.json --action bulk_booking  # exits with code 1
 ```
 
 | Flag | Required | Default | Description |
@@ -327,8 +339,8 @@ agentguard simulate guard-policy.json --action bulk_booking  # exits with code 1
 ## Development
 
 ```bash
-git clone https://github.com/saifeldeen911/agentguard.git
-cd agentguard
+git clone https://github.com/saifeldeen911/actionfence.git
+cd actionfence
 npm install
 npm run typecheck    # Type-check
 npm run lint         # Lint
@@ -349,12 +361,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 │  withGuard(server, { policy: './guard-policy.json' }) │
 │                                                       │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  AgentGuard Pipeline (per tool call)          │    │
+│  │  ActionFence Pipeline (per tool call)          │    │
 │  │                                               │    │
-│  │  1. Identity Read  → anonymous/token/verified │    │
+│  │  1. Identity Read  → anonymous/token/custom    │    │
 │  │  2. Policy Match   → allow/deny + reason      │    │
 │  │  3. Rate Limit     → sliding window check     │    │
-│  │  4. Spend Cap      → session/daily threshold  │    │
+│  │  4. Spend Cap      → per-action max_spend      │    │
 │  │  5. Receipt Sign   → HMAC-SHA256 + hash chain │    │
 │  │  6. Receipt Store  → SQLite append-only       │    │
 │  │  7. Console Report → colorized output         │    │

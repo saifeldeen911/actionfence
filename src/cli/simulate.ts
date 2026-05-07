@@ -1,6 +1,6 @@
 /**
  * @module cli/simulate
- * `agentguard simulate <path>` — dry-run a single action against a policy file.
+ * `actionfence simulate <path>` — dry-run a single action against a policy file.
  */
 
 import { resolve } from 'node:path';
@@ -27,7 +27,7 @@ const VALID_IDENTITY_TIERS: readonly IdentityClassification[] = ['anonymous', 't
  * Dry-run a policy evaluation for a single action.
  *
  * Usage:
- *   agentguard simulate <policy-path> --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]
+ *   actionfence simulate <policy-path> --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]
  *
  * Exit codes:
  *   0 — action would pass
@@ -48,7 +48,7 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
       `${chalk.red('✗')} Missing policy file path\n` +
         `\n` +
         `${chalk.yellow('Usage:')}\n` +
-        `  agentguard simulate <path> --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
+        `  actionfence simulate <path> --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
     );
     return 1;
   }
@@ -58,7 +58,7 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
       `${chalk.red('✗')} Missing required flag: --action\n` +
         `\n` +
         `${chalk.yellow('Usage:')}\n` +
-        `  agentguard simulate ${filePath} --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
+        `  actionfence simulate ${filePath} --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
     );
     return 1;
   }
@@ -173,7 +173,7 @@ function printSimulationResult(ctx: CliContext, input: SimulationDisplayInput): 
   const { decision, identity, rateLimit } = input;
   const passed = decision.status === 'PASSED';
 
-  const header = chalk.bold.yellow('⚡ SIMULATION') + chalk.dim(' — agentguard');
+  const header = chalk.bold.yellow('⚡ SIMULATION') + chalk.dim(' — actionfence');
   const statusLine = passed ? chalk.green('✓ WOULD PASS') : chalk.red('✗ WOULD BLOCK');
 
   const spendLabel =

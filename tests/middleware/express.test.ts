@@ -79,7 +79,7 @@ function createStore(): {
   readonly tempDir: string;
   readonly store: ReceiptStore;
 } {
-  const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-http-'));
+  const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-http-'));
   const store = new ReceiptStore({
     databasePath: join(tempDir, 'receipts.db'),
     signerOptions: {
@@ -168,7 +168,7 @@ describe('guard Express middleware', () => {
     expect(res.statusCode).toBe(403);
     expect(res.body).toMatchObject({
       error: {
-        code: 'AGENTGUARD_BLOCKED',
+        code: 'ACTIONFENCE_BLOCKED',
         action: 'bulk_booking',
         receiptId: expect.any(String),
       },
@@ -196,7 +196,7 @@ describe('guard Express middleware', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(200);
-    expect(res.headers['X-Agentguard-Simulation']).toBe('true');
+    expect(res.headers['X-ActionFence-Simulation']).toBe('true');
     expect(res.body).toMatchObject({
       simulation: true,
       wouldExecute: true,
@@ -225,8 +225,42 @@ describe('guard Express middleware', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(403);
-    expect(res.body).toContain('AGENTGUARD_BLOCKED');
+    expect(res.body).toContain('ACTIONFENCE_BLOCKED');
     expect(res.headers['Content-Type']).toBe('application/json; charset=utf-8');
+
+    store.close();
+    middleware.dispose();
+  });
+
+  it('should strip query strings from fallback HTTP paths before resolving actions', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const middleware = guard({
+      policy: {
+        ...POLICY,
+        actions: {
+          ...POLICY.actions,
+          'GET /flights': { allowed: true, identity: 'any' },
+        },
+      },
+      receiptStore: store,
+      silent: true,
+    });
+    const res = new FakeResponse();
+    const next = vi.fn();
+
+    middleware(
+      makeRequest({
+        path: undefined,
+        originalUrl: '/flights?origin=LAX&destination=JFK',
+      }),
+      res,
+      next,
+    );
+    await Promise.resolve();
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.headersSent).toBe(false);
 
     store.close();
     middleware.dispose();

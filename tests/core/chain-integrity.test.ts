@@ -35,7 +35,7 @@ function makeDecision(index: number): EvaluationDecision {
 
 describe('receipt chain integrity', () => {
   it('should verify 1000+ receipts and detect tampering at the first broken record', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'agentguard-chain-'));
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-chain-'));
     const databasePath = join(tempDir, 'receipts.db');
     const store = new ReceiptStore({
       databasePath,

@@ -1,16 +1,16 @@
 {
-  "name": "agentguard-mcp-example",
+  "name": "actionfence-mcp-example",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Example MCP server protected by AgentGuard",
+  "description": "Example MCP server protected by ActionFence",
   "scripts": {
     "start": "tsx src/index.ts",
     "build": "tsc",
     "start:built": "node dist/index.js"
   },
   "dependencies": {
-    "agentguard": "file:../../",
+    "actionfence": "file:../../",
     "@modelcontextprotocol/sdk": "^2.0.0"
   },
   "devDependencies": {

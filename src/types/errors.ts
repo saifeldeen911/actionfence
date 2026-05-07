@@ -1,12 +1,12 @@
 /**
  * @module types/errors
- * Custom error classes for AgentGuard.
+ * Custom error classes for ActionFence.
  * Each has a unique `code` property for programmatic error handling.
  */
 
 /** Error thrown when a policy file fails JSON Schema validation. */
 export class PolicyValidationError extends Error {
-  readonly code = 'AGENTGUARD_POLICY_VALIDATION_ERROR' as const;
+  readonly code = 'ACTIONFENCE_POLICY_VALIDATION_ERROR' as const;
 
   constructor(
     message: string,
@@ -19,7 +19,7 @@ export class PolicyValidationError extends Error {
 
 /** Error thrown when a policy file cannot be loaded from disk. */
 export class PolicyLoadError extends Error {
-  readonly code = 'AGENTGUARD_POLICY_LOAD_ERROR' as const;
+  readonly code = 'ACTIONFENCE_POLICY_LOAD_ERROR' as const;
 
   constructor(
     message: string,
@@ -33,7 +33,7 @@ export class PolicyLoadError extends Error {
 
 /** Error thrown when identity reading fails unexpectedly. */
 export class IdentityError extends Error {
-  readonly code = 'AGENTGUARD_IDENTITY_ERROR' as const;
+  readonly code = 'ACTIONFENCE_IDENTITY_ERROR' as const;
 
   constructor(
     message: string,
