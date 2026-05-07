@@ -35,16 +35,13 @@ export interface GuardHttpResponse {
   end?(body: string): unknown;
   set?(field: string, value: string): GuardHttpResponse;
   setHeader?(field: string, value: string): void;
+  getHeader?(field: string): unknown;
 }
 
 export type GuardNextFunction = (error?: unknown) => void;
 
 export interface GuardHttpMiddleware extends GuardInstance {
-  (
-    req: GuardHttpRequest,
-    res: GuardHttpResponse,
-    next: GuardNextFunction,
-  ): void;
+  (req: GuardHttpRequest, res: GuardHttpResponse, next: GuardNextFunction): void;
 }
 
 /** Sanitized payload evaluated and stored for HTTP requests. */
@@ -132,17 +129,11 @@ function createHttpPayload(req: GuardHttpRequest): GuardHttpPayload {
   });
 }
 
-function normalizeHeaders(
-  headers: GuardHttpRequest['headers'],
-): RequestContext['headers'] {
+function normalizeHeaders(headers: GuardHttpRequest['headers']): RequestContext['headers'] {
   const authorization = headers?.authorization;
-  const normalizedAuthorization = Array.isArray(authorization)
-    ? authorization[0]
-    : authorization;
+  const normalizedAuthorization = Array.isArray(authorization) ? authorization[0] : authorization;
 
-  return normalizedAuthorization
-    ? { authorization: normalizedAuthorization }
-    : {};
+  return normalizedAuthorization ? { authorization: normalizedAuthorization } : {};
 }
 
 function sendJson(
@@ -158,6 +149,10 @@ function sendJson(
   }
 
   const serialized = JSON.stringify(body);
+  if (res.getHeader?.('Content-Type') === undefined) {
+    setHeader(res, 'Content-Type', 'application/json; charset=utf-8');
+  }
+
   if (res.send) {
     res.send(serialized);
     return;

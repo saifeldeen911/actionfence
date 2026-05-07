@@ -91,19 +91,22 @@ export class GuardEngine {
     this.identityReader = options.identityReader ?? new IdentityReader();
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker();
-    this.receiptStore = options.receiptStore ?? new ReceiptStore({
-      ...options.receiptStoreOptions,
-      signerOptions: {
-        ...options.receiptStoreOptions?.signerOptions,
-        secret: options.secret ?? options.receiptStoreOptions?.signerOptions?.secret,
-      },
-    });
+    this.receiptStore =
+      options.receiptStore ??
+      new ReceiptStore({
+        ...options.receiptStoreOptions,
+        signerOptions: {
+          ...options.receiptStoreOptions?.signerOptions,
+          secret: options.secret ?? options.receiptStoreOptions?.signerOptions?.secret,
+        },
+      });
     this.reporter = options.reporter ?? new ConsoleReporter({ silent: options.silent });
     this.ownsRateLimiter = options.rateLimiter === undefined;
     this.ownsReceiptStore = options.receiptStore === undefined;
-    this.cleanupPolicyWatcher = typeof options.policy === 'string' && options.watchPolicy === true
-      ? watchPolicy(options.policy, (policy) => this.updatePolicy(policy))
-      : null;
+    this.cleanupPolicyWatcher =
+      typeof options.policy === 'string' && options.watchPolicy === true
+        ? watchPolicy(options.policy, (policy) => this.updatePolicy(policy))
+        : null;
   }
 
   evaluate(input: GuardEvaluationInput): GuardEvaluationResult {
@@ -137,7 +140,10 @@ export class GuardEngine {
     let errorCode: GuardErrorCode = 'AGENTGUARD_BLOCKED';
     let effectiveRateLimit: RateLimitResult | null = requestRate;
 
-    if (decision.status === 'PASSED' && this.isTransaction(input.toolName, input.params, decision)) {
+    if (
+      decision.status === 'PASSED' &&
+      this.isTransaction(input.toolName, input.params, decision)
+    ) {
       const transactionRate = this.checkTransactionRate(identity.agentId, mode);
       effectiveRateLimit = transactionRate;
 
@@ -192,25 +198,28 @@ export class GuardEngine {
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
   }): GuardEvaluationResult {
-    const spendSnapshot = input.decision.status === 'PASSED'
-      ? this.recordSpend(input.identity.agentId, input.decision.spendAmount, input.mode)
-      : null;
-    const preview = input.mode === 'simulate'
-      ? createSimulationPreview({
-        decision: input.decision,
-        identity: input.identity,
-        rateLimit: input.rateLimit,
-        spendSnapshot,
-      })
-      : null;
-    const receipt = input.mode === 'enforce'
-      ? this.receiptStore.insert({
-        decision: input.decision,
-        identity: input.identity,
-        params: input.params,
-        policyRef: this.policyRef,
-      })
-      : null;
+    const spendSnapshot =
+      input.decision.status === 'PASSED'
+        ? this.recordSpend(input.identity.agentId, input.decision.spendAmount, input.mode)
+        : null;
+    const preview =
+      input.mode === 'simulate'
+        ? createSimulationPreview({
+            decision: input.decision,
+            identity: input.identity,
+            rateLimit: input.rateLimit,
+            spendSnapshot,
+          })
+        : null;
+    const receipt =
+      input.mode === 'enforce'
+        ? this.receiptStore.insert({
+            decision: input.decision,
+            identity: input.identity,
+            params: input.params,
+            policyRef: this.policyRef,
+          })
+        : null;
 
     this.reporter.report({
       decision: input.decision,
@@ -219,16 +228,17 @@ export class GuardEngine {
     });
     this.notifyDecision(input.decision);
 
-    const error = input.decision.status === 'BLOCKED'
-      ? createErrorBody({
-        code: input.errorCode,
-        message: input.decision.reason ?? 'Action blocked by AgentGuard',
-        action: input.decision.action,
-        toolName: input.decision.toolName,
-        policyRef: this.policyRef,
-        receiptId: receipt?.receipt_id ?? null,
-      })
-      : null;
+    const error =
+      input.decision.status === 'BLOCKED'
+        ? createErrorBody({
+            code: input.errorCode,
+            message: input.decision.reason ?? 'Action blocked by AgentGuard',
+            action: input.decision.action,
+            toolName: input.decision.toolName,
+            policyRef: this.policyRef,
+            receiptId: receipt?.receipt_id ?? null,
+          })
+        : null;
 
     return Object.freeze({
       allowed: input.decision.status === 'PASSED',
@@ -297,19 +307,22 @@ export class GuardEngine {
     amount: number | null,
     mode: GuardMode,
   ): SpendSnapshot | null {
-    const result = mode === 'simulate'
-      ? this.spendTracker.previewRecord(agentId, amount)
-      : this.spendTracker.record(agentId, amount);
+    const result =
+      mode === 'simulate'
+        ? this.spendTracker.previewRecord(agentId, amount)
+        : this.spendTracker.record(agentId, amount);
     return result.recorded ? result.snapshot : null;
   }
 
-  private isTransaction(
-    toolName: string,
-    params: unknown,
-    decision: EvaluationDecision,
-  ): boolean {
+  private isTransaction(toolName: string, params: unknown, decision: EvaluationDecision): boolean {
     if (this.options.transactionResolver) {
-      return this.options.transactionResolver(toolName, params, decision);
+      try {
+        return this.options.transactionResolver(toolName, params, decision);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[agentguard] transactionResolver failed closed: ${message}`);
+        return true;
+      }
     }
 
     return decision.spendAmount !== null || decision.requiresHumanApproval;

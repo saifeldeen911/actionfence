@@ -3,7 +3,11 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
-import { guard, type GuardHttpRequest, type GuardHttpResponse } from '../../src/middleware/express.js';
+import {
+  guard,
+  type GuardHttpRequest,
+  type GuardHttpResponse,
+} from '../../src/middleware/express.js';
 import type { GuardPolicy } from '../../src/types/policy.js';
 
 const FIXED_SECRET = Buffer.alloc(32, 8).toString('base64url');
@@ -40,6 +44,34 @@ class FakeResponse implements GuardHttpResponse {
 
   setHeader(field: string, value: string): void {
     this.headers[field] = value;
+  }
+
+  getHeader(field: string): string | undefined {
+    return this.headers[field];
+  }
+}
+
+class SendOnlyResponse implements GuardHttpResponse {
+  statusCode = 200;
+  body: unknown;
+  headers: Record<string, string> = {};
+
+  status(code: number): GuardHttpResponse {
+    this.statusCode = code;
+    return this;
+  }
+
+  send(body: unknown): unknown {
+    this.body = body;
+    return body;
+  }
+
+  setHeader(field: string, value: string): void {
+    this.headers[field] = value;
+  }
+
+  getHeader(field: string): string | undefined {
+    return this.headers[field];
   }
 }
 
@@ -171,6 +203,30 @@ describe('guard Express middleware', () => {
       receiptStored: false,
     });
     expect(store.getLastHash()).toBe('');
+
+    store.close();
+    middleware.dispose();
+  });
+
+  it('should set JSON content type when falling back to send', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const middleware = guard({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+      actionResolver: () => 'bulk_booking',
+    });
+    const res = new SendOnlyResponse();
+    const next = vi.fn();
+
+    middleware(makeRequest(), res, next);
+    await Promise.resolve();
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toContain('AGENTGUARD_BLOCKED');
+    expect(res.headers['Content-Type']).toBe('application/json; charset=utf-8');
 
     store.close();
     middleware.dispose();

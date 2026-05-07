@@ -12,21 +12,29 @@ AgentGuard is building toward an AI action firewall for MCP (Model Context Proto
 import { withGuard } from 'agentguard';
 
 withGuard(server, { policy: './guard-policy.json' });
-server.registerTool('search_flights', { inputSchema }, async (params) => {
-  return { content: [{ type: 'text', text: 'ok' }] };
-});
+server.registerTool(
+  'search_flights',
+  {
+    /* input schema here */
+  },
+  async (params) => {
+    return { content: [{ type: 'text', text: 'ok' }] };
+  },
+);
 ```
 
 ```typescript
 import { guard } from 'agentguard';
 
-app.use(guard({
-  policy: './guard-policy.json',
-  actionResolver: (requestName) => {
-    if (requestName === 'POST /bookings') return 'book_flight';
-    return requestName;
-  },
-}));
+app.use(
+  guard({
+    policy: './guard-policy.json',
+    actionResolver: (requestName) => {
+      if (requestName === 'POST /bookings') return 'book_flight';
+      return requestName;
+    },
+  }),
+);
 ```
 
 ## Implemented Today
