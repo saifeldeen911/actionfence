@@ -10,7 +10,9 @@ One line of code. Signed receipts. Simulation mode.
 
 ## Why ActionFence?
 
-ActionFence sits in front of your MCP tools or HTTP routes and decides whether an incoming agent action is allowed before your real handler runs.
+AI agents can now book flights, send emails, and delete records in your system — often without you knowing until the invoice arrives. ActionFence lets you define exactly what they're allowed to do, and proves every decision with a signed receipt.
+
+It sits in front of your MCP tools or HTTP routes and decides whether an incoming agent action is allowed before your real handler runs.
 
 It gives you:
 
@@ -151,7 +153,7 @@ npx actionfence simulate guard-policy.json --action book_flight --identity verif
 | `identity` | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier |
 | `max_spend` | `number` | - | Per-invocation cap in major units |
 | `currency` | `string` | - | ISO 4217 currency code |
-| `requires_human_approval` | `boolean` | `false` | Informational in `0.1.0` |
+| `requires_human_approval` | `boolean` | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
 
 ### Identity Tiers
 
@@ -231,6 +233,8 @@ Receipts are:
 - Append-only
 - Verifiable with `ReceiptStore.verifyChain()`
 
+> **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`). This works perfectly for single-instance deployments. If you run multiple server instances, each will maintain its own receipt chain. PostgreSQL backend for multi-instance deployments is planned for v0.2.
+
 Signing key resolution order:
 
 1. `options.secret`
@@ -301,7 +305,8 @@ const middleware = guard({
 - Capability checks are exact string matches only
 - No APoP / LAS-WG adapters yet
 - No wildcard scope patterns or path-policy DSL
-- `requires_human_approval` is reported only; no approval workflow is implemented
+- `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval workflow yet (use the callback to build your own)
+- SQLite receipt store is single-instance only — PostgreSQL backend coming in v0.2
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 
 ## CLI Reference
