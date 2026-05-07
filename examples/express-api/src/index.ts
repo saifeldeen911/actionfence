@@ -62,7 +62,7 @@ const actionfence = guard({
   policy: './guard-policy.json',
   // Configure JWKS verification to allow actions that require `identity: "verified"`.
   // identityReaderOptions: {
-  //   jwksUri: process.env.ACTIONFENCE_JWKS_URI!,
+  //   jwksUri: process.env.ACTIONFENCE_JWKS_URI ?? 'https://example.com/.well-known/jwks.json',
   //   issuer: 'https://issuer.example',
   //   audience: 'bookflight-api',
   // },

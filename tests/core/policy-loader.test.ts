@@ -134,6 +134,7 @@ describe('loadPolicy', () => {
           },
           spend_limits: {
             session_max: -1,
+            currency: 'USD',
           },
         } as never),
       ).toThrow(PolicyValidationError);

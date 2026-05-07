@@ -38,7 +38,8 @@ describe('ConsoleReporter', () => {
     expect(message).toContain('ALLOW');
     expect(message).toContain('search_flights');
     expect(message).toContain('receipt=receipt-1');
-    expect(message).toContain('session=10.00');
+    expect(message).toContain('session=10.00 units');
+    expect(message).toContain('daily=10.00 units');
     expect(writer).toHaveBeenCalledWith(message);
   });
 

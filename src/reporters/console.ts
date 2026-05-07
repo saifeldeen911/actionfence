@@ -63,8 +63,8 @@ export class ConsoleReporter {
 
     if (input.spendSnapshot) {
       baseParts.push(
-        `session=${input.spendSnapshot.sessionTotal.toFixed(2)}`,
-        `daily=${input.spendSnapshot.dailyTotal.toFixed(2)}`,
+        `session=${input.spendSnapshot.sessionTotal.toFixed(2)} units`,
+        `daily=${input.spendSnapshot.dailyTotal.toFixed(2)} units`,
       );
     }
 

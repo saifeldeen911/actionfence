@@ -141,7 +141,7 @@ npx actionfence simulate guard-policy.json --action book_flight --identity verif
 | `actions` | `object` | Yes | Action rules keyed by action name |
 | `rate_limits` | `object` | No | Request and transaction limits |
 | `spend_limits` | `object` | No | Global session/day spend limits in major units |
-| `regulations` | `string[]` | No | Stored only in `0.1.0` |
+| `regulations` | `string[]` | No | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields
 
@@ -161,7 +161,7 @@ npx actionfence simulate guard-policy.json --action book_flight --identity verif
 | `token` | Bearer token present but not signature-verified |
 | `verified` | JWT passed JWKS verification |
 
-Verified identity is built in when you configure `identityReaderOptions.jwksUri`. If JWKS verification fails, ActionFence falls back to `token` instead of treating the request as anonymous.
+Verified identity is built in when you configure `identityReaderOptions.jwksUri` and JWKS lookup succeeds from cache or the remote endpoint. If JWKS retrieval or network access fails, ActionFence may fall back to `token` identity; invalid signatures, wrong issuers or audiences, unknown kids, and other cryptographic verification failures stay anonymous or rejected.
 
 ### Scope Enforcement
 

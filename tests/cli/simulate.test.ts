@@ -74,6 +74,18 @@ describe('cli/simulate', () => {
     expect(output).toContain('PASS');
   });
 
+  it('accepts uppercase identity tiers', async () => {
+    const ctx = createTestContext();
+    const exitCode = await runSimulate(
+      makeArgs([POLICY], { action: 'book_flight', identity: 'VERIFIED', spend: '100' }),
+      ctx,
+    );
+
+    expect(exitCode).toBe(0);
+    const output = ctx.stdoutLines.join('');
+    expect(output).toContain('PASS');
+  });
+
   it('respects --spend flag (blocks when over max_spend)', async () => {
     const ctx = createTestContext();
     const exitCode = await runSimulate(
@@ -133,7 +145,6 @@ describe('cli/simulate', () => {
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
-    expect(output).toContain('250.00');
-    expect(output).toContain('Session total:   250.00');
+    expect(output).toMatch(/Session total:\s+250\.00\s+USD/);
   });
 });

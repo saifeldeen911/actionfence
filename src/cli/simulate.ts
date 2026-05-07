@@ -47,15 +47,19 @@ export async function runSimulate(args: ParsedArgs, ctx: CliContext): Promise<nu
     return 1;
   }
 
-  if (identityFlag && !VALID_IDENTITY_TIERS.includes(identityFlag as IdentityClassification)) {
+  const normalizedIdentityFlag = identityFlag?.toLowerCase().trim();
+  if (
+    identityFlag &&
+    !VALID_IDENTITY_TIERS.includes(normalizedIdentityFlag as IdentityClassification)
+  ) {
     ctx.stderr(
-      `${chalk.red('x')} Invalid identity tier: "${identityFlag}"\n` +
+      `${chalk.red('x')} Invalid identity tier: "${normalizedIdentityFlag}"\n` +
         `  Valid values: ${VALID_IDENTITY_TIERS.join(', ')}\n`,
     );
     return 1;
   }
 
-  const identityTier = parseIdentityTier(identityFlag);
+  const identityTier = parseIdentityTier(normalizedIdentityFlag);
   const spendAmount = parseSpendAmount(spendFlag, ctx);
   if (spendAmount === undefined) {
     return 1;

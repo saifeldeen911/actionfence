@@ -241,7 +241,8 @@ describe('IdentityReader with JWKS', () => {
     expect(identity.capabilities).toEqual(['book_flight']);
   });
 
-  it('should fall back to token when the signature is invalid', async () => {
+  it('should return anonymous when the signature is invalid', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const token = await signJwt(secondaryKeys.privateKey, {
       sub: 'fallback-agent',
       azp: 'owner-2',
@@ -257,11 +258,15 @@ describe('IdentityReader with JWKS', () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    expect(identity.classification).toBe('token');
-    expect(identity.agentId).toBe('fallback-agent');
+    expect(identity.classification).toBe('anonymous');
+    expect(identity.agentId).toBe('anonymous');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('JWT verification failed'),
+      expect.anything(),
+    );
   });
 
-  it('should fall back to token when issuer validation fails', async () => {
+  it('should return anonymous when issuer validation fails', async () => {
     const token = await signJwt(primaryKeys.privateKey, { sub: 'issuer-agent' }, {
       issuer: 'https://wrong-issuer.example',
     });
@@ -275,11 +280,11 @@ describe('IdentityReader with JWKS', () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    expect(identity.classification).toBe('token');
-    expect(identity.agentId).toBe('issuer-agent');
+    expect(identity.classification).toBe('anonymous');
+    expect(identity.agentId).toBe('anonymous');
   });
 
-  it('should fall back to token when audience validation fails', async () => {
+  it('should return anonymous when audience validation fails', async () => {
     const token = await signJwt(primaryKeys.privateKey, { sub: 'audience-agent' }, {
       audience: 'wrong-audience',
     });
@@ -293,8 +298,47 @@ describe('IdentityReader with JWKS', () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
+    expect(identity.classification).toBe('anonymous');
+    expect(identity.agentId).toBe('anonymous');
+  });
+
+  it('should fall back to token when the JWKS endpoint cannot be reached', async () => {
+    const token = await signJwt(primaryKeys.privateKey, {
+      sub: 'network-agent',
+    });
+
+    const unreachableServer = createServer((_req, res) => {
+      res.statusCode = 204;
+      res.end();
+    });
+
+    await new Promise<void>((resolve) => {
+      unreachableServer.listen(0, '127.0.0.1', () => resolve());
+    });
+
+    const address = unreachableServer.address();
+    if (!address || typeof address === 'string') {
+      throw new Error('Failed to resolve temporary JWKS server address');
+    }
+
+    const jwksUri = `http://127.0.0.1:${address.port}/.well-known/jwks.json`;
+
+    await new Promise<void>((resolve, reject) => {
+      unreachableServer.close((error) => (error ? reject(error) : resolve()));
+    });
+
+    const reader = new IdentityReader({
+      jwksUri,
+      issuer,
+      audience,
+    });
+
+    const identity = await reader.readIdentity({
+      headers: { authorization: `Bearer ${token}` },
+    });
+
     expect(identity.classification).toBe('token');
-    expect(identity.agentId).toBe('audience-agent');
+    expect(identity.agentId).toBe('network-agent');
   });
 });
 

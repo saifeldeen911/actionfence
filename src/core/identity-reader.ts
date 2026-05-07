@@ -112,10 +112,7 @@ export class IdentityReader {
     }
   }
 
-  private async verifyToken(
-    token: string,
-    decodedIdentity: AgentIdentity,
-  ): Promise<AgentIdentity> {
+  private async verifyToken(token: string, decodedIdentity: AgentIdentity): Promise<AgentIdentity> {
     if (!this.jwks) {
       return decodedIdentity;
     }
@@ -123,10 +120,28 @@ export class IdentityReader {
     try {
       const { payload } = await jwtVerify(token, this.jwks, this.verifyOptions);
       return createIdentityFromPayload(payload, token, 'verified');
-    } catch {
-      return decodedIdentity;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const shouldFallbackToToken = !isJoseVerificationError(error);
+
+      console.warn(
+        `[actionfence] JWT verification failed for agent=${decodedIdentity.agentId}; ` +
+          `returning ${shouldFallbackToToken ? 'token' : 'anonymous'} identity: ${message}`,
+        error,
+      );
+
+      return shouldFallbackToToken ? decodedIdentity : ANONYMOUS_IDENTITY;
     }
   }
+}
+
+function isJoseVerificationError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' && code.startsWith('ERR_J');
 }
 
 function normalizeVerifyOption(

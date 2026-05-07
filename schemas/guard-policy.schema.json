@@ -110,6 +110,10 @@
           "pattern": "^[A-Z]{3}$",
           "description": "ISO 4217 currency code for spend reporting."
         }
+      },
+      "dependencies": {
+        "session_max": ["currency"],
+        "daily_max": ["currency"]
       }
     },
     "regulations": {
