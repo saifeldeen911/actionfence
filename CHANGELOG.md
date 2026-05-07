@@ -61,3 +61,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ESM + CJS dual-format output via tsup
   - Full TypeScript declarations
   - Node.js 20+ target
+
+[0.1.0]: https://github.com/saifeldeen911/agentguard/releases/tag/v0.1.0

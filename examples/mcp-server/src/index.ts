@@ -3,7 +3,7 @@
  *
  * Demonstrates how to protect an MCP server with AgentGuard's policy engine.
  * This example creates a flight booking MCP server with four tools:
- *   - search_flights: public, any identity
+ *   - search_flights: token identity
  *   - book_flight:    requires verified identity + spend cap
  *   - check_status:   requires token identity
  *   - bulk_booking:   explicitly blocked by policy
@@ -57,16 +57,28 @@ server.registerTool(
   async (params: { origin: string; destination: string; date: string }) => {
     // Mock flight search results
     return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({
-          flights: [
-            { id: 'FL-101', route: `${params.origin}→${params.destination}`, price: 299, time: '08:00' },
-            { id: 'FL-202', route: `${params.origin}→${params.destination}`, price: 449, time: '14:30' },
-          ],
-          date: params.date,
-        }),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({
+            flights: [
+              {
+                id: 'FL-101',
+                route: `${params.origin}→${params.destination}`,
+                price: 299,
+                time: '08:00',
+              },
+              {
+                id: 'FL-202',
+                route: `${params.origin}→${params.destination}`,
+                price: 449,
+                time: '14:30',
+              },
+            ],
+            date: params.date,
+          }),
+        },
+      ],
     };
   },
 );
@@ -88,16 +100,18 @@ server.registerTool(
   async (params: { flight_id: string; passengers: number; amount: number }) => {
     // Mock booking confirmation
     return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({
-          confirmation: `BK-${Date.now()}`,
-          flight: params.flight_id,
-          passengers: params.passengers,
-          total: `$${params.amount}`,
-          status: 'confirmed',
-        }),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({
+            confirmation: `BK-${Date.now()}`,
+            flight: params.flight_id,
+            passengers: params.passengers,
+            total: `$${params.amount}`,
+            status: 'confirmed',
+          }),
+        },
+      ],
     };
   },
 );
@@ -116,14 +130,16 @@ server.registerTool(
   },
   async (params: { booking_id: string }) => {
     return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({
-          booking: params.booking_id,
-          status: 'confirmed',
-          departure: '2026-06-15T08:00:00Z',
-        }),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({
+            booking: params.booking_id,
+            status: 'confirmed',
+            departure: '2026-06-15T08:00:00Z',
+          }),
+        },
+      ],
     };
   },
 );
@@ -146,10 +162,12 @@ server.registerTool(
   },
   async (_params: { flights: string[] }) => {
     return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({ message: 'Bulk booking completed' }),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({ message: 'Bulk booking completed' }),
+        },
+      ],
     };
   },
 );

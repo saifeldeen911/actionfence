@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import { loadPolicy } from '../core/policy-loader.js';
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
 import { RateLimiter } from '../core/rate-limiter.js';
+import type { RateLimitResult } from '../core/rate-limiter.js';
 import type { AgentIdentity, IdentityClassification } from '../types/identity.js';
 import type { EvaluationDecision } from '../types/decision.js';
 import type { ParsedArgs, CliContext } from './runner.js';
@@ -16,11 +17,7 @@ import type { ParsedArgs, CliContext } from './runner.js';
 // Constants
 // ---------------------------------------------------------------------------
 
-const VALID_IDENTITY_TIERS: readonly IdentityClassification[] = [
-  'anonymous',
-  'token',
-  'verified',
-];
+const VALID_IDENTITY_TIERS: readonly IdentityClassification[] = ['anonymous', 'token', 'verified'];
 
 // ---------------------------------------------------------------------------
 // Command handler
@@ -39,7 +36,8 @@ const VALID_IDENTITY_TIERS: readonly IdentityClassification[] = [
 export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
   const filePath = args.positionals[0];
   const actionFlag = typeof args.flags['action'] === 'string' ? args.flags['action'] : undefined;
-  const identityFlag = typeof args.flags['identity'] === 'string' ? args.flags['identity'] : undefined;
+  const identityFlag =
+    typeof args.flags['identity'] === 'string' ? args.flags['identity'] : undefined;
   const spendFlag = typeof args.flags['spend'] === 'string' ? args.flags['spend'] : undefined;
   const toolFlag = typeof args.flags['tool'] === 'string' ? args.flags['tool'] : undefined;
 
@@ -48,9 +46,9 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
   if (!filePath) {
     ctx.stderr(
       `${chalk.red('✗')} Missing policy file path\n` +
-      `\n` +
-      `${chalk.yellow('Usage:')}\n` +
-      `  agentguard simulate <path> --action <name> [--identity <tier>] [--spend <amount>]\n`,
+        `\n` +
+        `${chalk.yellow('Usage:')}\n` +
+        `  agentguard simulate <path> --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
     );
     return 1;
   }
@@ -58,23 +56,24 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
   if (!actionFlag) {
     ctx.stderr(
       `${chalk.red('✗')} Missing required flag: --action\n` +
-      `\n` +
-      `${chalk.yellow('Usage:')}\n` +
-      `  agentguard simulate ${filePath} --action <name>\n`,
+        `\n` +
+        `${chalk.yellow('Usage:')}\n` +
+        `  agentguard simulate ${filePath} --action <name> [--identity <tier>] [--spend <amount>] [--tool <name>]\n`,
     );
     return 1;
   }
 
   // --- Parse identity tier ---
 
-  const identityTier: IdentityClassification = parseIdentityTier(identityFlag);
-  if (identityFlag && !VALID_IDENTITY_TIERS.includes(identityTier)) {
+  if (identityFlag && !VALID_IDENTITY_TIERS.includes(identityFlag as IdentityClassification)) {
     ctx.stderr(
       `${chalk.red('✗')} Invalid identity tier: "${identityFlag}"\n` +
-      `  Valid values: ${VALID_IDENTITY_TIERS.join(', ')}\n`,
+        `  Valid values: ${VALID_IDENTITY_TIERS.join(', ')}\n`,
     );
     return 1;
   }
+
+  const identityTier: IdentityClassification = parseIdentityTier(identityFlag);
 
   // --- Parse spend amount ---
 
@@ -82,7 +81,9 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
   if (spendFlag !== undefined) {
     spendAmount = Number(spendFlag);
     if (!Number.isFinite(spendAmount) || spendAmount < 0) {
-      ctx.stderr(`${chalk.red('✗')} Invalid spend amount: "${spendFlag}" — must be a non-negative number\n`);
+      ctx.stderr(
+        `${chalk.red('✗')} Invalid spend amount: "${spendFlag}" — must be a non-negative number\n`,
+      );
       return 1;
     }
   }
@@ -90,19 +91,28 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
   // --- Load policy and evaluate ---
 
   let decision: EvaluationDecision;
+  let rateLimiter: RateLimiter | null = null;
   try {
     const policy = loadPolicy(resolve(ctx.cwd, filePath));
     const evaluator = new PolicyEvaluator(policy);
-    const rateLimiter = new RateLimiter(policy.rate_limits ?? {});
+    rateLimiter = new RateLimiter(policy.rate_limits ?? {});
 
     const toolName = toolFlag ?? actionFlag;
     const identity = createMockIdentity(identityTier);
 
     decision = evaluator.evaluate(actionFlag, toolName, identity, spendAmount);
 
-    // Also check rate limits for informational display
+    // Also check rate limits for informational display and simulate the runtime exit code.
     const rateCheck = rateLimiter.previewRequestRate(identity.agentId);
-    rateLimiter.dispose();
+    if (!rateCheck.allowed) {
+      decision = {
+        ...decision,
+        status: 'BLOCKED',
+        reason:
+          decision.reason ?? `Request rate limit would be exceeded for agent "${identity.agentId}"`,
+        requiresHumanApproval: false,
+      };
+    }
 
     printSimulationResult(ctx, {
       decision,
@@ -114,6 +124,8 @@ export function runSimulate(args: ParsedArgs, ctx: CliContext): number {
     const message = error instanceof Error ? error.message : String(error);
     ctx.stderr(`${chalk.red('✗')} Simulation failed: ${message}\n`);
     return 1;
+  } finally {
+    rateLimiter?.dispose();
   }
 
   return decision.status === 'PASSED' ? 0 : 1;
@@ -154,7 +166,7 @@ interface SimulationDisplayInput {
   readonly decision: EvaluationDecision;
   readonly identity: AgentIdentity;
   readonly toolName: string;
-  readonly rateLimit: { readonly limit: number; readonly remaining: number };
+  readonly rateLimit: RateLimitResult;
 }
 
 function printSimulationResult(ctx: CliContext, input: SimulationDisplayInput): void {
@@ -162,21 +174,20 @@ function printSimulationResult(ctx: CliContext, input: SimulationDisplayInput): 
   const passed = decision.status === 'PASSED';
 
   const header = chalk.bold.yellow('⚡ SIMULATION') + chalk.dim(' — agentguard');
-  const statusLine = passed
-    ? chalk.green('✓ WOULD PASS')
-    : chalk.red('✗ WOULD BLOCK');
+  const statusLine = passed ? chalk.green('✓ WOULD PASS') : chalk.red('✗ WOULD BLOCK');
 
-  const spendLabel = decision.spendAmount !== null
-    ? `$${decision.spendAmount.toFixed(2)}`
-    : chalk.dim('none');
+  const spendLabel =
+    decision.spendAmount !== null ? `$${decision.spendAmount.toFixed(2)}` : chalk.dim('none');
 
   const approvalLabel = decision.requiresHumanApproval
     ? chalk.yellow('required')
     : chalk.dim('not required');
 
-  const rateLimitLabel = rateLimit.limit === 0
+  const rateLimitLabel = !Number.isFinite(rateLimit.limit)
     ? chalk.dim('unlimited')
-    : `${rateLimit.remaining}/${rateLimit.limit} remaining`;
+    : rateLimit.allowed
+      ? `${rateLimit.remaining}/${rateLimit.limit} remaining`
+      : chalk.red(`blocked (${rateLimit.remaining}/${rateLimit.limit} remaining)`);
 
   const lines = [
     '',

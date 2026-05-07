@@ -6,12 +6,13 @@
   "actions": {
     "search_flights": {
       "allowed": true,
-      "identity": "any"
+      "identity": "token"
     },
     "book_flight": {
       "allowed": true,
       "identity": "verified",
       "max_spend": 500,
+      "currency": "USD",
       "requires_human_approval": true
     },
     "check_status": {
@@ -26,5 +27,7 @@
     "requests_per_minute": 30,
     "transactions_per_day": 5
   },
-  "regulations": ["EU_AI_Act_Art50"]
+  "regulations": [
+    "EU_AI_Act_Art50"
+  ]
 }

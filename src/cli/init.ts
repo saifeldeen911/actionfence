@@ -4,7 +4,7 @@
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, isAbsolute, resolve, sep } from 'node:path';
 import chalk from 'chalk';
 import type { ParsedArgs, CliContext } from './runner.js';
 
@@ -69,7 +69,7 @@ export function runInit(args: ParsedArgs, ctx: CliContext): number {
   if (existsSync(outputPath)) {
     ctx.stderr(
       `${chalk.red('✗')} File already exists: ${outputPath}\n` +
-      `  Remove it first or specify a different path with --output\n`,
+        `  Remove it first or specify a different path with --output\n`,
     );
     return 1;
   }
@@ -85,16 +85,24 @@ export function runInit(args: ParsedArgs, ctx: CliContext): number {
   }
 
   const filename = outputFlag ?? DEFAULT_FILENAME;
+  const displayName = basename(filename);
+  const examplePath =
+    isAbsolute(filename) ||
+    filename.includes(sep) ||
+    filename.startsWith('./') ||
+    filename.startsWith('../')
+      ? filename
+      : `./${filename}`;
 
   ctx.stdout(
-    `${chalk.green('✓')} Created ${chalk.bold(filename)}\n` +
-    `\n` +
-    `${chalk.yellow('Next steps:')}\n` +
-    `  1. Edit the policy to match your tool names\n` +
-    `  2. Add to your MCP server:\n` +
-    `     ${chalk.cyan("import { withGuard } from 'agentguard';")}\n` +
-    `     ${chalk.cyan(`withGuard(server, { policy: './${filename}' });`)}\n` +
-    `  3. Validate: ${chalk.cyan(`npx agentguard validate ${filename}`)}\n`,
+    `${chalk.green('✓')} Created ${chalk.bold(displayName)}\n` +
+      `\n` +
+      `${chalk.yellow('Next steps:')}\n` +
+      `  1. Edit the policy to match your tool names\n` +
+      `  2. Add to your MCP server:\n` +
+      `     ${chalk.cyan("import { withGuard } from 'agentguard';")}\n` +
+      `     ${chalk.cyan(`withGuard(server, { policy: '${examplePath}' });`)}\n` +
+      `  3. Validate: ${chalk.cyan(`npx agentguard validate ${examplePath}`)}\n`,
   );
 
   return 0;

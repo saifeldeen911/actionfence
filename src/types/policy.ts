@@ -20,6 +20,8 @@ export interface ActionRule {
   readonly identity?: IdentityTier;
   /** Maximum spend amount allowed for this action (smallest currency unit, e.g. cents). */
   readonly max_spend?: number;
+  /** ISO 4217 currency code for max_spend, if provided. */
+  readonly currency?: string;
   /** Whether human approval is required before execution. */
   readonly requires_human_approval?: boolean;
 }

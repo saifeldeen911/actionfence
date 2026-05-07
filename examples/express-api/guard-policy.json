@@ -12,6 +12,7 @@
       "allowed": true,
       "identity": "verified",
       "max_spend": 1000,
+      "currency": "USD",
       "requires_human_approval": true
     },
     "GET /bookings/:id": {
@@ -26,5 +27,7 @@
     "requests_per_minute": 60,
     "transactions_per_day": 10
   },
-  "regulations": ["EU_AI_Act_Art50"]
+  "regulations": [
+    "EU_AI_Act_Art50"
+  ]
 }

@@ -143,10 +143,13 @@ export class PolicyEvaluator {
       }
 
       if (spendAmount > rule.max_spend) {
+        const spendLabel = formatSpendLabel(spendAmount, rule.currency);
+        const capLabel = formatSpendLabel(rule.max_spend, rule.currency);
+
         return {
           ...baseDecision,
           status: 'BLOCKED',
-          reason: `Action "${action}" spend amount $${spendAmount} exceeds cap of $${rule.max_spend}`,
+          reason: `Action "${action}" spend amount ${spendLabel} exceeds cap of ${capLabel}`,
           requiresHumanApproval: false,
           durationMs: performance.now() - startTime,
         };
@@ -164,6 +167,12 @@ export class PolicyEvaluator {
   }
 }
 
-function resolveDefaultRule(value: GuardPolicy['default_rule'] | string | undefined): IdentityTier | 'allow' | 'deny' {
+function resolveDefaultRule(
+  value: GuardPolicy['default_rule'] | string | undefined,
+): IdentityTier | 'allow' | 'deny' {
   return value === 'allow' ? 'allow' : 'deny';
+}
+
+function formatSpendLabel(amount: number, currency: string | undefined): string {
+  return currency ? `${amount} ${currency}` : `$${amount}`;
 }

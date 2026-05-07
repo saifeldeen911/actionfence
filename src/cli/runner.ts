@@ -50,10 +50,7 @@ function defaultContext(): CliContext {
  * Run the AgentGuard CLI with the given argv tokens.
  * Returns an exit code (0 = success, 1 = error).
  */
-export async function run(
-  argv: readonly string[],
-  context?: Partial<CliContext>,
-): Promise<number> {
+export async function run(argv: readonly string[], context?: Partial<CliContext>): Promise<number> {
   const ctx: CliContext = { ...defaultContext(), ...context };
   const args = parseArgs(argv);
 
@@ -120,7 +117,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
         flags[body.slice(0, eqIndex)] = body.slice(eqIndex + 1);
       } else {
         const next = argv[i + 1];
-        if (next !== undefined && !next.startsWith('-')) {
+        if (next !== undefined && !isFlagToken(next)) {
           flags[body] = next;
           i++;
         } else {
@@ -133,7 +130,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     if (arg.startsWith('-') && arg.length === 2) {
       const key = arg.slice(1);
       const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith('-')) {
+      if (next !== undefined && !isFlagToken(next)) {
         flags[key] = next;
         i++;
       } else {
@@ -149,7 +146,15 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     }
   }
 
-  return Object.freeze({ command, positionals: Object.freeze(positionals), flags: Object.freeze(flags) });
+  return Object.freeze({
+    command,
+    positionals: Object.freeze(positionals),
+    flags: Object.freeze(flags),
+  });
+}
+
+function isFlagToken(value: string): boolean {
+  return /^-{1,2}[A-Za-z]/.test(value);
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +183,7 @@ ${chalk.yellow('Options:')}
 ${chalk.yellow('Examples:')}
   agentguard init --service MyAPI
   agentguard validate guard-policy.json
-  agentguard simulate guard-policy.json --action book_flight --identity anonymous
+  agentguard simulate guard-policy.json --action book_flight --identity anonymous --tool do_search_v2
 
 ${chalk.dim('Documentation: https://github.com/saifeldeen911/agentguard')}
 `);
@@ -191,7 +196,7 @@ function printVersion(ctx: CliContext): void {
 function getVersion(): string {
   try {
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const pkgPath = resolve(__dirname, '..', 'package.json');
+    const pkgPath = resolve(__dirname, '..', '..', 'package.json');
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version?: string };
     return pkg.version ?? '0.0.0';
   } catch {

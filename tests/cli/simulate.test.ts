@@ -19,10 +19,7 @@ function createTestContext(): CliContext & { stdoutLines: string[]; stderrLines:
   };
 }
 
-function makeArgs(
-  positionals: string[],
-  flags: Record<string, string | true> = {},
-): ParsedArgs {
+function makeArgs(positionals: string[], flags: Record<string, string | true> = {}): ParsedArgs {
   return { command: 'simulate', positionals, flags };
 }
 
@@ -92,8 +89,9 @@ describe('cli/simulate', () => {
 
   it('defaults to anonymous identity when --identity is not specified', () => {
     const ctx = createTestContext();
-    runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
+    const exitCode = runSimulate(makeArgs([POLICY], { action: 'search_flights' }), ctx);
 
+    expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
     expect(output).toContain('anonymous');
   });
@@ -116,22 +114,24 @@ describe('cli/simulate', () => {
 
   it('shows the correct tool name when --tool flag is provided', () => {
     const ctx = createTestContext();
-    runSimulate(
+    const exitCode = runSimulate(
       makeArgs([POLICY], { action: 'search_flights', tool: 'do_search_v2' }),
       ctx,
     );
 
+    expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
     expect(output).toContain('do_search_v2');
   });
 
   it('shows spend amount when --spend is provided and action passes', () => {
     const ctx = createTestContext();
-    runSimulate(
+    const exitCode = runSimulate(
       makeArgs([POLICY], { action: 'book_flight', identity: 'verified', spend: '250' }),
       ctx,
     );
 
+    expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
     expect(output).toContain('$250.00');
   });
