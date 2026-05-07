@@ -183,11 +183,7 @@ function printSimulationResult(ctx: CliContext, input: SimulationDisplayInput): 
     ? chalk.yellow('required')
     : chalk.dim('not required');
 
-  const rateLimitLabel = !Number.isFinite(rateLimit.limit)
-    ? chalk.dim('unlimited')
-    : rateLimit.allowed
-      ? `${rateLimit.remaining}/${rateLimit.limit} remaining`
-      : chalk.red(`blocked (${rateLimit.remaining}/${rateLimit.limit} remaining)`);
+  const rateLimitLabel = formatRateLimitLabel(rateLimit);
 
   const lines = [
     '',
@@ -211,4 +207,16 @@ function printSimulationResult(ctx: CliContext, input: SimulationDisplayInput): 
   );
 
   ctx.stdout(lines.join('\n'));
+}
+
+function formatRateLimitLabel(rateLimit: RateLimitResult): string {
+  if (!Number.isFinite(rateLimit.limit)) {
+    return chalk.dim('unlimited');
+  }
+
+  if (!rateLimit.allowed) {
+    return chalk.red(`blocked (${rateLimit.remaining}/${rateLimit.limit} remaining)`);
+  }
+
+  return `${rateLimit.remaining}/${rateLimit.limit} remaining`;
 }
