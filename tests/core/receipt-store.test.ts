@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -160,6 +160,36 @@ describe('ReceiptStore', () => {
     expect(reopenedStore.getById(receipt.receipt_id)?.receipt_hash).toBe(receipt.receipt_hash);
 
     reopenedStore.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should fall back to the legacy database path when the default is missing', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-store-'));
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    const legacyDatabasePath = join(tempDir, '.agentguard', 'receipts.db');
+    const legacyStore = new ReceiptStore({
+      databasePath: legacyDatabasePath,
+      signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key-legacy') },
+    });
+
+    const receipt = legacyStore.insert({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { itinerary: 'CAI-LHR' },
+      policyRef: 'policy',
+      receiptId: 'receipt-legacy-db',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+    legacyStore.close();
+
+    const reopenedStore = new ReceiptStore({
+      signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key-default') },
+    });
+
+    expect(reopenedStore.getById(receipt.receipt_id)?.receipt_hash).toBe(receipt.receipt_hash);
+
+    reopenedStore.close();
+    cwdSpy.mockRestore();
     rmSync(tempDir, { recursive: true, force: true });
   });
 

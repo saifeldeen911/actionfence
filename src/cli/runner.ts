@@ -185,7 +185,7 @@ ${chalk.yellow('Examples:')}
   actionfence validate guard-policy.json
   actionfence simulate guard-policy.json --action book_flight --identity anonymous --tool do_search_v2
 
-${chalk.dim('Documentation: https://github.com/saifeldeen911/actionfence')}
+${chalk.dim('Documentation: README.md')}
 `);
 }
 

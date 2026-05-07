@@ -2,11 +2,13 @@
 
 A working MCP server protected by ActionFence. Demonstrates policy enforcement, identity tier checks, spend caps, and rate limiting on a flight booking API.
 
+ActionFence is the product name; the example code and filenames still use guard identifiers such as `guard-policy.json` and `withGuard`.
+
 ## Tools
 
 | Tool | Policy | Identity | Spend Cap |
 |------|--------|----------|-----------|
-| `search_flights` | ✅ Allowed | `any` | — |
+| `search_flights` | ✅ Allowed | `token` | — |
 | `book_flight` | ✅ Allowed | `verified` | $500 |
 | `check_status` | ✅ Allowed | `token` | — |
 | `bulk_booking` | ❌ Blocked | — | — |

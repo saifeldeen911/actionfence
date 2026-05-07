@@ -12,8 +12,13 @@ import {
 } from 'node:crypto';
 import {
   existsSync,
+  chmodSync,
+  copyFileSync,
   mkdirSync,
   readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -38,7 +43,8 @@ interface CanonicalJsonObject {
   readonly [key: string]: CanonicalJsonValue;
 }
 
-const DEFAULT_KEY_PATH = resolve('.actionfence/key');
+const DEFAULT_KEY_PATH = '.actionfence/key';
+const LEGACY_KEY_PATH = '.agentguard/key';
 
 /**
  * ReceiptSigner signs and verifies immutable action receipts.
@@ -143,12 +149,24 @@ export class ReceiptSigner {
   }
 
   private resolveSigningKey(explicitSecret?: string): Uint8Array {
+    const defaultKeyPath = resolve(DEFAULT_KEY_PATH);
+    const legacyKeyPath = resolve(LEGACY_KEY_PATH);
+
     if (explicitSecret !== undefined) {
       return parseSecretMaterial(explicitSecret, 'options.secret');
     }
 
-    if (process.env.ACTIONFENCE_SECRET) {
-      return parseSecretMaterial(process.env.ACTIONFENCE_SECRET, 'ACTIONFENCE_SECRET');
+    const actionFenceSecret = process.env.ACTIONFENCE_SECRET;
+    if (actionFenceSecret) {
+      return parseSecretMaterial(actionFenceSecret, 'ACTIONFENCE_SECRET');
+    }
+
+    const legacySecret = process.env.AGENTGUARD_SECRET;
+    if (legacySecret) {
+      console.warn(
+        '[actionfence] AGENTGUARD_SECRET is deprecated; set ACTIONFENCE_SECRET instead.',
+      );
+      return parseSecretMaterial(legacySecret, 'AGENTGUARD_SECRET');
     }
 
     if (existsSync(this.keyFilePath)) {
@@ -156,9 +174,48 @@ export class ReceiptSigner {
       return parseSecretMaterial(storedSecret, this.keyFilePath);
     }
 
+    if (this.keyFilePath === defaultKeyPath && existsSync(legacyKeyPath)) {
+      this.migrateLegacySigningKey(defaultKeyPath, legacyKeyPath);
+
+      const storedSecret = readFileSync(this.keyFilePath, 'utf8').trim();
+      return parseSecretMaterial(storedSecret, this.keyFilePath);
+    }
+
     const generatedSecret = randomBytes(32);
     persistGeneratedSecret(this.keyFilePath, generatedSecret);
     return generatedSecret;
+  }
+
+  private migrateLegacySigningKey(defaultKeyPath: string, legacyKeyPath: string): void {
+    try {
+      mkdirSync(dirname(this.keyFilePath), { recursive: true, mode: 0o700 });
+
+      const legacyMode = statSync(legacyKeyPath).mode & 0o777;
+
+      try {
+        renameSync(legacyKeyPath, defaultKeyPath);
+      } catch (renameError: unknown) {
+        copyFileSync(legacyKeyPath, defaultKeyPath);
+        chmodSync(defaultKeyPath, legacyMode);
+        unlinkSync(legacyKeyPath);
+
+        if (renameError instanceof Error) {
+          console.warn(
+            `[actionfence] Migrated legacy signing key via copy because rename failed: ${renameError.message}`,
+          );
+        }
+      }
+
+      console.warn(
+        `[actionfence] Migrated legacy signing key from ${legacyKeyPath} to ${defaultKeyPath}`,
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[actionfence] resolveSigningKey failed to migrate ${legacyKeyPath} to ${defaultKeyPath}: ${message}`,
+      );
+      throw error;
+    }
   }
 
   private signHash(receiptHash: string): string {

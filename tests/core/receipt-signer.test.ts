@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ReceiptSigner } from '../../src/core/receipt-signer.js';
@@ -166,6 +173,69 @@ describe('ReceiptSigner', () => {
 
     expect(verifier.verifySignature(receipt)).toBe(true);
 
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should fall back to AGENTGUARD_SECRET when ACTIONFENCE_SECRET is missing', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
+    const keyFilePath = join(tempDir, 'key');
+    vi.stubEnv('ACTIONFENCE_SECRET', '');
+    vi.stubEnv('AGENTGUARD_SECRET', ENV_SECRET);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const signer = new ReceiptSigner({ keyFilePath });
+    const receipt = signer.createReceipt({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { value: 1 },
+      policyRef: 'policy v1',
+      receiptId: 'receipt-legacy-env',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    const verifier = new ReceiptSigner({ secret: ENV_SECRET });
+
+    expect(verifier.verifySignature(receipt)).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[actionfence] AGENTGUARD_SECRET is deprecated; set ACTIONFENCE_SECRET instead.',
+    );
+
+    warnSpy.mockRestore();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should migrate a legacy key file to the default location', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const legacyKeyPath = join(tempDir, '.agentguard', 'key');
+    const migratedKeyPath = join(tempDir, '.actionfence', 'key');
+
+    mkdirSync(join(tempDir, '.agentguard'), { recursive: true });
+    writeFileSync(legacyKeyPath, FILE_SECRET, 'utf8');
+
+    const signer = new ReceiptSigner();
+    const receipt = signer.createReceipt({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { value: 1 },
+      policyRef: 'policy v1',
+      receiptId: 'receipt-legacy-file',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    const verifier = new ReceiptSigner({ secret: FILE_SECRET });
+
+    expect(existsSync(migratedKeyPath)).toBe(true);
+    expect(existsSync(legacyKeyPath)).toBe(false);
+    expect(readFileSync(migratedKeyPath, 'utf8').trim()).toBe(FILE_SECRET);
+    expect(verifier.verifySignature(receipt)).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      `[actionfence] Migrated legacy signing key from ${legacyKeyPath} to ${migratedKeyPath}`,
+    );
+
+    warnSpy.mockRestore();
+    cwdSpy.mockRestore();
     rmSync(tempDir, { recursive: true, force: true });
   });
 

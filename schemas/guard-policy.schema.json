@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://actionfence.dev/schema/v1/guard-policy.schema.json",
+  "$id": "https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json",
   "title": "Guard Policy",
   "description": "Policy file for ActionFence — defines what AI agents are allowed to do.",
   "type": "object",

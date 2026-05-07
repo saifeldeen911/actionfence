@@ -3,7 +3,7 @@
  * Persistent append-only receipt storage backed by SQLite.
  */
 
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { ReceiptSigner, type ReceiptSignerOptions } from './receipt-signer.js';
@@ -39,7 +39,35 @@ interface ReceiptRow {
   readonly receipt_sig: string;
 }
 
-const DEFAULT_DATABASE_PATH = resolve('.actionfence/receipts.db');
+const DEFAULT_DATABASE_PATH = '.actionfence/receipts.db';
+const LEGACY_DATABASE_PATH = '.agentguard/receipts.db';
+
+function resolveDatabasePath(databasePath?: string): string {
+  if (databasePath !== undefined) {
+    return resolve(databasePath);
+  }
+
+  const resolvedDefaultPath = resolve(DEFAULT_DATABASE_PATH);
+  const resolvedLegacyPath = resolve(LEGACY_DATABASE_PATH);
+  const defaultExists = existsSync(resolvedDefaultPath);
+  const legacyExists = existsSync(resolvedLegacyPath);
+
+  if (defaultExists && legacyExists) {
+    console.warn(
+      `[actionfence] Found both ${resolvedDefaultPath} and legacy ${resolvedLegacyPath}; using ${resolvedDefaultPath}.`,
+    );
+    return resolvedDefaultPath;
+  }
+
+  if (!defaultExists && legacyExists) {
+    console.warn(
+      `[actionfence] Using legacy receipt database ${resolvedLegacyPath}; migrate to ${resolvedDefaultPath}.`,
+    );
+    return resolvedLegacyPath;
+  }
+
+  return resolvedDefaultPath;
+}
 
 /**
  * ReceiptStore provides append-only persistence and chain verification.
@@ -55,7 +83,7 @@ export class ReceiptStore {
   private readonly insertTransaction: (input: CreateReceiptInput) => ActionReceipt;
 
   constructor(options: ReceiptStoreOptions = {}) {
-    const databasePath = resolve(options.databasePath ?? DEFAULT_DATABASE_PATH);
+    const databasePath = resolveDatabasePath(options.databasePath);
     mkdirSync(dirname(databasePath), { recursive: true });
 
     this.signer = options.signer ?? new ReceiptSigner(options.signerOptions);

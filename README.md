@@ -94,7 +94,7 @@ ActionFence uses a `guard-policy.json` file to define what agents can do. Think 
 
 ```json
 {
-  "$schema": "https://actionfence.dev/schema/v1/guard-policy.schema.json",
+  "$schema": "https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json",
   "service": "BookFlight.com",
   "version": "1.0",
   "default_rule": "deny",
