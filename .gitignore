@@ -35,3 +35,6 @@ npm-debug.log*
 
 # Package tarballs
 *.tgz
+
+.agents/
+skills-lock.json
