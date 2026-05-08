@@ -1,0 +1,292 @@
+# ActionFence — Complete Integration Reference
+
+> ActionFence is an npm package (v0.1.2) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps, rate limiting, HMAC-signed receipts, and simulation mode. Node.js >= 20 required.
+
+## Install
+
+```bash
+npm install actionfence
+```
+
+For MCP server usage, also install the MCP SDK (optional peer dependency):
+
+```bash
+npm install actionfence @modelcontextprotocol/sdk
+```
+
+## Core Concepts
+
+ActionFence has two main entry points:
+- `withGuard(server, options)` — for MCP servers. Monkey-patches `server.registerTool()` to intercept all tool calls.
+- `guard(options)` — for Express/Fastify. Returns standard HTTP middleware.
+
+Both read a `guard-policy.json` file that defines what actions are allowed, identity requirements, spend caps, and rate limits. Every decision (allow or block) is logged as a signed receipt in SQLite.
+
+## MCP Server Integration
+
+```typescript
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { withGuard } from 'actionfence';
+
+const server = new McpServer({ name: 'my-server', version: '1.0.0' });
+
+// Install ActionFence — one line. Must be called BEFORE registerTool().
+const guard = withGuard(server, {
+  policy: './guard-policy.json',
+  // Optional: enable JWKS verification for verified identity tier
+  // identityReaderOptions: {
+  //   jwksUri: 'https://issuer.example/.well-known/jwks.json',
+  //   issuer: 'https://issuer.example',
+  //   audience: 'my-server',
+  // },
+});
+
+// Register tools normally — ActionFence intercepts automatically
+server.registerTool('search', {
+  description: 'Search items',
+  inputSchema: {
+    type: 'object' as const,
+    properties: { query: { type: 'string' } },
+    required: ['query'],
+  },
+}, async (params: { query: string }) => {
+  return { content: [{ type: 'text' as const, text: `Results for ${params.query}` }] };
+});
+
+// Connect transport
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+## Express/Fastify Integration
+
+```typescript
+import express from 'express';
+import { guard } from 'actionfence';
+
+const app = express();
+app.use(express.json());
+
+// Install ActionFence middleware
+const actionfence = guard({
+  policy: './guard-policy.json',
+  // Map Express routes to policy action names
+  actionResolver: (toolName: string) => {
+    // toolName is "METHOD /path" e.g. "GET /users" or "POST /orders"
+    // Use regex to normalize dynamic segments:
+    if (/^GET \/orders\/[^/]+$/.test(toolName)) return 'GET /orders/:id';
+    return toolName;
+  },
+  // Extract spend amount from request body
+  spendExtractor: (params: unknown) => {
+    const body = (params as { body?: { amount?: number } })?.body;
+    return body?.amount ?? null;
+  },
+});
+
+app.use(actionfence);
+
+// Define routes normally — ActionFence protects all of them
+app.get('/items', (_req, res) => { res.json({ items: [] }); });
+app.post('/orders', (req, res) => { res.status(201).json({ status: 'created' }); });
+
+app.listen(3000);
+
+// Cleanup on shutdown
+process.on('SIGINT', () => { actionfence.dispose(); process.exit(0); });
+```
+
+## Policy File Format (guard-policy.json)
+
+Create with `npx actionfence init` or write manually:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json",
+  "service": "MyService",
+  "version": "1.0",
+  "default_rule": "deny",
+  "actions": {
+    "search": {
+      "allowed": true,
+      "identity": "any"
+    },
+    "create_order": {
+      "allowed": true,
+      "identity": "verified",
+      "max_spend": 500,
+      "currency": "USD",
+      "requires_human_approval": true
+    },
+    "delete_all": {
+      "allowed": false
+    }
+  },
+  "rate_limits": {
+    "requests_per_minute": 30,
+    "transactions_per_day": 5
+  },
+  "spend_limits": {
+    "session_max": 1000,
+    "daily_max": 2500,
+    "currency": "USD"
+  }
+}
+```
+
+### Policy fields
+
+- `service` (string, required): Service name.
+- `version` (string, required): Policy version identifier.
+- `default_rule` ("allow" | "deny", optional): What to do when an action is not listed. Defaults to "deny".
+- `actions` (object, required): Map of action name to rule object.
+- `rate_limits` (object, optional): `requests_per_minute` and `transactions_per_day`.
+- `spend_limits` (object, optional): `session_max`, `daily_max`, and `currency`.
+- `regulations` (string[], optional): Stored in receipts but not enforced in v0.1.
+
+### Action rule fields
+
+- `allowed` (boolean, required): Whether the action is permitted.
+- `identity` ("any" | "token" | "verified", optional): Minimum identity tier. Default "any".
+- `max_spend` (number, optional): Per-invocation spend cap in major currency units.
+- `currency` (string, optional): ISO 4217 currency code.
+- `requires_human_approval` (boolean, optional): Flags the decision and fires `onDecision` callback.
+
+### Identity tiers
+
+- `anonymous`: No credentials. Lowest tier.
+- `token`: Bearer token present but not signature-verified.
+- `verified`: JWT verified via JWKS. Highest tier.
+
+The tier hierarchy is: anonymous < token < verified. An action requiring "token" accepts both "token" and "verified".
+
+## GuardOptions Reference
+
+All options for both `withGuard()` and `guard()`:
+
+```typescript
+interface GuardOptions {
+  policy: string | GuardPolicy;        // Required. Path to guard-policy.json or inline policy object.
+  simulate?: boolean;                  // Default false. Dry-run mode — evaluates but doesn't execute.
+  silent?: boolean;                    // Default false. Suppress console output.
+  secret?: string;                     // HMAC secret for receipt signing. Falls back to ACTIONFENCE_SECRET env var, then .actionfence/key auto-generated file.
+  identityReaderOptions?: {            // Built-in JWKS identity verification.
+    jwksUri: string;                   //   Remote JWKS endpoint URL.
+    issuer?: string | string[];        //   Optional JWT issuer check.
+    audience?: string | string[];      //   Optional JWT audience check.
+  };
+  identityReader?: IdentityReaderLike; // Full custom identity resolution (overrides identityReaderOptions).
+  actionResolver?: (toolName: string, params: unknown) => string;  // Map tool/route names to policy action keys.
+  spendExtractor?: (params: unknown) => number | null;             // Extract spend amount from request params.
+  transactionResolver?: (toolName: string, params: unknown, decision: EvaluationDecision) => boolean; // Override transaction classification for rate limiting.
+  onDecision?: (decision: GuardEvaluationResult) => void;          // Hook for logging, metrics, approval workflows.
+  watchPolicy?: boolean;               // Default false. Hot-reload policy file on changes.
+}
+```
+
+## CLI
+
+```bash
+npx actionfence init                                    # Create starter guard-policy.json
+npx actionfence init --service MyAPI                    # With custom service name
+npx actionfence init --output ./policies/policy.json    # Custom output path
+npx actionfence validate guard-policy.json              # Validate policy against JSON Schema
+npx actionfence simulate guard-policy.json --action search         # Dry-run as anonymous
+npx actionfence simulate guard-policy.json --action create_order --identity verified --spend 250
+```
+
+## Simulation Mode
+
+Runs the full policy pipeline without executing the handler or storing a receipt.
+
+MCP: `withGuard(server, { policy: './guard-policy.json', simulate: true })`
+Express: `guard({ policy: './guard-policy.json', simulate: true })`
+Per-request (Express): Send `X-ActionFence-Simulation: true` header.
+
+## Receipts
+
+Every enforced decision stores a signed receipt in `.actionfence/receipts.db` (SQLite). Receipts are HMAC-SHA256 signed, hash-chained, and append-only.
+
+Signing key resolution order:
+1. `options.secret`
+2. `ACTIONFENCE_SECRET` environment variable
+3. Auto-generated `.actionfence/key` file
+
+## Scope Enforcement
+
+If a verified JWT includes a `capabilities` claim (string array), ActionFence treats it as an allowlist. A request passing policy checks but not listed in `capabilities` is blocked.
+
+## v0.1 Limitations
+
+- Capability checks are exact string matches only (no wildcards)
+- `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval UI
+- SQLite receipt store is single-instance only
+- Money is major-unit only; mixed-currency in one policy is not supported
+
+## Common Integration Patterns
+
+### Express: action names map to "METHOD /path"
+The guard middleware constructs the tool name as `METHOD /path` (e.g., `GET /flights`, `POST /bookings`). Use `actionResolver` to normalize dynamic segments:
+
+```typescript
+actionResolver: (toolName) => {
+  if (/^GET \/users\/[^/]+$/.test(toolName)) return 'GET /users/:id';
+  if (/^DELETE \/users\/[^/]+$/.test(toolName)) return 'DELETE /users/:id';
+  return toolName;
+}
+```
+
+### MCP: tool names map directly to action names
+For MCP servers, the tool name registered with `server.registerTool('tool_name', ...)` is used as the action name by default. The `actionResolver` is optional and only needed if you want to alias tools.
+
+### Cleanup
+Always call `dispose()` on shutdown to close the SQLite connection:
+
+```typescript
+// MCP
+const guard = withGuard(server, options);
+process.on('SIGINT', () => { guard.dispose(); process.exit(0); });
+
+// Express
+const middleware = guard(options);
+process.on('SIGINT', () => { middleware.dispose(); process.exit(0); });
+```
+
+## Package Exports
+
+```typescript
+// Primary — what most users need:
+import { withGuard } from 'actionfence';  // MCP middleware
+import { guard } from 'actionfence';      // Express middleware
+
+// Core modules — for advanced/custom usage:
+import { loadPolicy, watchPolicy } from 'actionfence';
+import { PolicyEvaluator } from 'actionfence';
+import { IdentityReader } from 'actionfence';
+import { RateLimiter } from 'actionfence';
+import { ReceiptSigner } from 'actionfence';
+import { ReceiptStore } from 'actionfence';
+import { SpendTracker } from 'actionfence';
+import { GuardEngine } from 'actionfence';
+
+// Types:
+import type { GuardOptions, GuardPolicy, ActionRule, AgentIdentity, EvaluationDecision, ActionReceipt } from 'actionfence';
+```
+
+## File Structure After Integration
+
+After installing and configuring ActionFence, your project will have:
+
+```
+your-project/
+├── guard-policy.json        # Created by `npx actionfence init` or manually
+├── .actionfence/            # Auto-created at runtime (add to .gitignore)
+│   ├── receipts.db          # SQLite receipt store
+│   └── key                  # Auto-generated HMAC signing key
+├── package.json             # actionfence in dependencies
+└── src/
+    └── index.ts             # Your server with withGuard() or guard()
+```
+
+Add `.actionfence/` to your `.gitignore`.

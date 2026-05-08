@@ -1,0 +1,27 @@
+# ActionFence
+
+> ActionFence is a Node.js npm package that acts as an embeddable AI action firewall for MCP servers and Express/Fastify APIs. It enforces JSON-based policies with identity verification, spend caps, rate limiting, signed receipts, and simulation mode. Install with `npm install actionfence`. Requires Node.js >= 20.
+
+- ActionFence uses `withGuard(server, options)` for MCP servers and `guard(options)` for Express middleware
+- Policy rules are defined in a `guard-policy.json` file with JSON Schema validation
+- The package supports ESM and CJS dual-format output
+- `@modelcontextprotocol/sdk` is an optional peer dependency (only needed for MCP usage)
+
+## Docs
+
+- [Full LLM integration guide](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt): Complete self-contained reference with install, setup, API, policy format, and working examples for both MCP and Express
+- [README](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/README.md): Project overview, quick start, and full API reference
+- [Policy JSON Schema](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/schemas/guard-policy.schema.json): Machine-readable schema for guard-policy.json validation
+- [CHANGELOG](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/CHANGELOG.md): Version history and release notes
+
+## Examples
+
+- [MCP server example](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/examples/mcp-server/src/index.ts): Flight booking MCP server protected by ActionFence
+- [Express API example](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/examples/express-api/src/index.ts): REST API with route-based ActionFence policy
+- [MCP policy file](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/examples/mcp-server/guard-policy.json): Example guard-policy.json for MCP
+- [Express policy file](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/examples/express-api/guard-policy.json): Example guard-policy.json for Express
+
+## Optional
+
+- [Contributing guide](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/CONTRIBUTING.md): Development setup, code style, and PR process
+- [Security policy](https://raw.githubusercontent.com/saifeldeen911/actionfence/main/SECURITY.md): How to report vulnerabilities

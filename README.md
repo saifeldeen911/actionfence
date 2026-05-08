@@ -94,6 +94,14 @@ npx actionfence validate guard-policy.json
 npx actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
 ```
 
+### Using an AI Coding Assistant?
+
+Copy this prompt into Claude, Cursor, Copilot, or any LLM and let it handle the setup:
+
+```
+Install and integrate the "actionfence" npm package into my current project. Read the full integration guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt then: install the package, create a guard-policy.json for my use case, and wire up the middleware.
+```
+
 ## Policy File
 
 `guard-policy.json` defines what agents can do in your system.
@@ -348,6 +356,7 @@ npm run lint
 npm test
 npm run build
 ```
+
 
 ## License
 
