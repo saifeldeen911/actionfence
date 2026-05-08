@@ -7,7 +7,6 @@ Thank you for your interest in contributing to ActionFence! This document provid
 ### Prerequisites
 
 - **Node.js** >= 20.0.0
-- **npm** >= 10.0.0
 
 ### Getting Started
 

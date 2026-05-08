@@ -2,22 +2,22 @@
 
 ## Supported Versions
 
-This project is pre-`1.0`. Security fixes are applied to the latest development line on `main`.
+This project is pre-`1.0`. Security fixes are applied to the latest release on `main`.
 
 ## Reporting a Vulnerability
 
-Please do not report security vulnerabilities through public GitHub issues.
+Please do **not** report security vulnerabilities through public GitHub issues.
 
-Use one of the following channels instead:
+Instead, use one of these channels:
 
-- Open a private security advisory on GitHub, if enabled for the repository
-- Email the maintainer listed in the repository profile
+- **Email:** [saifeldeenkhalaf@gmail.com](mailto:saifeldeenkhalaf@gmail.com)
+- **GitHub:** Open a [private security advisory](https://github.com/saifeldeen911/actionfence/security/advisories/new)
 
-When reporting a vulnerability, include:
+When reporting, please include:
 
 - A clear description of the issue
 - Reproduction steps or a proof of concept
 - Impact assessment
 - Any suggested mitigation if you have one
 
-We will acknowledge valid reports as quickly as possible and work on a fix before public disclosure when feasible.
+I will acknowledge valid reports as quickly as possible and work on a fix before public disclosure when feasible.
