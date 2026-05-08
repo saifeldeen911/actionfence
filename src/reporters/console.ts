@@ -32,7 +32,7 @@ export class ConsoleReporter {
   constructor(options: ConsoleReporterOptions = {}) {
     this.silent = options.silent ?? false;
     this.writer = options.writer ?? ((message: string) => process.stdout.write(`${message}\n`));
-    this.colors = options.useColors === false ? new Chalk({ level: 0 }) : chalk;
+    this.colors = options.useColors === false ? new Chalk({ level: 0 }) : ((chalk as any).default || chalk);
   }
 
   /**
