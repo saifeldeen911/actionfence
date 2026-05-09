@@ -5,6 +5,25 @@ All notable changes to ActionFence will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — Unreleased
+
+### Added
+
+- **Storage Adapter Layer**
+  - New `StorageAdapter` interface (`src/storage/adapter.ts`) for pluggable receipt storage backends
+  - `SQLiteAdapter` — extracted from the former monolithic `ReceiptStore`, same SQLite behavior
+  - `MemoryAdapter` — lightweight in-memory adapter for tests and ephemeral use
+  - New `ReceiptFilters` type for querying receipts by agent, action, status, and time range
+  - New `count()` and `query()` methods on all adapters for introspection and dashboards
+  - `AsyncMutex` in `ReceiptStore` to prevent hash-chain corruption from concurrent inserts
+
+### Changed
+
+- `ReceiptStore` refactored from a monolithic SQLite class into a thin facade over `StorageAdapter`
+- All `ReceiptStore` public methods are now `async` (return `Promise<T>`)
+- `GuardEngine.finalize()` is now async to support the async `ReceiptStore.insert()`
+- Custom adapters can be injected via `ReceiptStoreOptions.adapter`
+
 ## [0.1.2] — 2026-05-08
 
 ### Changed

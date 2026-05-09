@@ -34,7 +34,7 @@ function makeDecision(index: number): EvaluationDecision {
 }
 
 describe('receipt chain integrity', () => {
-  it('should verify 1000+ receipts and detect tampering at the first broken record', () => {
+  it('should verify 1000+ receipts and detect tampering at the first broken record', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-chain-'));
     const databasePath = join(tempDir, 'receipts.db');
     const store = new ReceiptStore({
@@ -44,7 +44,7 @@ describe('receipt chain integrity', () => {
 
     const insertedIds: string[] = [];
     for (let index = 0; index < 1005; index++) {
-      const receipt = store.insert({
+      const receipt = await store.insert({
         decision: makeDecision(index),
         identity: makeIdentity(),
         params: {
@@ -58,11 +58,11 @@ describe('receipt chain integrity', () => {
       insertedIds.push(receipt.receipt_id);
     }
 
-    expect(store.verifyChain()).toEqual({
+    expect(await store.verifyChain()).toEqual({
       valid: true,
       checkedCount: 1005,
     });
-    store.close();
+    await store.close();
 
     const tamperedId = insertedIds[500];
     const db = new Database(databasePath);
@@ -75,14 +75,14 @@ describe('receipt chain integrity', () => {
       signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key') },
     });
 
-    expect(reopenedStore.verifyChain()).toEqual({
+    expect(await reopenedStore.verifyChain()).toEqual({
       valid: false,
       checkedCount: 501,
       brokenReceiptId: tamperedId,
       reason: 'PAYLOAD_HASH_MISMATCH',
     });
 
-    reopenedStore.close();
+    await reopenedStore.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 });

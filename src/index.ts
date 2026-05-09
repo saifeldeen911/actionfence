@@ -62,6 +62,12 @@ export { SpendTracker } from './core/spend-tracker.js';
 export { ConsoleReporter } from './reporters/console.js';
 export type { ConsoleReporterOptions, ConsoleReportInput } from './reporters/console.js';
 
+// --- Storage ---
+export type { StorageAdapter, ReceiptFilters } from './storage/adapter.js';
+export { SQLiteAdapter } from './storage/sqlite-adapter.js';
+export type { SQLiteAdapterOptions } from './storage/sqlite-adapter.js';
+export { MemoryAdapter } from './storage/memory-adapter.js';
+
 // --- Middleware ---
 export { withGuard } from './middleware/mcp.js';
 export type {

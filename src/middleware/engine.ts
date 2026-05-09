@@ -185,7 +185,7 @@ export class GuardEngine {
     }
 
     if (this.ownsReceiptStore) {
-      this.receiptStore.close();
+      void this.receiptStore.close();
     }
   }
 
@@ -195,7 +195,7 @@ export class GuardEngine {
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
   }
 
-  private finalize(input: {
+  private async finalize(input: {
     readonly mode: GuardMode;
     readonly decision: EvaluationDecision;
     readonly identity: AgentIdentity;
@@ -203,7 +203,7 @@ export class GuardEngine {
     readonly statusCode: number;
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
-  }): GuardEvaluationResult {
+  }): Promise<GuardEvaluationResult> {
     const spendSnapshot = this.resolveSpendSnapshot(
       input.identity.agentId,
       input.decision,
@@ -220,7 +220,7 @@ export class GuardEngine {
         : null;
     const receipt =
       input.mode === 'enforce'
-        ? this.receiptStore.insert({
+        ? await this.receiptStore.insert({
             decision: input.decision,
             identity: input.identity,
             params: input.params,
