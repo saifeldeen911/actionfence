@@ -46,23 +46,13 @@ app.use(
       jwksUri: 'https://issuer.example/.well-known/jwks.json',
     },
     actionResolver: (toolName) => {
-      if (/^GET \\/bookings\\/[^/]+$/.test(toolName)) {
+      if (/^GET \/bookings\/[^/]+$/.test(toolName)) {
         return 'GET /bookings/:id';
       }
       return toolName;
     },
   }),
 );`,
-  },
-  {
-    id: 'cli',
-    label: 'CLI',
-    code: `npx actionfence init
-npx actionfence validate guard-policy.json
-npx actionfence simulate guard-policy.json \\
-  --action book_flight \\
-  --identity verified \\
-  --spend 250`,
   },
 ];
 
@@ -72,50 +62,47 @@ export function CodeTabs() {
   const lines = activeSample.code.split('\n');
 
   return (
-    <section
-      id="code"
-      className="animate-fade-up stagger-5"
-      aria-labelledby="code-title"
-    >
-      <div className="mb-4 flex items-center justify-between">
-        <h2
-          id="code-title"
-          className="text-sm font-medium"
-          style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}
-        >
-          Integration
-        </h2>
-        <div className="flex gap-1">
-          {samples.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className="tab-btn"
-              data-active={s.id === activeId}
-              onClick={() => setActiveId(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+    <section id="install" aria-labelledby="code-title">
+      <div className="flex items-center gap-1 mb-4">
+        {samples.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            className="tab-btn"
+            data-active={s.id === activeId}
+            onClick={() => setActiveId(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
 
       <div className="code-block">
-        <div
-          className="flex items-center gap-2 border-b px-4 py-2.5"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'var(--color-red)' }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'var(--color-amber)' }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'var(--color-green)' }} />
+        <div className="code-header">
           <span
-            className="ml-auto text-xs"
-            style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-mono)' }}
+            className="h-2 w-2"
+            style={{ background: 'var(--color-danger)', borderRadius: '50%' }}
+          />
+          <span
+            className="h-2 w-2"
+            style={{ background: 'var(--color-accent)', borderRadius: '50%' }}
+          />
+          <span
+            className="h-2 w-2"
+            style={{ background: 'var(--color-pass)', borderRadius: '50%' }}
+          />
+          <span
+            className="ml-auto"
+            style={{
+              fontSize: '0.7rem',
+              color: 'var(--color-text-dim)',
+              fontFamily: 'var(--font-mono)',
+            }}
           >
-            {activeSample.id === 'cli' ? 'terminal' : `${activeSample.id}.ts`}
+            {activeSample.id}.ts
           </span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="code-body">
           <pre>
             {lines.map((line, i) => (
               <div key={`${activeId}-${i}`} className="flex">

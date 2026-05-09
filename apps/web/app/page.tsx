@@ -13,259 +13,894 @@ export default async function HomePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       <Navbar />
 
-      <div className="grid-bg" aria-hidden="true" />
+      <main id="landing-root">
+        {/* ═══════════════════════ HERO ═══════════════════════ */}
+        <section
+          className="relative overflow-hidden"
+          style={{ borderBottom: '1px solid #1f2424' }}
+        >
+          {/* Dot grid background */}
+          <div
+            className="dot-grid absolute inset-0 pointer-events-none"
+            style={{ zIndex: 0 }}
+          />
 
-      <main id="landing-root" className="relative z-10">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
+          <div
+            className="relative mx-auto flex max-w-5xl flex-col gap-12 px-5 py-20 sm:py-28"
+            style={{ zIndex: 1 }}
+          >
+            <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-start sm:justify-between">
+              {/* Left: headline + CTA */}
+              <div className="flex max-w-md flex-col gap-6">
+                <h1
+                  className="animate-fade-up stagger-1"
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
+                    lineHeight: 1.15,
+                    color: 'var(--color-text)',
+                    letterSpacing: '-0.03em',
+                  }}
+                >
+                  Your AI agents act.
+                  <br />
+                  ActionFence decides
+                  <br />
+                  if they should.
+                </h1>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-16 px-5 pb-24 pt-16 sm:pt-24">
-          {/* ── Hero ── */}
-          <header className="flex flex-col items-center text-center">
-            <div className="glow-orb" aria-hidden="true" />
+                <p
+                  className="animate-fade-up stagger-2"
+                  style={{
+                    fontSize: '0.92rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                    maxWidth: '400px',
+                  }}
+                >
+                  A policy firewall for MCP servers and APIs.
+                  <br />
+                  Identity tiers. Spend caps. Signed receipts.
+                  <br />
+                  One line of code.
+                </p>
 
+                <div className="animate-fade-up stagger-3 flex flex-wrap items-center gap-4 pt-2">
+                  <InstallBar />
+                  <a
+                    href={`${repoUrl}#readme`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-mono-secondary"
+                  >
+                    Read the docs →
+                  </a>
+                </div>
+              </div>
+
+              {/* Right: Terminal simulation */}
+              <div className="animate-fade-up stagger-3 w-full max-w-lg flex-1">
+                <div className="terminal-block" style={{ borderRadius: '2px' }}>
+                  <div className="terminal-header">
+                    <span
+                      className="h-2.5 w-2.5"
+                      style={{
+                        background: 'var(--color-danger)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                    <span
+                      className="h-2.5 w-2.5"
+                      style={{
+                        background: 'var(--color-accent)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                    <span
+                      className="h-2.5 w-2.5"
+                      style={{
+                        background: '#22c55e',
+                        borderRadius: '50%',
+                      }}
+                    />
+                    <span
+                      className="ml-auto"
+                      style={{
+                        fontSize: '0.72rem',
+                        color: 'var(--color-text-dim)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      zsh
+                    </span>
+                  </div>
+                  <div
+                    className="terminal-body"
+                    style={{
+                      fontSize: '0.78rem',
+                      lineHeight: 1.85,
+                    }}
+                  >
+                    <span className="term-prompt">$</span>
+                    <span style={{ color: 'var(--color-text)' }}>
+                      actionfence simulate guard-policy.json \
+                    </span>
+                    <br />
+                    <span style={{ display: 'inline-block', marginLeft: '18px' }}>
+                      --action book_flight --identity verified --spend 250
+                    </span>
+                    <br />
+                    <br />
+                    <span
+                      style={{
+                        color: 'var(--color-accent)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      SIMULATION - actionfence
+                    </span>
+                    <br />
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Action:         '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>book_flight</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Identity:       '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>verified</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Status:         '}
+                    </span>
+                    <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
+                      PASS
+                    </span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Spend:          '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>250.00</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Session total:  '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>250.00</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Human approval: '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>required</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Rate limit:     '}
+                    </span>
+                    <span style={{ color: 'var(--color-text)' }}>
+                      29/30 remaining
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════ THE PROBLEM ═══════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
             <div className="animate-fade-up stagger-1">
-              <span
-                className="badge"
-                style={{ color: 'var(--color-green)', borderColor: 'rgba(34, 197, 94, 0.2)' }}
+              <h2
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontWeight: 700,
+                  fontSize: 'clamp(1.4rem, 3.5vw, 1.8rem)',
+                  lineHeight: 1.25,
+                  color: 'var(--color-text)',
+                  letterSpacing: '-0.02em',
+                }}
               >
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-                  <circle cx="5" cy="5" r="5" />
-                </svg>
-                Open-source · MIT licensed
-              </span>
+                AI agents are powerful.
+                <br />
+                That's exactly the problem.
+              </h2>
+
+              <p
+                className="mt-5 max-w-xl"
+                style={{
+                  fontSize: '0.9rem',
+                  lineHeight: 1.7,
+                  color: 'var(--color-text-muted)',
+                }}
+              >
+                Agents call tools, transfer funds, book flights,
+                and delete records — autonomously, at scale.
+                Without a gate, every tool call is a trust decision
+                you've already made for them.
+              </p>
             </div>
 
-            <h1
-              className="animate-fade-up stagger-2 mt-8 text-5xl font-bold tracking-tighter sm:text-6xl lg:text-7xl"
-              style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text)' }}
-            >
-              actionfence
-            </h1>
-
-            <p
-              className="animate-fade-up stagger-3 mt-5 max-w-xl text-lg leading-relaxed sm:text-xl"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              AI action firewall for MCP servers and APIs.
-              <br />
-              Define what agents can do. Signed receipts for every decision.
-            </p>
-
-            <div className="animate-fade-up stagger-4 mt-10 w-full max-w-md">
-              <InstallBar />
-            </div>
-
-            <div className="animate-fade-up stagger-5 mt-6 flex flex-wrap justify-center gap-3">
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary btn-github"
+            {/* Two columns: Without vs With */}
+            <div className="animate-fade-up stagger-2 mt-12 grid gap-6 sm:grid-cols-2">
+              {/* Without */}
+              <div
+                className="terminal-block"
+                style={{ borderRadius: '2px' }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                </svg>
-                View on GitHub
-              </a>
-              <a
-                href={`${repoUrl}#readme`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary"
-              >
-                Read the docs
-              </a>
-            </div>
-          </header>
+                <div
+                  className="terminal-header"
+                  style={{
+                    borderRadius: '2px 2px 0 0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.74rem',
+                      color: 'var(--color-text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    Without ActionFence
+                  </span>
+                  <span className="badge badge-red">DENIED</span>
+                </div>
+                <div
+                  className="terminal-body"
+                  style={{
+                    padding: '20px',
+                    fontSize: '0.76rem',
+                    lineHeight: 1.85,
+                    color: 'var(--color-text-dim)',
+                  }}
+                >
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>{' '}
+                  agent-tool invoked: book_flight
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>{' '}
+                  handler executed — no identity check
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:12]
+                  </span>{' '}
+                  $250.00 charged to card ending in 4242
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:12]
+                  </span>{' '}
+                  no receipt. no audit trail.
+                </div>
+              </div>
 
-          {/* ── Features ── */}
-          <section id="features" className="animate-fade-up stagger-4" aria-labelledby="features-title">
+              {/* With */}
+              <div
+                className="terminal-block"
+                style={{ borderRadius: '2px' }}
+              >
+                <div
+                  className="terminal-header"
+                  style={{
+                    borderRadius: '2px 2px 0 0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.74rem',
+                      color: 'var(--color-text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    With ActionFence
+                  </span>
+                  <span className="badge badge-amber">PASS</span>
+                </div>
+                <div
+                  className="terminal-body"
+                  style={{
+                    padding: '20px',
+                    fontSize: '0.76rem',
+                    lineHeight: 1.85,
+                    color: 'var(--color-text-dim)',
+                  }}
+                >
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>{' '}
+                  action intercepted: book_flight
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>{' '}
+                  identity verified (tier: verified)
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>{' '}
+                  spend cap: $250.00 / $500.00 OK
+                  <br />
+                  <span style={{ color: 'var(--color-text-muted)' }}>
+                    [14:02:11]
+                  </span>
+                  <span style={{ color: 'var(--color-accent)' }}>PASSED</span>{' '}
+                  — receipt_id:{' '}
+                  <span style={{ color: 'var(--color-text)' }}>a1b2...d4e6</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════ HOW IT WORKS ═══════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
             <h2
-              id="features-title"
-              className="mb-6 text-sm font-medium"
-              style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}
+              className="animate-fade-up stagger-1"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--color-text-dim)',
+                marginBottom: '40px',
+              }}
             >
-              What it does
+              How it works
             </h2>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <FeatureCard
-                title="Policy Enforcement"
-                description="JSON policy decides before your handler runs. Allow, deny, or flag for human approval."
-                color="green"
-              />
-              <FeatureCard
-                title="Identity & Spend"
-                description="Verify JWTs via JWKS, enforce capability scopes, cap per-action and daily spend."
-                color="amber"
-              />
-              <FeatureCard
-                title="Signed Receipts"
-                description="Hash-chained, HMAC-signed audit trail stored in SQLite. Tamper-evident by default."
-                color="red"
-              />
-            </div>
-          </section>
+            <div className="grid gap-10 sm:grid-cols-3">
+              <div className="animate-fade-up stagger-2">
+                <span className="step-num">01</span>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Define the policy
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.88rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  Write guard-policy.json. What's allowed,
+                  who can do it, how much they can spend.
+                  Default rule: deny.
+                </p>
+              </div>
 
-          {/* ── Quick facts ── */}
-          <section className="animate-fade-up stagger-5" aria-label="Quick facts">
-            <div
-              className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border sm:grid-cols-4"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-border)' }}
+              <div className="animate-fade-up stagger-3">
+                <span className="step-num">02</span>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Wrap your server
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.88rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  withGuard(server, {'{'} policy: './guard-policy.json' {'}'})<br />
+                  One function call. Works with MCP and Express.
+                </p>
+              </div>
+
+              <div className="animate-fade-up stagger-4">
+                <span className="step-num">03</span>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Every action is audited
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.88rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  Identity verified. Spend tracked. Decision signed
+                  and chained in SQLite. You have the receipts.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════ FEATURES ═══════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+            <h2
+              className="animate-fade-up stagger-1"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--color-text-dim)',
+                marginBottom: '40px',
+              }}
             >
-              <QuickFact label="Runtime" value="Node 20+" />
-              <QuickFact label="Surfaces" value="MCP + HTTP" />
-              <QuickFact label="License" value="MIT" />
-              <QuickFact label="Dry-run" value="Simulate" />
+              Features
+            </h2>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              {/* Policy Enforcement */}
+              <div className="animate-fade-up stagger-2 card" style={{ padding: '24px' }}>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Policy Enforcement
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.85rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  Define exact rules per action. Verified identity,
+                  spend caps, rate limits, capability scopes.
+                </p>
+                <div className="code-block" style={{ fontSize: '0.72rem' }}>
+                  <div className="code-header">
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>
+                      guard-policy.json
+                    </span>
+                  </div>
+                  <div className="code-body" style={{ padding: '12px 16px' }}>
+                    <pre style={{ lineHeight: 1.8 }}>
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'{'}</span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'  "default_rule": "deny",'}</span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'  "actions": {'}</span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>
+                        {'    "book_flight": {'}
+                      </span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>
+                        {'      "allowed": true,'}
+                      </span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>
+                        {'      "max_spend": 500'}
+                      </span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'    }'}</span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'  }'}</span>
+                      <br />
+                      <span style={{ color: 'var(--color-text-dim)' }}>{'}'}</span>
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Identity Tiers */}
+              <div className="animate-fade-up stagger-3 card" style={{ padding: '24px' }}>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Identity Tiers
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.85rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  anonymous → token → verified.
+                  Built-in JWKS support or bring your own resolver.
+                </p>
+                <div
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '2px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.74rem',
+                    lineHeight: 1.8,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      borderBottom: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <div style={{ padding: '8px 14px', color: 'var(--color-text-dim)' }}>anonymous</div>
+                    <div style={{ padding: '8px 14px', color: 'var(--color-text-muted)' }}>No credentials</div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      borderBottom: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <div style={{ padding: '8px 14px', color: 'var(--color-text-dim)' }}>token</div>
+                    <div style={{ padding: '8px 14px', color: 'var(--color-text-muted)' }}>
+                      Bearer present
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                    }}
+                  >
+                    <div style={{ padding: '8px 14px', color: 'var(--color-accent)' }}>verified</div>
+                    <div style={{ padding: '8px 14px', color: 'var(--color-text-muted)' }}>
+                      JWKS verified
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signed Receipts */}
+              <div className="animate-fade-up stagger-4 card" style={{ padding: '24px' }}>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Signed Receipts
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.85rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  Hash-chained, HMAC-SHA256, append-only.
+                  Verifiable with ReceiptStore.verifyChain().
+                </p>
+                <div className="receipt-block" style={{ fontSize: '0.74rem' }}>
+                  <div>
+                    <span className="receipt-label">receipt_id:</span>
+                    <span className="receipt-value">a1b2c3d4-...</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">timestamp:</span>
+                    <span className="receipt-value">2026-05-07T14:02:11Z</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">agent_id:</span>
+                    <span className="receipt-value">agt_7x9f2k...</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">action:</span>
+                    <span className="receipt-value">book_flight</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">status:</span>
+                    <span className="receipt-accent">PASSED</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">payload_hash:</span>
+                    <span className="receipt-hash">0x8f3a...</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">prev_hash:</span>
+                    <span className="receipt-hash">0x7e2d...</span>
+                  </div>
+                  <div>
+                    <span className="receipt-label">receipt_sig:</span>
+                    <span className="receipt-hash">0x4f9b...</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Simulation Mode */}
+              <div className="animate-fade-up stagger-5 card" style={{ padding: '24px' }}>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-text)',
+                    marginBottom: '12px',
+                  }}
+                >
+                  Simulation Mode
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.85rem',
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-muted)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  Test your policy before it goes live.
+                  Full pipeline, no handler, no stored receipt.
+                </p>
+                <div className="terminal-block" style={{ fontSize: '0.72rem' }}>
+                  <div
+                    className="terminal-body"
+                    style={{ padding: '16px', lineHeight: 1.85 }}
+                  >
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      $ actionfence simulate guard-policy.json
+                    </span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>{'  '}</span>
+                    <span style={{ color: 'var(--color-accent)' }}>--action</span>
+                    <span style={{ color: 'var(--color-text)' }}> book_flight</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>{'  '}</span>
+                    <span style={{ color: 'var(--color-accent)' }}>--identity</span>
+                    <span style={{ color: 'var(--color-text)' }}> verified</span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>{'  '}</span>
+                    <span style={{ color: 'var(--color-accent)' }}>--spend</span>
+                    <span style={{ color: 'var(--color-text)' }}> 250</span>
+                    <br />
+                    <br />
+                    <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
+                      SIMULATION - actionfence
+                    </span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Status: PASS'}
+                    </span>
+                    <br />
+                    <span style={{ color: 'var(--color-text-dim)' }}>
+                      {'  Spend:  250.00'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* ── Code Examples ── */}
-          <CodeTabs />
+        {/* ═══════════════════ QUICK INSTALL ═══════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+            <h2
+              className="animate-fade-up stagger-1"
+              style={{
+                fontFamily: 'var(--font-head)',
+                fontWeight: 700,
+                fontSize: 'clamp(1.4rem, 3.5vw, 1.8rem)',
+                lineHeight: 1.25,
+                color: 'var(--color-text)',
+                letterSpacing: '-0.02em',
+                marginBottom: '8px',
+              }}
+            >
+              One line of protection.
+            </h2>
+            <p
+              className="animate-fade-up stagger-2 mt-4"
+              style={{
+                fontSize: '0.9rem',
+                lineHeight: 1.65,
+                color: 'var(--color-text-muted)',
+                maxWidth: '460px',
+                marginBottom: '32px',
+              }}
+            >
+              Wrap your server in one call. ActionFence intercepts every tool
+              invocation, enforces your policy, and stores a signed receipt.
+            </p>
 
-          {/* ── AI Assistant Prompt ── */}
-          <AiPrompt />
+            <div className="animate-fade-up stagger-3">
+              <CodeTabs />
+            </div>
 
-          {/* ── Footer ── */}
-          <footer
-            className="animate-fade-in stagger-6 flex flex-col items-center gap-4 border-t pt-8 text-xs sm:flex-row sm:justify-between"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-dim)' }}
-          >
-            <span style={{ fontFamily: 'var(--font-mono)' }}>
-              © {new Date().getFullYear()} ActionFence
-            </span>
-            <div className="flex gap-5">
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="transition-colors hover:text-white"
-              >
-                GitHub
-              </a>
-              <a
-                href="https://www.npmjs.com/package/actionfence"
-                target="_blank"
-                rel="noreferrer"
-                className="transition-colors hover:text-white"
-              >
-                npm
-              </a>
+            <div className="animate-fade-up stagger-4 mt-6">
               <a
                 href={`${repoUrl}#readme`}
                 target="_blank"
                 rel="noreferrer"
-                className="transition-colors hover:text-white"
+                className="btn-mono-secondary"
               >
-                Docs
+                See full API reference →
               </a>
-              <span>MIT License</span>
             </div>
-          </footer>
-        </div>
+          </div>
+        </section>
+
+        {/* ═════════════════ COMPLIANCE NOTE ═════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-14">
+            <div className="animate-fade-up stagger-1">
+              <p
+                style={{
+                  fontSize: '0.85rem',
+                  lineHeight: 1.7,
+                  color: 'var(--color-text-muted)',
+                  maxWidth: '600px',
+                  fontStyle: 'italic',
+                }}
+              >
+                ActionFence stores regulation tags (EU_AI_Act_Art50 and others) in
+                every receipt. Not a compliance platform — a foundation to build on.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ═════════════════ AI PROMPT ═════════════════ */}
+        <section
+          style={{
+            borderBottom: '1px solid #1f2424',
+          }}
+        >
+          <div className="mx-auto max-w-5xl px-5 py-14">
+            <div className="animate-fade-up stagger-1">
+              <AiPrompt />
+            </div>
+          </div>
+        </section>
+
+        {/* ═════════════════ FOOTER ═════════════════ */}
+        <footer>
+          <div className="mx-auto max-w-5xl px-5 py-8">
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+              className="sm:flex-row"
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.78rem',
+                  color: 'var(--color-text-dim)',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                actionfence — MIT License
+              </span>
+
+              <div className="flex items-center gap-5">
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ghost-link"
+                >
+                  GitHub
+                </a>
+                <a
+                  href="https://www.npmjs.com/package/actionfence"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ghost-link"
+                >
+                  npm
+                </a>
+                <a
+                  href={`${repoUrl}/blob/main/CHANGELOG.md`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ghost-link"
+                >
+                  CHANGELOG
+                </a>
+              </div>
+            </div>
+
+            <div
+              className="mt-6 pt-6"
+              style={{
+                borderTop: '1px solid var(--color-border)',
+                textAlign: 'center',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  color: 'var(--color-text-dim)',
+                }}
+              >
+                Built by{' '}
+                <a
+                  href="https://github.com/saifeldeen911"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ghost-link"
+                  style={{ fontSize: '0.74rem' }}
+                >
+                  Saifeldeen
+                </a>
+              </span>
+            </div>
+          </div>
+        </footer>
       </main>
     </>
-  );
-}
-
-/* ── Feature Card ── */
-
-const iconPaths: Record<string, React.ReactNode> = {
-  green: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  ),
-  amber: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
-    </svg>
-  ),
-  red: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  ),
-};
-
-const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-  green: {
-    bg: 'var(--color-green-muted)',
-    text: 'var(--color-green)',
-    border: 'rgba(34, 197, 94, 0.15)',
-  },
-  amber: {
-    bg: 'var(--color-amber-muted)',
-    text: 'var(--color-amber)',
-    border: 'rgba(245, 158, 11, 0.15)',
-  },
-  red: {
-    bg: 'var(--color-red-muted)',
-    text: 'var(--color-red)',
-    border: 'rgba(239, 68, 68, 0.15)',
-  },
-};
-
-function FeatureCard({
-  title,
-  description,
-  color,
-}: {
-  title: string;
-  description: string;
-  color: string;
-}) {
-  const c = colorMap[color];
-
-  return (
-    <article className="card p-5">
-      <span
-        className="feature-icon"
-        style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
-      >
-        {iconPaths[color]}
-      </span>
-      <h3
-        className="mt-4 text-sm font-semibold"
-        style={{ color: 'var(--color-text)', fontFamily: 'var(--font-mono)' }}
-      >
-        {title}
-      </h3>
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-        {description}
-      </p>
-    </article>
-  );
-}
-
-/* ── Quick Fact ── */
-
-function QuickFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1 p-4" style={{ background: 'var(--color-surface)' }}>
-      <span
-        className="text-xs"
-        style={{ color: 'var(--color-text-dim)', fontFamily: 'var(--font-mono)' }}
-      >
-        {label}
-      </span>
-      <span
-        className="text-sm font-semibold"
-        style={{ color: 'var(--color-text)', fontFamily: 'var(--font-mono)' }}
-      >
-        {value}
-      </span>
-    </div>
   );
 }
