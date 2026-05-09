@@ -6,6 +6,8 @@ readme-plans/
 
 # Build output
 dist/
+apps/web/.next/
+apps/web/out/
 
 # Guard runtime data
 .actionfence/
