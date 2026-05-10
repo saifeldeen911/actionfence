@@ -345,10 +345,13 @@ export class GuardEngine {
     amount: number | null,
     mode: GuardMode,
   ): SpendSnapshot | null {
+    const windowConfig = this.policy.spend_limits?.window;
+    const maxWindowMillis = windowConfig ? windowConfig.duration_minutes * 60 * 1000 : undefined;
+
     const result =
       mode === 'simulate'
         ? this.spendTracker.previewRecord(agentId, amount)
-        : this.spendTracker.record(agentId, amount);
+        : this.spendTracker.record(agentId, amount, maxWindowMillis);
     return result.recorded ? result.snapshot : null;
   }
 
@@ -521,7 +524,10 @@ function resolveSpendLimitReason(
   }
 
   if (windowResult && !windowResult.allowed) {
-    const windowDuration = config.window?.duration_minutes ?? 0;
+    const windowDuration = config.window?.duration_minutes;
+    if (typeof windowDuration !== 'number' || windowDuration <= 0) {
+      return `Action would exceed rolling window spend limit of ${formatMoney(windowResult.windowMax, config.currency)} per configured window`;
+    }
     return `Action would exceed rolling window spend limit of ${formatMoney(windowResult.windowMax, config.currency)} per ${windowDuration} minutes`;
   }
 

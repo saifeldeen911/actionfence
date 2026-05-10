@@ -118,7 +118,8 @@
       },
       "dependencies": {
         "session_max": ["currency"],
-        "daily_max": ["currency"]
+        "daily_max": ["currency"],
+        "window": ["currency"]
       }
     },
     "regulations": {

@@ -69,7 +69,7 @@ export class SpendTracker {
   /**
    * Record a spend amount for one agent.
    */
-  record(agentId: string, amount: number | null): SpendRecordResult {
+  record(agentId: string, amount: number | null, maxWindowMillis?: number): SpendRecordResult {
     const entry = this.getOrCreateEntry(agentId);
 
     if (amount === null) {
@@ -82,9 +82,13 @@ export class SpendTracker {
 
     assertValidAmount(amount);
 
+    const now = Date.now();
     entry.sessionTotal += amount;
     entry.dailyTotal += amount;
-    entry.windowLog.push({ amount, timestamp: Date.now() });
+    entry.windowLog.push({ amount, timestamp: now });
+
+    const evictionWindow = maxWindowMillis ?? 7 * 24 * 60 * 60 * 1000;
+    evictExpired(entry.windowLog, now - evictionWindow);
 
     return {
       recorded: true,
@@ -121,12 +125,11 @@ export class SpendTracker {
     const windowMs = windowConfig.duration_minutes * 60 * 1000;
     const cutoff = now - windowMs;
 
-    // Lazy eviction: prune expired entries
-    evictExpired(entry.windowLog, cutoff);
+    const filteredLog = entry.windowLog.filter((e) => e.timestamp > cutoff);
 
-    const currentTotal = sumWindowLog(entry.windowLog);
+    const currentTotal = sumWindowLog(filteredLog);
     const projectedTotal = currentTotal + amount;
-    const oldestTimestamp = entry.windowLog[0]?.timestamp ?? now;
+    const oldestTimestamp = filteredLog[0]?.timestamp ?? now;
     const resetMs = Math.max(0, oldestTimestamp + windowMs - now);
 
     return {
@@ -146,9 +149,32 @@ export class SpendTracker {
     windowConfig: SpendWindowConfig,
     amount = 0,
   ): WindowCheckResult {
-    // checkWindow is already non-mutating with respect to adding entries
-    // (it only prunes expired entries, which is safe during preview)
-    return this.checkWindow(agentId, windowConfig, amount);
+    const entry = this.spendByAgent.get(agentId);
+    if (!entry) {
+      return {
+        allowed: amount <= windowConfig.max_amount,
+        windowTotal: 0,
+        windowMax: windowConfig.max_amount,
+        windowResetMs: 0,
+      };
+    }
+
+    const now = Date.now();
+    const windowMs = windowConfig.duration_minutes * 60 * 1000;
+    const cutoff = now - windowMs;
+
+    const filteredLog = entry.windowLog.filter((e) => e.timestamp > cutoff);
+    const currentTotal = sumWindowLog(filteredLog);
+    const projectedTotal = currentTotal + amount;
+    const oldestTimestamp = filteredLog[0]?.timestamp ?? now;
+    const resetMs = Math.max(0, oldestTimestamp + windowMs - now);
+
+    return {
+      allowed: projectedTotal <= windowConfig.max_amount,
+      windowTotal: currentTotal,
+      windowMax: windowConfig.max_amount,
+      windowResetMs: resetMs,
+    };
   }
 
   /**
