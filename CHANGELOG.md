@@ -5,7 +5,7 @@ All notable changes to ActionFence will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] — Unreleased
+## [0.2.0] — 2026-05-10
 
 ### Added
 
@@ -102,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Full TypeScript declarations
   - Node.js 20+ target
 
+[0.2.0]: https://github.com/saifeldeen911/actionfence/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/saifeldeen911/actionfence/releases/tag/v0.1.2
 [0.1.1]: https://github.com/saifeldeen911/actionfence/releases/tag/v0.1.1
 [0.1.0]: https://github.com/saifeldeen911/actionfence/compare/e1f95c8...v0.1.1
