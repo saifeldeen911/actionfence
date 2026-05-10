@@ -145,13 +145,13 @@ describe('guard Express middleware', () => {
     expect(next).toHaveBeenCalledWith();
     expect(res.headersSent).toBe(false);
 
-    const receipts = store.listByAgent('agent-http');
+    const receipts = await store.listByAgent('agent-http');
     expect(receipts).toHaveLength(1);
     expect(receipts[0]?.status).toBe('PASSED');
     expect(receipts[0]?.payload_json).toContain('"path":"/search"');
     expect(receipts[0]?.payload_json).not.toContain('authorization');
 
-    store.close();
+    await store.close();
     middleware.dispose();
   });
 
@@ -180,7 +180,7 @@ describe('guard Express middleware', () => {
       },
     });
 
-    store.close();
+    await store.close();
     middleware.dispose();
   });
 
@@ -208,9 +208,9 @@ describe('guard Express middleware', () => {
       wouldExecute: true,
       receiptStored: false,
     });
-    expect(store.getLastHash()).toBe('');
+    expect(await store.getLastHash()).toBe('');
 
-    store.close();
+    await store.close();
     middleware.dispose();
   });
 
@@ -234,7 +234,7 @@ describe('guard Express middleware', () => {
     expect(res.body).toContain('ACTIONFENCE_BLOCKED');
     expect(res.headers['Content-Type']).toBe('application/json; charset=utf-8');
 
-    store.close();
+    await store.close();
     middleware.dispose();
   });
 
@@ -268,7 +268,7 @@ describe('guard Express middleware', () => {
     expect(next).toHaveBeenCalledWith();
     expect(res.headersSent).toBe(false);
 
-    store.close();
+    await store.close();
     middleware.dispose();
   });
 });

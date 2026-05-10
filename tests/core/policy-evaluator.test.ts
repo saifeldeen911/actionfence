@@ -30,9 +30,7 @@ const ALLOW_DEFAULT_POLICY: GuardPolicy = {
   },
 };
 
-function makeIdentity(
-  classification: 'anonymous' | 'token' | 'verified',
-): AgentIdentity {
+function makeIdentity(classification: 'anonymous' | 'token' | 'verified'): AgentIdentity {
   return {
     classification,
     agentId: classification === 'anonymous' ? 'anonymous' : 'agent-123',
@@ -48,7 +46,9 @@ describe('PolicyEvaluator', () => {
   describe('action lookup + default rule', () => {
     it('should block unlisted actions when default_rule is deny', () => {
       const decision = evaluator.evaluate(
-        'unknown_action', 'unknown_action', makeIdentity('verified'),
+        'unknown_action',
+        'unknown_action',
+        makeIdentity('verified'),
       );
       expect(decision.status).toBe('BLOCKED');
       expect(decision.reason).toContain('not listed in the policy');
@@ -57,7 +57,9 @@ describe('PolicyEvaluator', () => {
     it('should allow unlisted actions when default_rule is allow', () => {
       const allowEvaluator = new PolicyEvaluator(ALLOW_DEFAULT_POLICY);
       const decision = allowEvaluator.evaluate(
-        'any_action', 'any_action', makeIdentity('anonymous'),
+        'any_action',
+        'any_action',
+        makeIdentity('anonymous'),
       );
       expect(decision.status).toBe('PASSED');
     });
@@ -70,7 +72,9 @@ describe('PolicyEvaluator', () => {
 
       const evaluator = new PolicyEvaluator(invalidDefaultRulePolicy);
       const decision = evaluator.evaluate(
-        'unknown_action', 'unknown_action', makeIdentity('verified'),
+        'unknown_action',
+        'unknown_action',
+        makeIdentity('verified'),
       );
 
       expect(decision.status).toBe('BLOCKED');
@@ -79,9 +83,7 @@ describe('PolicyEvaluator', () => {
 
     it('should block explicitly denied actions regardless of default_rule', () => {
       const allowEvaluator = new PolicyEvaluator(ALLOW_DEFAULT_POLICY);
-      const decision = allowEvaluator.evaluate(
-        'dangerous', 'dangerous', makeIdentity('verified'),
-      );
+      const decision = allowEvaluator.evaluate('dangerous', 'dangerous', makeIdentity('verified'));
       expect(decision.status).toBe('BLOCKED');
       expect(decision.reason).toContain('explicitly denied');
     });
@@ -90,51 +92,46 @@ describe('PolicyEvaluator', () => {
   describe('identity tier checks', () => {
     it('should allow anonymous agents for identity: any', () => {
       const decision = evaluator.evaluate(
-        'search_flights', 'search_flights', makeIdentity('anonymous'),
+        'search_flights',
+        'search_flights',
+        makeIdentity('anonymous'),
       );
       expect(decision.status).toBe('PASSED');
     });
 
     it('should block anonymous agents for identity: token', () => {
-      const decision = evaluator.evaluate(
-        'read_prices', 'read_prices', makeIdentity('anonymous'),
-      );
+      const decision = evaluator.evaluate('read_prices', 'read_prices', makeIdentity('anonymous'));
       expect(decision.status).toBe('BLOCKED');
       expect(decision.reason).toContain('requires identity tier "token"');
     });
 
     it('should allow token agents for identity: token', () => {
-      const decision = evaluator.evaluate(
-        'read_prices', 'read_prices', makeIdentity('token'),
-      );
+      const decision = evaluator.evaluate('read_prices', 'read_prices', makeIdentity('token'));
       expect(decision.status).toBe('PASSED');
     });
 
     it('should allow verified agents for identity: token', () => {
-      const decision = evaluator.evaluate(
-        'read_prices', 'read_prices', makeIdentity('verified'),
-      );
+      const decision = evaluator.evaluate('read_prices', 'read_prices', makeIdentity('verified'));
       expect(decision.status).toBe('PASSED');
     });
 
     it('should block anonymous agents for identity: verified', () => {
-      const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('anonymous'),
-      );
+      const decision = evaluator.evaluate('book_flight', 'book_flight', makeIdentity('anonymous'));
       expect(decision.status).toBe('BLOCKED');
     });
 
     it('should block token agents for identity: verified', () => {
-      const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('token'),
-      );
+      const decision = evaluator.evaluate('book_flight', 'book_flight', makeIdentity('token'));
       expect(decision.status).toBe('BLOCKED');
       expect(decision.reason).toContain('requires identity tier "verified"');
     });
 
     it('should allow verified agents for identity: verified', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), 100,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        100,
       );
       expect(decision.status).toBe('PASSED');
     });
@@ -143,21 +140,30 @@ describe('PolicyEvaluator', () => {
   describe('spend cap checks', () => {
     it('should allow spend within cap', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), 499,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        499,
       );
       expect(decision.status).toBe('PASSED');
     });
 
     it('should allow spend exactly at cap', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), 500,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        500,
       );
       expect(decision.status).toBe('PASSED');
     });
 
     it('should block spend exceeding cap', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), 501,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        501,
       );
       expect(decision.status).toBe('BLOCKED');
       expect(decision.reason).toContain('exceeds cap');
@@ -165,7 +171,10 @@ describe('PolicyEvaluator', () => {
 
     it('should allow when no spend amount is provided', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), null,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        null,
       );
       expect(decision.status).toBe('PASSED');
     });
@@ -174,14 +183,19 @@ describe('PolicyEvaluator', () => {
   describe('requires_human_approval flag', () => {
     it('should set requiresHumanApproval when action has the flag', () => {
       const decision = evaluator.evaluate(
-        'book_flight', 'book_flight', makeIdentity('verified'), 100,
+        'book_flight',
+        'book_flight',
+        makeIdentity('verified'),
+        100,
       );
       expect(decision.requiresHumanApproval).toBe(true);
     });
 
     it('should not set requiresHumanApproval when flag is absent', () => {
       const decision = evaluator.evaluate(
-        'search_flights', 'search_flights', makeIdentity('anonymous'),
+        'search_flights',
+        'search_flights',
+        makeIdentity('anonymous'),
       );
       expect(decision.requiresHumanApproval).toBe(false);
     });
@@ -190,7 +204,9 @@ describe('PolicyEvaluator', () => {
   describe('decision metadata', () => {
     it('should include action and tool name', () => {
       const decision = evaluator.evaluate(
-        'search_flights', 'search_tool_v2', makeIdentity('anonymous'),
+        'search_flights',
+        'search_tool_v2',
+        makeIdentity('anonymous'),
       );
       expect(decision.action).toBe('search_flights');
       expect(decision.toolName).toBe('search_tool_v2');
@@ -198,14 +214,18 @@ describe('PolicyEvaluator', () => {
 
     it('should include ISO timestamp', () => {
       const decision = evaluator.evaluate(
-        'search_flights', 'search_flights', makeIdentity('anonymous'),
+        'search_flights',
+        'search_flights',
+        makeIdentity('anonymous'),
       );
       expect(decision.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 
     it('should include duration in ms', () => {
       const decision = evaluator.evaluate(
-        'search_flights', 'search_flights', makeIdentity('anonymous'),
+        'search_flights',
+        'search_flights',
+        makeIdentity('anonymous'),
       );
       expect(decision.durationMs).toBeGreaterThanOrEqual(0);
     });
@@ -217,7 +237,9 @@ describe('PolicyEvaluator', () => {
 
       // Initially blocked (default: deny)
       let decision = mutableEvaluator.evaluate(
-        'new_action', 'new_action', makeIdentity('anonymous'),
+        'new_action',
+        'new_action',
+        makeIdentity('anonymous'),
       );
       expect(decision.status).toBe('BLOCKED');
 
@@ -225,9 +247,7 @@ describe('PolicyEvaluator', () => {
       mutableEvaluator.updatePolicy(ALLOW_DEFAULT_POLICY);
 
       // Now passes
-      decision = mutableEvaluator.evaluate(
-        'new_action', 'new_action', makeIdentity('anonymous'),
-      );
+      decision = mutableEvaluator.evaluate('new_action', 'new_action', makeIdentity('anonymous'));
       expect(decision.status).toBe('PASSED');
     });
   });

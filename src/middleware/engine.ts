@@ -9,6 +9,7 @@ import { IdentityReader, type RequestContext } from '../core/identity-reader.js'
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
 import { RateLimiter, type RateLimitResult } from '../core/rate-limiter.js';
 import { ReceiptStore } from '../core/receipt-store.js';
+import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import type { GuardOptions } from '../types/config.js';
@@ -75,11 +76,12 @@ export class GuardEngine {
   private readonly identityReader: IdentityReaderLike;
   private readonly rateLimiter: RateLimiter;
   private readonly spendTracker: SpendTracker;
-  private readonly receiptStore: ReceiptStore;
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
   private readonly ownsReceiptStore: boolean;
+  private receiptStore?: ReceiptStore;
+  private receiptStorePromise?: Promise<ReceiptStore>;
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
 
@@ -88,18 +90,13 @@ export class GuardEngine {
     this.policy = loadPolicy(options.policy);
     this.policyRefBase = getPolicyRefBase(options.policy, this.policy);
     this.evaluator = new PolicyEvaluator(this.policy);
-    this.identityReader = options.identityReader ?? new IdentityReader(options.identityReaderOptions);
+    this.identityReader =
+      options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker();
-    this.receiptStore =
-      options.receiptStore ??
-      new ReceiptStore({
-        ...options.receiptStoreOptions,
-        signerOptions: {
-          ...options.receiptStoreOptions?.signerOptions,
-          secret: options.secret ?? options.receiptStoreOptions?.signerOptions?.secret,
-        },
-      });
+    if (options.receiptStore) {
+      this.receiptStore = options.receiptStore;
+    }
     this.reporter = options.reporter ?? new ConsoleReporter({ silent: options.silent });
     this.ownsRateLimiter = options.rateLimiter === undefined;
     this.ownsReceiptStore = options.receiptStore === undefined;
@@ -184,8 +181,10 @@ export class GuardEngine {
       this.rateLimiter.dispose();
     }
 
-    if (this.ownsReceiptStore) {
-      this.receiptStore.close();
+    if (this.ownsReceiptStore && this.receiptStore) {
+      void this.receiptStore.close().catch((err: unknown) => {
+        console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
+      });
     }
   }
 
@@ -195,7 +194,38 @@ export class GuardEngine {
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
   }
 
-  private finalize(input: {
+  private async getReceiptStore(): Promise<ReceiptStore> {
+    if (this.receiptStore) return this.receiptStore;
+    if (this.receiptStorePromise) return this.receiptStorePromise;
+
+    this.receiptStorePromise = (async () => {
+      let adapter: StorageAdapter | undefined;
+      const storageConfig = this.options.storage;
+
+      if (storageConfig?.adapter === 'postgres') {
+        const { PostgresAdapter } = await import('../storage/postgres-adapter.js');
+        adapter = await PostgresAdapter.create({
+          connectionString: storageConfig.connectionString,
+          poolConfig: storageConfig.poolConfig as import('pg').PoolConfig | undefined,
+        });
+      }
+
+      this.receiptStore = new ReceiptStore({
+        ...this.options.receiptStoreOptions,
+        adapter,
+        signerOptions: {
+          ...this.options.receiptStoreOptions?.signerOptions,
+          secret: this.options.secret ?? this.options.receiptStoreOptions?.signerOptions?.secret,
+        },
+      });
+
+      return this.receiptStore;
+    })();
+
+    return this.receiptStorePromise;
+  }
+
+  private async finalize(input: {
     readonly mode: GuardMode;
     readonly decision: EvaluationDecision;
     readonly identity: AgentIdentity;
@@ -203,7 +233,7 @@ export class GuardEngine {
     readonly statusCode: number;
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
-  }): GuardEvaluationResult {
+  }): Promise<GuardEvaluationResult> {
     const spendSnapshot = this.resolveSpendSnapshot(
       input.identity.agentId,
       input.decision,
@@ -220,7 +250,7 @@ export class GuardEngine {
         : null;
     const receipt =
       input.mode === 'enforce'
-        ? this.receiptStore.insert({
+        ? await (await this.getReceiptStore()).insert({
             decision: input.decision,
             identity: input.identity,
             params: input.params,
@@ -327,7 +357,9 @@ export class GuardEngine {
     mode: GuardMode,
   ): SpendSnapshot | null {
     if (decision.status !== 'PASSED') {
-      return decision.spendAmount !== null ? this.previewSpend(agentId, decision.spendAmount) : null;
+      return decision.spendAmount !== null
+        ? this.previewSpend(agentId, decision.spendAmount)
+        : null;
     }
 
     return this.recordSpend(agentId, decision.spendAmount, mode);

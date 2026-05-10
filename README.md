@@ -102,6 +102,31 @@ Copy this prompt into Claude, Cursor, Copilot, or any LLM and let it handle the 
 Install and integrate the "actionfence" npm package into my current project. Read the full integration guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt then: install the package, create a guard-policy.json for my use case, and wire up the middleware.
 ```
 
+## Storage
+
+ActionFence stores signed receipts in SQLite by default (zero-config).
+For serverless or horizontally-scaled deployments, use PostgreSQL:
+
+### PostgreSQL Setup
+
+1. Install the `pg` driver:
+   ```bash
+   npm install pg
+   ```
+
+2. Configure storage in your guard setup:
+   ```typescript
+   withGuard(server, {
+     policy: './guard-policy.json',
+     storage: {
+       adapter: 'postgres',
+       connectionString: process.env.DATABASE_URL,
+     },
+   });
+   ```
+
+ActionFence auto-creates the `actionfence_receipts` table on first use.
+
 ## Policy File
 
 `guard-policy.json` defines what agents can do in your system.
@@ -143,33 +168,33 @@ Install and integrate the "actionfence" npm package into my current project. Rea
 
 ### Policy Reference
 
-| Field | Type | Required | Notes |
-| --- | --- | --- | --- |
-| `service` | `string` | Yes | Service name |
-| `version` | `string` | Yes | Policy version |
-| `default_rule` | `"allow" \| "deny"` | No | Defaults to `"deny"` |
-| `actions` | `object` | Yes | Action rules keyed by action name |
-| `rate_limits` | `object` | No | Request and transaction limits |
-| `spend_limits` | `object` | No | Global session/day spend limits in major units |
-| `regulations` | `string[]` | No | Stored (persisted) in `v0.1.0` but not enforced |
+| Field          | Type                | Required | Notes                                           |
+| -------------- | ------------------- | -------- | ----------------------------------------------- |
+| `service`      | `string`            | Yes      | Service name                                    |
+| `version`      | `string`            | Yes      | Policy version                                  |
+| `default_rule` | `"allow" \| "deny"` | No       | Defaults to `"deny"`                            |
+| `actions`      | `object`            | Yes      | Action rules keyed by action name               |
+| `rate_limits`  | `object`            | No       | Request and transaction limits                  |
+| `spend_limits` | `object`            | No       | Global session/day spend limits in major units  |
+| `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields
 
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `allowed` | `boolean` | - | Required |
-| `identity` | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier |
-| `max_spend` | `number` | - | Per-invocation cap in major units |
-| `currency` | `string` | - | ISO 4217 currency code |
-| `requires_human_approval` | `boolean` | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
+| Field                     | Type                             | Default | Notes                                                                                                                                                                                  |
+| ------------------------- | -------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowed`                 | `boolean`                        | -       | Required                                                                                                                                                                               |
+| `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier                                                                                                                                                                  |
+| `max_spend`               | `number`                         | -       | Per-invocation cap in major units                                                                                                                                                      |
+| `currency`                | `string`                         | -       | ISO 4217 currency code                                                                                                                                                                 |
+| `requires_human_approval` | `boolean`                        | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
 
 ### Identity Tiers
 
-| Tier | Meaning |
-| --- | --- |
-| `anonymous` | No credentials presented |
-| `token` | Bearer token present but not signature-verified |
-| `verified` | JWT passed JWKS verification |
+| Tier        | Meaning                                         |
+| ----------- | ----------------------------------------------- |
+| `anonymous` | No credentials presented                        |
+| `token`     | Bearer token present but not signature-verified |
+| `verified`  | JWT passed JWKS verification                    |
 
 Verified identity is built in when you configure `identityReaderOptions.jwksUri` and JWKS lookup succeeds from cache or the remote endpoint. If JWKS retrieval or network access fails, ActionFence may fall back to `token` identity; invalid signatures, wrong issuers or audiences, unknown kids, and other cryptographic verification failures stay anonymous or rejected.
 
@@ -241,7 +266,7 @@ Receipts are:
 - Append-only
 - Verifiable with `ReceiptStore.verifyChain()`
 
-> **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`). This works perfectly for single-instance deployments. If you run multiple server instances, each will maintain its own receipt chain. PostgreSQL backend for multi-instance deployments is planned for v0.2.
+> **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`) by default. This works perfectly for single-instance deployments. If you run multiple server instances, use the `postgres` storage adapter to maintain a single global receipt chain.
 
 Signing key resolution order:
 
@@ -286,26 +311,27 @@ const middleware = guard({
 
 ### `GuardOptions`
 
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `policy` | `string \| GuardPolicy` | - | Required |
-| `simulate` | `boolean` | `false` | Dry-run mode |
-| `silent` | `boolean` | `false` | Suppress console output |
-| `secret` | `string` | - | HMAC secret override |
-| `identityReaderOptions` | `IdentityReaderOptions` | - | Built-in JWKS verification config |
-| `identityReader` | `IdentityReaderLike` | - | Full custom identity resolution override |
-| `actionResolver` | `(toolName, params) => string` | - | Map tool names to policy actions |
-| `spendExtractor` | `(params) => number \| null` | - | Extract spend in major units |
-| `transactionResolver` | `(toolName, params, decision) => boolean` | - | Override transaction classification |
-| `onDecision` | `(decision) => void` | - | Metrics, logging, hooks |
-| `watchPolicy` | `boolean` | `false` | Hot-reload file-backed policies |
+| Option                  | Type                                      | Default | Notes                                    |
+| ----------------------- | ----------------------------------------- | ------- | ---------------------------------------- |
+| `policy`                | `string \| GuardPolicy`                   | -       | Required                                 |
+| `simulate`              | `boolean`                                 | `false` | Dry-run mode                             |
+| `silent`                | `boolean`                                 | `false` | Suppress console output                  |
+| `secret`                | `string`                                  | -       | HMAC secret override                     |
+| `identityReaderOptions` | `IdentityReaderOptions`                   | -       | Built-in JWKS verification config        |
+| `identityReader`        | `IdentityReaderLike`                      | -       | Full custom identity resolution override |
+| `actionResolver`        | `(toolName, params) => string`            | -       | Map tool names to policy actions         |
+| `spendExtractor`        | `(params) => number \| null`              | -       | Extract spend in major units             |
+| `transactionResolver`   | `(toolName, params, decision) => boolean` | -       | Override transaction classification      |
+| `onDecision`            | `(decision) => void`                      | -       | Metrics, logging, hooks                  |
+| `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
+| `storage`               | `StorageConfig`                           | -       | Storage backend (SQLite/PostgreSQL)      |
 
 ### `IdentityReaderOptions`
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `jwksUri` | `string` | Remote JWKS endpoint |
-| `issuer` | `string \| string[]` | Optional issuer check |
+| Field      | Type                 | Notes                   |
+| ---------- | -------------------- | ----------------------- |
+| `jwksUri`  | `string`             | Remote JWKS endpoint    |
+| `issuer`   | `string \| string[]` | Optional issuer check   |
 | `audience` | `string \| string[]` | Optional audience check |
 
 ## `0.1.0` Limits
@@ -314,7 +340,6 @@ const middleware = guard({
 - No APoP / LAS-WG adapters yet
 - No wildcard scope patterns or path-policy DSL
 - `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval workflow yet (use the callback to build your own)
-- SQLite receipt store is single-instance only — PostgreSQL backend coming in v0.2
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 
 ## CLI Reference
@@ -356,7 +381,6 @@ npm run lint
 npm test
 npm run build
 ```
-
 
 ## License
 

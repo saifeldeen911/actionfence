@@ -32,16 +32,16 @@ npm run build
 
 ### Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run build` | Build ESM + CJS output via tsup |
-| `npm run dev` | Watch mode for development |
-| `npm test` | Run all tests once |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage report |
-| `npm run typecheck` | Type-check via tsc (no emit) |
-| `npm run lint` | Lint source and test files |
-| `npm run format` | Format all files with Prettier |
+| Script                  | Description                     |
+| ----------------------- | ------------------------------- |
+| `npm run build`         | Build ESM + CJS output via tsup |
+| `npm run dev`           | Watch mode for development      |
+| `npm test`              | Run all tests once              |
+| `npm run test:watch`    | Run tests in watch mode         |
+| `npm run test:coverage` | Run tests with coverage report  |
+| `npm run typecheck`     | Type-check via tsc (no emit)    |
+| `npm run lint`          | Lint source and test files      |
+| `npm run format`        | Format all files with Prettier  |
 
 ### Code Style
 
@@ -80,6 +80,7 @@ npm run build
 **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 **Examples:**
+
 - `feat(core): add spend cap evaluation to policy evaluator`
 - `fix(rate-limiter): prevent memory leak on idle keys`
 - `test(identity): add test for malformed JWT fallback`

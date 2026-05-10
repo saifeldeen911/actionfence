@@ -12,8 +12,5 @@ export default defineConfig({
   sourcemap: true,
   outDir: 'dist',
   target: 'node20',
-  external: [
-    '@modelcontextprotocol/sdk',
-    'better-sqlite3',
-  ],
+  external: ['@modelcontextprotocol/sdk', 'better-sqlite3'],
 });

@@ -4,12 +4,12 @@ This example shows an Express API protected by ActionFence.
 
 ## Routes
 
-| Route | Method | Policy | Identity | Spend Cap |
-| --- | --- | --- | --- | --- |
-| `/flights` | `GET` | Allowed | `any` | - |
-| `/bookings` | `POST` | Allowed | `verified` | `1000.00 USD` |
-| `/bookings/:id` | `GET` | Allowed | `token` | - |
-| `/bookings/:id` | `DELETE` | Blocked | - | - |
+| Route           | Method   | Policy  | Identity   | Spend Cap     |
+| --------------- | -------- | ------- | ---------- | ------------- |
+| `/flights`      | `GET`    | Allowed | `any`      | -             |
+| `/bookings`     | `POST`   | Allowed | `verified` | `1000.00 USD` |
+| `/bookings/:id` | `GET`    | Allowed | `token`    | -             |
+| `/bookings/:id` | `DELETE` | Blocked | -          | -             |
 
 ## Quick Start
 

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import Database from 'better-sqlite3';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
+import { MemoryAdapter } from '../../src/storage/memory-adapter.js';
 import type { AgentIdentity } from '../../src/types/identity.js';
 import type { EvaluationDecision } from '../../src/types/decision.js';
 
@@ -55,13 +56,13 @@ describe('ReceiptStore', () => {
 
     expect(existsSync(databasePath)).toBe(true);
 
-    store.close();
+    void store.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should insert and read back receipts', () => {
+  it('should insert and read back receipts', async () => {
     const { store, tempDir } = createTempStore();
-    const receipt = store.insert({
+    const receipt = await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -70,24 +71,24 @@ describe('ReceiptStore', () => {
       timestamp: '2026-05-06T20:00:00.000Z',
     });
 
-    const storedReceipt = store.getById(receipt.receipt_id);
-    const byAgent = store.listByAgent('agent-123');
+    const storedReceipt = await store.getById(receipt.receipt_id);
+    const byAgent = await store.listByAgent('agent-123');
 
     expect(storedReceipt).not.toBeNull();
     expect(storedReceipt?.receipt_hash).toBe(receipt.receipt_hash);
     expect(byAgent).toHaveLength(1);
     expect(byAgent[0]?.receipt_id).toBe(receipt.receipt_id);
 
-    store.close();
+    await store.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should return the last receipt hash', () => {
+  it('should return the last receipt hash', async () => {
     const { store, tempDir } = createTempStore();
 
-    expect(store.getLastHash()).toBe('');
+    expect(await store.getLastHash()).toBe('');
 
-    const first = store.insert({
+    const first = await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -95,7 +96,7 @@ describe('ReceiptStore', () => {
       receiptId: 'receipt-1',
       timestamp: '2026-05-06T20:00:00.000Z',
     });
-    const second = store.insert({
+    const second = await store.insert({
       decision: makeDecision({ action: 'cancel_booking', toolName: 'cancel_booking' }),
       identity: makeIdentity(),
       params: { bookingId: 'bk_123' },
@@ -104,17 +105,17 @@ describe('ReceiptStore', () => {
       timestamp: '2026-05-06T20:01:00.000Z',
     });
 
-    expect(store.getLastHash()).toBe(second.receipt_hash);
+    expect(await store.getLastHash()).toBe(second.receipt_hash);
     expect(second.prev_hash).toBe(first.receipt_hash);
 
-    store.close();
+    await store.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should reject duplicate receipt ids', () => {
+  it('should reject duplicate receipt ids', async () => {
     const { store, tempDir } = createTempStore();
 
-    store.insert({
+    await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -123,7 +124,7 @@ describe('ReceiptStore', () => {
       timestamp: '2026-05-06T20:00:00.000Z',
     });
 
-    expect(() =>
+    await expect(
       store.insert({
         decision: makeDecision(),
         identity: makeIdentity(),
@@ -132,15 +133,15 @@ describe('ReceiptStore', () => {
         receiptId: 'receipt-duplicate',
         timestamp: '2026-05-06T20:01:00.000Z',
       }),
-    ).toThrow();
+    ).rejects.toThrow();
 
-    store.close();
+    await store.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should reopen an existing database', () => {
+  it('should reopen an existing database', async () => {
     const { store, databasePath, tempDir } = createTempStore();
-    const receipt = store.insert({
+    const receipt = await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -148,20 +149,21 @@ describe('ReceiptStore', () => {
       receiptId: 'receipt-reopen',
       timestamp: '2026-05-06T20:00:00.000Z',
     });
-    store.close();
+    await store.close();
 
     const reopenedStore = new ReceiptStore({
       databasePath,
       signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key') },
     });
 
-    expect(reopenedStore.getById(receipt.receipt_id)?.receipt_hash).toBe(receipt.receipt_hash);
+    const found = await reopenedStore.getById(receipt.receipt_id);
+    expect(found?.receipt_hash).toBe(receipt.receipt_hash);
 
-    reopenedStore.close();
+    await reopenedStore.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should fall back to the legacy database path when the default is missing', () => {
+  it('should fall back to the legacy database path when the default is missing', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-store-'));
     const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
     const legacyDatabasePath = join(tempDir, '.agentguard', 'receipts.db');
@@ -170,7 +172,7 @@ describe('ReceiptStore', () => {
       signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key-legacy') },
     });
 
-    const receipt = legacyStore.insert({
+    const receipt = await legacyStore.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -178,23 +180,24 @@ describe('ReceiptStore', () => {
       receiptId: 'receipt-legacy-db',
       timestamp: '2026-05-06T20:00:00.000Z',
     });
-    legacyStore.close();
+    await legacyStore.close();
 
     const reopenedStore = new ReceiptStore({
       signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key-default') },
     });
 
-    expect(reopenedStore.getById(receipt.receipt_id)?.receipt_hash).toBe(receipt.receipt_hash);
+    const found = await reopenedStore.getById(receipt.receipt_id);
+    expect(found?.receipt_hash).toBe(receipt.receipt_hash);
 
-    reopenedStore.close();
+    await reopenedStore.close();
     cwdSpy.mockRestore();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should verify a valid chain successfully', () => {
+  it('should verify a valid chain successfully', async () => {
     const { store, tempDir } = createTempStore();
 
-    store.insert({
+    await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -202,7 +205,7 @@ describe('ReceiptStore', () => {
       receiptId: 'receipt-1',
       timestamp: '2026-05-06T20:00:00.000Z',
     });
-    store.insert({
+    await store.insert({
       decision: makeDecision({ action: 'cancel_booking', toolName: 'cancel_booking' }),
       identity: makeIdentity(),
       params: { bookingId: 'bk_123' },
@@ -211,18 +214,18 @@ describe('ReceiptStore', () => {
       timestamp: '2026-05-06T20:01:00.000Z',
     });
 
-    expect(store.verifyChain()).toEqual({
+    expect(await store.verifyChain()).toEqual({
       valid: true,
       checkedCount: 2,
     });
 
-    store.close();
+    await store.close();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should detect tampering in stored payload data', () => {
+  it('should detect tampering in stored payload data', async () => {
     const { store, databasePath, tempDir } = createTempStore();
-    const receipt = store.insert({
+    const receipt = await store.insert({
       decision: makeDecision(),
       identity: makeIdentity(),
       params: { itinerary: 'CAI-LHR' },
@@ -230,7 +233,7 @@ describe('ReceiptStore', () => {
       receiptId: 'receipt-tampered',
       timestamp: '2026-05-06T20:00:00.000Z',
     });
-    store.close();
+    await store.close();
 
     const db = new Database(databasePath);
     db.prepare('UPDATE receipts SET payload_json = ? WHERE receipt_id = ?').run(
@@ -244,14 +247,39 @@ describe('ReceiptStore', () => {
       signerOptions: { secret: FIXED_SECRET, keyFilePath: join(tempDir, 'key') },
     });
 
-    expect(reopenedStore.verifyChain()).toEqual({
+    expect(await reopenedStore.verifyChain()).toEqual({
       valid: false,
       checkedCount: 1,
       brokenReceiptId: receipt.receipt_id,
       reason: 'PAYLOAD_HASH_MISMATCH',
     });
 
-    reopenedStore.close();
+    await reopenedStore.close();
     rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should work with a custom MemoryAdapter', async () => {
+    const adapter = new MemoryAdapter();
+    const store = new ReceiptStore({
+      adapter,
+      signerOptions: { secret: FIXED_SECRET },
+    });
+
+    const receipt = await store.insert({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { itinerary: 'CAI-LHR' },
+      policyRef: 'policy',
+      receiptId: 'receipt-mem-1',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    expect(adapter.size).toBe(1);
+    expect(await store.getById(receipt.receipt_id)).not.toBeNull();
+    expect(await store.verifyChain()).toEqual({ valid: true, checkedCount: 1 });
+
+    await store.close();
+    // MemoryAdapter.close() is a no-op — adapter should still be usable
+    expect(adapter.size).toBe(1);
   });
 });

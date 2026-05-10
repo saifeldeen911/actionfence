@@ -24,9 +24,7 @@ const validateSchema = ajv.compile<GuardPolicy>(policySchema);
  * @throws {PolicyValidationError} If the policy fails schema validation.
  */
 export function loadPolicy(pathOrObject: string | GuardPolicy): GuardPolicy {
-  const raw = typeof pathOrObject === 'string'
-    ? readPolicyFile(pathOrObject)
-    : pathOrObject;
+  const raw = typeof pathOrObject === 'string' ? readPolicyFile(pathOrObject) : pathOrObject;
 
   const normalized = normalizePolicyObject(raw);
   validatePolicyObject(normalized);
@@ -41,10 +39,7 @@ export function loadPolicy(pathOrObject: string | GuardPolicy): GuardPolicy {
  * @param callback - Called with the new policy on every valid change.
  * @returns A cleanup function that stops watching.
  */
-export function watchPolicy(
-  filePath: string,
-  callback: (policy: GuardPolicy) => void,
-): () => void {
+export function watchPolicy(filePath: string, callback: (policy: GuardPolicy) => void): () => void {
   const resolvedPath = resolve(filePath);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let watcher: FSWatcher | null = null;
@@ -93,11 +88,7 @@ function readPolicyFile(filePath: string): unknown {
     content = readFileSync(resolvedPath, 'utf-8');
   } catch (error: unknown) {
     const cause = error instanceof Error ? error : undefined;
-    throw new PolicyLoadError(
-      `Failed to read policy file: ${resolvedPath}`,
-      resolvedPath,
-      cause,
-    );
+    throw new PolicyLoadError(`Failed to read policy file: ${resolvedPath}`, resolvedPath, cause);
   }
 
   try {
@@ -124,10 +115,7 @@ function validatePolicyObject(data: unknown): asserts data is GuardPolicy {
       return `${path}: ${err.message ?? 'unknown error'}`;
     });
 
-    throw new PolicyValidationError(
-      `Invalid guard policy:\n  ${errors.join('\n  ')}`,
-      errors,
-    );
+    throw new PolicyValidationError(`Invalid guard policy:\n  ${errors.join('\n  ')}`, errors);
   }
 }
 

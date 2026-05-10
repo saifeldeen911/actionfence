@@ -12,16 +12,9 @@ export type {
   GuardPolicy,
 } from './policy.js';
 
-export type {
-  IdentityClassification,
-  AgentIdentity,
-  IdentityReaderLike,
-} from './identity.js';
+export type { IdentityClassification, AgentIdentity, IdentityReaderLike } from './identity.js';
 
-export type {
-  DecisionStatus,
-  EvaluationDecision,
-} from './decision.js';
+export type { DecisionStatus, EvaluationDecision } from './decision.js';
 
 export type { GuardOptions } from './config.js';
 
@@ -34,13 +27,6 @@ export type {
   ReceiptVerificationSuccess,
 } from './receipt.js';
 
-export type {
-  SpendSnapshot,
-  SpendRecordResult,
-} from './spend.js';
+export type { SpendSnapshot, SpendRecordResult } from './spend.js';
 
-export {
-  PolicyValidationError,
-  PolicyLoadError,
-  IdentityError,
-} from './errors.js';
+export { PolicyValidationError, PolicyLoadError, IdentityError } from './errors.js';

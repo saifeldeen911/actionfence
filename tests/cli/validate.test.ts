@@ -19,7 +19,10 @@ function createTestContext(): CliContext & { stdoutLines: string[]; stderrLines:
   };
 }
 
-function makeArgs(positionals: string[] = [], flags: Record<string, string | true> = {}): ParsedArgs {
+function makeArgs(
+  positionals: string[] = [],
+  flags: Record<string, string | true> = {},
+): ParsedArgs {
   return { command: 'validate', positionals, flags };
 }
 

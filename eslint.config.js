@@ -18,10 +18,7 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/explicit-function-return-type': [
-        'warn',
-        { allowExpressions: true },
-      ],
+      '@typescript-eslint/explicit-function-return-type': ['warn', { allowExpressions: true }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },

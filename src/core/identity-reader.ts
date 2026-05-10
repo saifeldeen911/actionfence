@@ -164,9 +164,8 @@ function createIdentityFromPayload(
   classification: IdentityClassification,
 ): AgentIdentity {
   const agentId = typeof payload.sub === 'string' ? payload.sub : 'unknown';
-  const ownerId = extractStringClaim(payload, 'azp')
-    ?? extractStringClaim(payload, 'owner')
-    ?? null;
+  const ownerId =
+    extractStringClaim(payload, 'azp') ?? extractStringClaim(payload, 'owner') ?? null;
   const capabilities = extractStringArrayClaim(payload, 'capabilities');
 
   return Object.freeze({

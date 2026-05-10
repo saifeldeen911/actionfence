@@ -78,13 +78,13 @@ describe('withGuard', () => {
     expect(result).toEqual({ content: [{ type: 'text', text: 'ok' }] });
     expect(handler).toHaveBeenCalledWith({ q: 'CAI' }, {});
 
-    const receipts = store.listByAgent('anonymous');
+    const receipts = await store.listByAgent('anonymous');
     expect(receipts).toHaveLength(1);
     expect(receipts[0]?.action).toBe('search_flights');
     expect(receipts[0]?.status).toBe('PASSED');
 
     instance.dispose();
-    store.close();
+    await store.close();
   });
 
   it('should block denied MCP tool calls without invoking the handler', async () => {
@@ -106,10 +106,10 @@ describe('withGuard', () => {
     expect(body.error.code).toBe('ACTIONFENCE_BLOCKED');
     expect(body.error.receiptId).toBeTruthy();
     expect(handler).not.toHaveBeenCalled();
-    expect(store.getById(body.error.receiptId)?.status).toBe('BLOCKED');
+    expect((await store.getById(body.error.receiptId))?.status).toBe('BLOCKED');
 
     instance.dispose();
-    store.close();
+    await store.close();
   });
 
   it('should return simulation previews without calling handlers or writing receipts', async () => {
@@ -132,13 +132,13 @@ describe('withGuard', () => {
     expect(preview.simulation).toBe(true);
     expect(preview.receiptStored).toBe(false);
     expect(handler).not.toHaveBeenCalled();
-    expect(store.getLastHash()).toBe('');
+    expect(await store.getLastHash()).toBe('');
 
     instance.dispose();
-    store.close();
+    await store.close();
   });
 
-  it('should restore registerTool on dispose', () => {
+  it('should restore registerTool on dispose', async () => {
     const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);
     const server = new FakeMcpServer();
@@ -152,6 +152,6 @@ describe('withGuard', () => {
     expect(server.registerTool).not.toBe(originalRegisterTool);
     instance.dispose();
     expect(server.registerTool).toBe(originalRegisterTool);
-    store.close();
+    await store.close();
   });
 });

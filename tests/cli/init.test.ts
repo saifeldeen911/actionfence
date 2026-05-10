@@ -17,7 +17,9 @@ function createTempDir(): string {
   return dir;
 }
 
-function createTestContext(cwd: string): CliContext & { stdoutLines: string[]; stderrLines: string[] } {
+function createTestContext(
+  cwd: string,
+): CliContext & { stdoutLines: string[]; stderrLines: string[] } {
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
   return {

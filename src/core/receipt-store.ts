@@ -1,12 +1,15 @@
 /**
  * @module core/receipt-store
- * Persistent append-only receipt storage backed by SQLite.
+ * Thin facade over a {@link StorageAdapter} that handles receipt signing,
+ * hash-chain linking, and chain verification.
+ *
+ * The adapter controls where receipts are persisted (SQLite, PostgreSQL,
+ * memory, etc.). This class is adapter-agnostic.
  */
 
-import { existsSync, mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import Database from 'better-sqlite3';
 import { ReceiptSigner, type ReceiptSignerOptions } from './receipt-signer.js';
+import { SQLiteAdapter } from '../storage/sqlite-adapter.js';
+import type { StorageAdapter } from '../storage/adapter.js';
 import type {
   ActionReceipt,
   CreateReceiptInput,
@@ -15,250 +18,115 @@ import type {
 
 /** Module-specific options for receipt storage. */
 export interface ReceiptStoreOptions {
+  /** Path to the SQLite database file. Only used when no custom adapter is provided. */
   readonly databasePath?: string;
   readonly signer?: ReceiptSigner;
   readonly signerOptions?: ReceiptSignerOptions;
-}
-
-interface ReceiptRow {
-  readonly receipt_id: string;
-  readonly timestamp: string;
-  readonly agent_id: string;
-  readonly owner_id: string | null;
-  readonly action: string;
-  readonly tool_name: string;
-  readonly payload_json: string;
-  readonly payload_hash: string;
-  readonly policy_ref: string;
-  readonly status: 'PASSED' | 'BLOCKED';
-  readonly block_reason: string | null;
-  readonly identity_tier: 'anonymous' | 'token' | 'verified';
-  readonly spend_amount: number | null;
-  readonly prev_hash: string;
-  readonly receipt_hash: string;
-  readonly receipt_sig: string;
-}
-
-const DEFAULT_DATABASE_PATH = '.actionfence/receipts.db';
-const LEGACY_DATABASE_PATH = '.agentguard/receipts.db';
-
-function resolveDatabasePath(databasePath?: string): string {
-  if (databasePath !== undefined) {
-    return resolve(databasePath);
-  }
-
-  const resolvedDefaultPath = resolve(DEFAULT_DATABASE_PATH);
-  const resolvedLegacyPath = resolve(LEGACY_DATABASE_PATH);
-  const defaultExists = existsSync(resolvedDefaultPath);
-  const legacyExists = existsSync(resolvedLegacyPath);
-
-  if (defaultExists && legacyExists) {
-    console.warn(
-      `[actionfence] Found both ${resolvedDefaultPath} and legacy ${resolvedLegacyPath}; using ${resolvedDefaultPath}.`,
-    );
-    return resolvedDefaultPath;
-  }
-
-  if (!defaultExists && legacyExists) {
-    console.warn(
-      `[actionfence] Using legacy receipt database ${resolvedLegacyPath}; migrate to ${resolvedDefaultPath}.`,
-    );
-    return resolvedLegacyPath;
-  }
-
-  return resolvedDefaultPath;
+  /** Custom storage adapter. When omitted, a SQLiteAdapter is created using `databasePath`. */
+  readonly adapter?: StorageAdapter;
 }
 
 /**
- * ReceiptStore provides append-only persistence and chain verification.
+ * Simple async mutex that serialises insert operations so the
+ * getLastHash → createReceipt → insert sequence cannot interleave
+ * across concurrent `evaluate()` calls.
+ */
+class AsyncMutex {
+  private tail: Promise<void> = Promise.resolve();
+
+  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const previous = this.tail;
+    this.tail = gate;
+
+    await previous;
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
+  }
+}
+
+/**
+ * ReceiptStore provides signed, append-only persistence and chain verification.
+ *
+ * Internally delegates to a {@link StorageAdapter} for actual I/O while
+ * handling cryptographic signing and hash-chain linking.
  */
 export class ReceiptStore {
-  private readonly db: Database.Database;
+  private readonly adapter: StorageAdapter;
   private readonly signer: ReceiptSigner;
-  private readonly insertStatement: Database.Statement;
-  private readonly getLastHashStatement: Database.Statement;
-  private readonly getByIdStatement: Database.Statement;
-  private readonly listByAgentStatement: Database.Statement;
-  private readonly verifyListStatement: Database.Statement;
-  private readonly insertTransaction: (input: CreateReceiptInput) => ActionReceipt;
+  private readonly ownsAdapter: boolean;
+  private readonly insertMutex = new AsyncMutex();
 
   constructor(options: ReceiptStoreOptions = {}) {
-    const databasePath = resolveDatabasePath(options.databasePath);
-    mkdirSync(dirname(databasePath), { recursive: true });
-
     this.signer = options.signer ?? new ReceiptSigner(options.signerOptions);
-    this.db = new Database(databasePath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('synchronous = FULL');
 
-    this.initializeSchema();
+    if (options.adapter) {
+      this.adapter = options.adapter;
+      this.ownsAdapter = false;
+    } else {
+      this.adapter = new SQLiteAdapter({ databasePath: options.databasePath });
+      this.ownsAdapter = true;
+    }
+  }
 
-    this.insertStatement = this.db.prepare(`
-      INSERT INTO receipts (
-        receipt_id,
-        timestamp,
-        agent_id,
-        owner_id,
-        action,
-        tool_name,
-        payload_json,
-        payload_hash,
-        policy_ref,
-        status,
-        block_reason,
-        identity_tier,
-        spend_amount,
-        prev_hash,
-        receipt_hash,
-        receipt_sig,
-        created_at
-      ) VALUES (
-        @receipt_id,
-        @timestamp,
-        @agent_id,
-        @owner_id,
-        @action,
-        @tool_name,
-        @payload_json,
-        @payload_hash,
-        @policy_ref,
-        @status,
-        @block_reason,
-        @identity_tier,
-        @spend_amount,
-        @prev_hash,
-        @receipt_hash,
-        @receipt_sig,
-        @timestamp
-      )
-    `);
-    this.getLastHashStatement = this.db.prepare(`
-      SELECT receipt_hash
-      FROM receipts
-      ORDER BY rowid DESC
-      LIMIT 1
-    `);
-    this.getByIdStatement = this.db.prepare(`
-      SELECT
-        receipt_id,
-        timestamp,
-        agent_id,
-        owner_id,
-        action,
-        tool_name,
-        payload_json,
-        payload_hash,
-        policy_ref,
-        status,
-        block_reason,
-        identity_tier,
-        spend_amount,
-        prev_hash,
-        receipt_hash,
-        receipt_sig
-      FROM receipts
-      WHERE receipt_id = ?
-    `);
-    this.listByAgentStatement = this.db.prepare(`
-      SELECT
-        receipt_id,
-        timestamp,
-        agent_id,
-        owner_id,
-        action,
-        tool_name,
-        payload_json,
-        payload_hash,
-        policy_ref,
-        status,
-        block_reason,
-        identity_tier,
-        spend_amount,
-        prev_hash,
-        receipt_hash,
-        receipt_sig
-      FROM receipts
-      WHERE agent_id = ?
-      ORDER BY rowid ASC
-    `);
-    this.verifyListStatement = this.db.prepare(`
-      SELECT
-        receipt_id,
-        timestamp,
-        agent_id,
-        owner_id,
-        action,
-        tool_name,
-        payload_json,
-        payload_hash,
-        policy_ref,
-        status,
-        block_reason,
-        identity_tier,
-        spend_amount,
-        prev_hash,
-        receipt_hash,
-        receipt_sig
-      FROM receipts
-      ORDER BY rowid ASC
-    `);
-
-    this.insertTransaction = this.db.transaction((input: CreateReceiptInput): ActionReceipt => {
-      const lastHash = this.getLastHash();
+  /**
+   * Insert a newly signed receipt atomically with its chain link.
+   *
+   * Uses a mutex to guarantee that concurrent calls cannot read the same
+   * `prevHash`, which would break the hash chain.
+   */
+  async insert(input: CreateReceiptInput): Promise<ActionReceipt> {
+    return this.insertMutex.runExclusive(async () => {
+      const lastHash = await this.adapter.getLastHash();
       const receipt = this.signer.createReceipt({
         ...input,
         prevHash: lastHash,
       });
-
-      this.insertStatement.run(receipt);
+      await this.adapter.insert(receipt);
       return receipt;
     });
   }
 
   /**
-   * Insert a newly signed receipt atomically with its chain link.
-   */
-  insert(input: CreateReceiptInput): ActionReceipt {
-    return this.insertTransaction(input);
-  }
-
-  /**
    * Return the last known receipt hash, or an empty string for an empty store.
    */
-  getLastHash(): string {
-    const row = this.getLastHashStatement.get() as { readonly receipt_hash?: string } | undefined;
-    return row?.receipt_hash ?? '';
+  async getLastHash(): Promise<string> {
+    return this.adapter.getLastHash();
   }
 
   /**
    * Find a receipt by its id.
    */
-  getById(receiptId: string): ActionReceipt | null {
-    const row = this.getByIdStatement.get(receiptId) as ReceiptRow | undefined;
-    return row ? freezeReceipt(row) : null;
+  async getById(receiptId: string): Promise<ActionReceipt | null> {
+    return this.adapter.getById(receiptId);
   }
 
   /**
    * List all receipts for one agent in insertion order.
    */
-  listByAgent(agentId: string): readonly ActionReceipt[] {
-    const rows = this.listByAgentStatement.all(agentId) as ReceiptRow[];
-    return Object.freeze(rows.map((row) => freezeReceipt(row)));
+  async listByAgent(agentId: string): Promise<readonly ActionReceipt[]> {
+    return this.adapter.listByAgent(agentId);
   }
 
   /**
    * Verify the full persisted receipt chain in insertion order.
    */
-  verifyChain(): ReceiptVerificationResult {
-    const rows = this.verifyListStatement.all() as ReceiptRow[];
+  async verifyChain(): Promise<ReceiptVerificationResult> {
+    const receipts = await this.adapter.getAllOrdered();
     let previousHash = '';
 
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-      if (!row) {
+    for (let index = 0; index < receipts.length; index++) {
+      const receipt = receipts[index];
+      if (!receipt) {
         continue;
       }
-      const receipt = freezeReceipt(row);
       const checkedCount = index + 1;
 
       if (receipt.prev_hash !== previousHash) {
@@ -319,64 +187,23 @@ export class ReceiptStore {
 
     return {
       valid: true,
-      checkedCount: rows.length,
+      checkedCount: receipts.length,
     };
   }
 
   /**
-   * Close the underlying database handle.
+   * Close the underlying storage adapter.
    */
-  close(): void {
-    this.db.close();
+  async close(): Promise<void> {
+    if (this.ownsAdapter) {
+      await this.adapter.close();
+    }
   }
 
-  private initializeSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS receipts (
-        receipt_id TEXT PRIMARY KEY,
-        timestamp TEXT NOT NULL,
-        agent_id TEXT NOT NULL,
-        owner_id TEXT,
-        action TEXT NOT NULL,
-        tool_name TEXT NOT NULL,
-        payload_json TEXT NOT NULL,
-        payload_hash TEXT NOT NULL,
-        policy_ref TEXT NOT NULL,
-        status TEXT NOT NULL,
-        block_reason TEXT,
-        identity_tier TEXT NOT NULL,
-        spend_amount REAL,
-        prev_hash TEXT NOT NULL,
-        receipt_hash TEXT NOT NULL UNIQUE,
-        receipt_sig TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS receipts_timestamp_idx ON receipts (timestamp);
-      CREATE INDEX IF NOT EXISTS receipts_agent_id_idx ON receipts (agent_id);
-      CREATE INDEX IF NOT EXISTS receipts_action_idx ON receipts (action);
-      CREATE INDEX IF NOT EXISTS receipts_status_idx ON receipts (status);
-    `);
+  /**
+   * Access the underlying storage adapter (e.g. for introspection queries).
+   */
+  getAdapter(): StorageAdapter {
+    return this.adapter;
   }
-}
-
-function freezeReceipt(row: ReceiptRow): ActionReceipt {
-  return Object.freeze({
-    receipt_id: row.receipt_id,
-    timestamp: row.timestamp,
-    agent_id: row.agent_id,
-    owner_id: row.owner_id,
-    action: row.action,
-    tool_name: row.tool_name,
-    payload_json: row.payload_json,
-    payload_hash: row.payload_hash,
-    policy_ref: row.policy_ref,
-    status: row.status,
-    block_reason: row.block_reason,
-    identity_tier: row.identity_tier,
-    spend_amount: row.spend_amount,
-    prev_hash: row.prev_hash,
-    receipt_hash: row.receipt_hash,
-    receipt_sig: row.receipt_sig,
-  });
 }

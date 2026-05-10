@@ -20,10 +20,7 @@ export type {
   IdentityReaderLike,
 } from './types/identity.js';
 
-export type {
-  DecisionStatus,
-  EvaluationDecision,
-} from './types/decision.js';
+export type { DecisionStatus, EvaluationDecision } from './types/decision.js';
 
 export type { GuardOptions } from './types/config.js';
 
@@ -36,16 +33,9 @@ export type {
   ReceiptVerificationSuccess,
 } from './types/receipt.js';
 
-export type {
-  SpendSnapshot,
-  SpendRecordResult,
-} from './types/spend.js';
+export type { SpendSnapshot, SpendRecordResult } from './types/spend.js';
 
-export {
-  PolicyValidationError,
-  PolicyLoadError,
-  IdentityError,
-} from './types/errors.js';
+export { PolicyValidationError, PolicyLoadError, IdentityError } from './types/errors.js';
 
 // --- Core ---
 export { loadPolicy, watchPolicy } from './core/policy-loader.js';
@@ -61,6 +51,14 @@ export type { ReceiptStoreOptions } from './core/receipt-store.js';
 export { SpendTracker } from './core/spend-tracker.js';
 export { ConsoleReporter } from './reporters/console.js';
 export type { ConsoleReporterOptions, ConsoleReportInput } from './reporters/console.js';
+
+// --- Storage ---
+export type { StorageAdapter, ReceiptFilters } from './storage/adapter.js';
+export { SQLiteAdapter } from './storage/sqlite-adapter.js';
+export type { SQLiteAdapterOptions } from './storage/sqlite-adapter.js';
+export { PostgresAdapter } from './storage/postgres-adapter.js';
+export type { PostgresAdapterOptions } from './storage/postgres-adapter.js';
+export { MemoryAdapter } from './storage/memory-adapter.js';
 
 // --- Middleware ---
 export { withGuard } from './middleware/mcp.js';
@@ -91,7 +89,4 @@ export type {
 } from './middleware/engine.js';
 
 export { createSimulationPreview } from './middleware/simulation.js';
-export type {
-  RateLimitPreview,
-  SimulationPreview,
-} from './middleware/simulation.js';
+export type { RateLimitPreview, SimulationPreview } from './middleware/simulation.js';
