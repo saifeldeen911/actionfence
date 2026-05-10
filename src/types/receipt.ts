@@ -62,6 +62,4 @@ export interface ReceiptVerificationFailure {
 }
 
 /** Result of verifying the persisted receipt chain. */
-export type ReceiptVerificationResult =
-  | ReceiptVerificationSuccess
-  | ReceiptVerificationFailure;
+export type ReceiptVerificationResult = ReceiptVerificationSuccess | ReceiptVerificationFailure;

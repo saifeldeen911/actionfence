@@ -7,10 +7,12 @@
 
 import { run } from './runner.js';
 
-run(process.argv.slice(2)).then((exitCode) => {
-  process.exitCode = exitCode;
-}).catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`Error: ${message}\n`);
-  process.exitCode = 1;
-});
+run(process.argv.slice(2))
+  .then((exitCode) => {
+    process.exitCode = exitCode;
+  })
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Error: ${message}\n`);
+    process.exitCode = 1;
+  });

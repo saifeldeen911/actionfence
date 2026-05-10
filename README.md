@@ -143,33 +143,33 @@ Install and integrate the "actionfence" npm package into my current project. Rea
 
 ### Policy Reference
 
-| Field | Type | Required | Notes |
-| --- | --- | --- | --- |
-| `service` | `string` | Yes | Service name |
-| `version` | `string` | Yes | Policy version |
-| `default_rule` | `"allow" \| "deny"` | No | Defaults to `"deny"` |
-| `actions` | `object` | Yes | Action rules keyed by action name |
-| `rate_limits` | `object` | No | Request and transaction limits |
-| `spend_limits` | `object` | No | Global session/day spend limits in major units |
-| `regulations` | `string[]` | No | Stored (persisted) in `v0.1.0` but not enforced |
+| Field          | Type                | Required | Notes                                           |
+| -------------- | ------------------- | -------- | ----------------------------------------------- |
+| `service`      | `string`            | Yes      | Service name                                    |
+| `version`      | `string`            | Yes      | Policy version                                  |
+| `default_rule` | `"allow" \| "deny"` | No       | Defaults to `"deny"`                            |
+| `actions`      | `object`            | Yes      | Action rules keyed by action name               |
+| `rate_limits`  | `object`            | No       | Request and transaction limits                  |
+| `spend_limits` | `object`            | No       | Global session/day spend limits in major units  |
+| `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields
 
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `allowed` | `boolean` | - | Required |
-| `identity` | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier |
-| `max_spend` | `number` | - | Per-invocation cap in major units |
-| `currency` | `string` | - | ISO 4217 currency code |
-| `requires_human_approval` | `boolean` | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
+| Field                     | Type                             | Default | Notes                                                                                                                                                                                  |
+| ------------------------- | -------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allowed`                 | `boolean`                        | -       | Required                                                                                                                                                                               |
+| `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier                                                                                                                                                                  |
+| `max_spend`               | `number`                         | -       | Per-invocation cap in major units                                                                                                                                                      |
+| `currency`                | `string`                         | -       | ISO 4217 currency code                                                                                                                                                                 |
+| `requires_human_approval` | `boolean`                        | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
 
 ### Identity Tiers
 
-| Tier | Meaning |
-| --- | --- |
-| `anonymous` | No credentials presented |
-| `token` | Bearer token present but not signature-verified |
-| `verified` | JWT passed JWKS verification |
+| Tier        | Meaning                                         |
+| ----------- | ----------------------------------------------- |
+| `anonymous` | No credentials presented                        |
+| `token`     | Bearer token present but not signature-verified |
+| `verified`  | JWT passed JWKS verification                    |
 
 Verified identity is built in when you configure `identityReaderOptions.jwksUri` and JWKS lookup succeeds from cache or the remote endpoint. If JWKS retrieval or network access fails, ActionFence may fall back to `token` identity; invalid signatures, wrong issuers or audiences, unknown kids, and other cryptographic verification failures stay anonymous or rejected.
 
@@ -286,26 +286,26 @@ const middleware = guard({
 
 ### `GuardOptions`
 
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `policy` | `string \| GuardPolicy` | - | Required |
-| `simulate` | `boolean` | `false` | Dry-run mode |
-| `silent` | `boolean` | `false` | Suppress console output |
-| `secret` | `string` | - | HMAC secret override |
-| `identityReaderOptions` | `IdentityReaderOptions` | - | Built-in JWKS verification config |
-| `identityReader` | `IdentityReaderLike` | - | Full custom identity resolution override |
-| `actionResolver` | `(toolName, params) => string` | - | Map tool names to policy actions |
-| `spendExtractor` | `(params) => number \| null` | - | Extract spend in major units |
-| `transactionResolver` | `(toolName, params, decision) => boolean` | - | Override transaction classification |
-| `onDecision` | `(decision) => void` | - | Metrics, logging, hooks |
-| `watchPolicy` | `boolean` | `false` | Hot-reload file-backed policies |
+| Option                  | Type                                      | Default | Notes                                    |
+| ----------------------- | ----------------------------------------- | ------- | ---------------------------------------- |
+| `policy`                | `string \| GuardPolicy`                   | -       | Required                                 |
+| `simulate`              | `boolean`                                 | `false` | Dry-run mode                             |
+| `silent`                | `boolean`                                 | `false` | Suppress console output                  |
+| `secret`                | `string`                                  | -       | HMAC secret override                     |
+| `identityReaderOptions` | `IdentityReaderOptions`                   | -       | Built-in JWKS verification config        |
+| `identityReader`        | `IdentityReaderLike`                      | -       | Full custom identity resolution override |
+| `actionResolver`        | `(toolName, params) => string`            | -       | Map tool names to policy actions         |
+| `spendExtractor`        | `(params) => number \| null`              | -       | Extract spend in major units             |
+| `transactionResolver`   | `(toolName, params, decision) => boolean` | -       | Override transaction classification      |
+| `onDecision`            | `(decision) => void`                      | -       | Metrics, logging, hooks                  |
+| `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
 
 ### `IdentityReaderOptions`
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `jwksUri` | `string` | Remote JWKS endpoint |
-| `issuer` | `string \| string[]` | Optional issuer check |
+| Field      | Type                 | Notes                   |
+| ---------- | -------------------- | ----------------------- |
+| `jwksUri`  | `string`             | Remote JWKS endpoint    |
+| `issuer`   | `string \| string[]` | Optional issuer check   |
 | `audience` | `string \| string[]` | Optional audience check |
 
 ## `0.1.0` Limits
@@ -356,7 +356,6 @@ npm run lint
 npm test
 npm run build
 ```
-
 
 ## License
 

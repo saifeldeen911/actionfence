@@ -88,7 +88,8 @@ export class GuardEngine {
     this.policy = loadPolicy(options.policy);
     this.policyRefBase = getPolicyRefBase(options.policy, this.policy);
     this.evaluator = new PolicyEvaluator(this.policy);
-    this.identityReader = options.identityReader ?? new IdentityReader(options.identityReaderOptions);
+    this.identityReader =
+      options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker();
     this.receiptStore =
@@ -329,7 +330,9 @@ export class GuardEngine {
     mode: GuardMode,
   ): SpendSnapshot | null {
     if (decision.status !== 'PASSED') {
-      return decision.spendAmount !== null ? this.previewSpend(agentId, decision.spendAmount) : null;
+      return decision.spendAmount !== null
+        ? this.previewSpend(agentId, decision.spendAmount)
+        : null;
     }
 
     return this.recordSpend(agentId, decision.spendAmount, mode);

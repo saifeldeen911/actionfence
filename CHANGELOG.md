@@ -29,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unhandled promise rejection during engine disposal when closing the receipt store
 - Improved SQLite storage adapter error handling by preserving original stack traces and parsing constraint violations robustly
 
-
 ## [0.1.2] — 2026-05-08
 
 ### Changed

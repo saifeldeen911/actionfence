@@ -39,7 +39,8 @@ export function runValidate(args: ParsedArgs, ctx: CliContext): number {
     if (error instanceof PolicyValidationError) {
       ctx.stderr(
         `${chalk.red('x')} Invalid policy: ${chalk.bold(filePath)}\n\n` +
-          formatValidationErrors(error.validationErrors) + '\n',
+          formatValidationErrors(error.validationErrors) +
+          '\n',
       );
       return 1;
     }
@@ -68,9 +69,7 @@ function formatPolicySummary(policy: GuardPolicy): string {
   const rpmLabel = policy.rate_limits?.requests_per_minute ?? 'unlimited';
   const tpdLabel = policy.rate_limits?.transactions_per_day ?? 'unlimited';
   const spendLabel = formatSpendLimits(policy);
-  const regLabel = policy.regulations?.length
-    ? policy.regulations.join(', ')
-    : chalk.dim('none');
+  const regLabel = policy.regulations?.length ? policy.regulations.join(', ') : chalk.dim('none');
 
   const lines = [
     `  ${chalk.dim('Service:')}         ${policy.service}`,

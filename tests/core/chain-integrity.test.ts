@@ -66,8 +66,10 @@ describe('receipt chain integrity', () => {
 
     const tamperedId = insertedIds[500];
     const db = new Database(databasePath);
-    db.prepare('UPDATE receipts SET payload_json = ? WHERE receipt_id = ?')
-      .run('{"tampered":true}', tamperedId);
+    db.prepare('UPDATE receipts SET payload_json = ? WHERE receipt_id = ?').run(
+      '{"tampered":true}',
+      tamperedId,
+    );
     db.close();
 
     const reopenedStore = new ReceiptStore({

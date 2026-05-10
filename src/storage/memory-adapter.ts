@@ -97,7 +97,7 @@ function deepFreeze<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
-  
+
   const propNames = Object.getOwnPropertyNames(obj);
   for (const name of propNames) {
     const value = (obj as Record<string, unknown>)[name];
@@ -105,6 +105,6 @@ function deepFreeze<T>(obj: T): T {
       deepFreeze(value);
     }
   }
-  
+
   return Object.freeze(obj);
 }

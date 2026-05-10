@@ -4,12 +4,12 @@ This example shows an MCP server protected by ActionFence.
 
 ## Tools
 
-| Tool | Policy | Identity | Spend Cap |
-| --- | --- | --- | --- |
-| `search_flights` | Allowed | `token` | - |
-| `book_flight` | Allowed | `verified` | `500.00 USD` |
-| `check_status` | Allowed | `token` | - |
-| `bulk_booking` | Blocked | - | - |
+| Tool             | Policy  | Identity   | Spend Cap    |
+| ---------------- | ------- | ---------- | ------------ |
+| `search_flights` | Allowed | `token`    | -            |
+| `book_flight`    | Allowed | `verified` | `500.00 USD` |
+| `check_status`   | Allowed | `token`    | -            |
+| `bulk_booking`   | Blocked | -          | -            |
 
 ## Quick Start
 

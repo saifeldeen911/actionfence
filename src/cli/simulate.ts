@@ -8,7 +8,11 @@ import chalk from 'chalk';
 import { loadPolicy } from '../core/policy-loader.js';
 import { GuardEngine } from '../middleware/engine.js';
 import type { SimulationPreview } from '../middleware/simulation.js';
-import type { AgentIdentity, IdentityClassification, IdentityReaderLike } from '../types/identity.js';
+import type {
+  AgentIdentity,
+  IdentityClassification,
+  IdentityReaderLike,
+} from '../types/identity.js';
 import type { ParsedArgs, CliContext } from './runner.js';
 
 const VALID_IDENTITY_TIERS: readonly IdentityClassification[] = ['anonymous', 'token', 'verified'];
@@ -110,7 +114,7 @@ function parseIdentityTier(value: string | undefined): IdentityClassification {
 
   const normalized = value.toLowerCase().trim();
   return VALID_IDENTITY_TIERS.includes(normalized as IdentityClassification)
-    ? normalized as IdentityClassification
+    ? (normalized as IdentityClassification)
     : 'anonymous';
 }
 
@@ -153,10 +157,11 @@ function printSimulationResult(
   const passed = preview.status === 'PASSED';
   const header = chalk.bold.yellow('SIMULATION') + chalk.dim(' - actionfence');
   const statusLine = passed ? chalk.green('PASS') : chalk.red('BLOCK');
-  const spendLabel = preview.spendAmount !== null
-    ? formatMoney(preview.spendAmount, currency)
-    : chalk.dim('none');
-  const approvalLabel = preview.requiresHumanApproval ? chalk.yellow('required') : chalk.dim('not required');
+  const spendLabel =
+    preview.spendAmount !== null ? formatMoney(preview.spendAmount, currency) : chalk.dim('none');
+  const approvalLabel = preview.requiresHumanApproval
+    ? chalk.yellow('required')
+    : chalk.dim('not required');
   const rateLimitLabel = preview.rateLimit
     ? `${preview.rateLimit.remaining}/${preview.rateLimit.limit} remaining`
     : chalk.dim('unlimited');

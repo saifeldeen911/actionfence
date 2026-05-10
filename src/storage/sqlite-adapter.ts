@@ -134,7 +134,9 @@ export class SQLiteAdapter implements StorageAdapter {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       const pathInfo = databasePath ? ` at path "${databasePath}"` : '';
-      throw new Error(`[actionfence] Failed to initialize SQLite storage${pathInfo}: ${message}`, { cause: error });
+      throw new Error(`[actionfence] Failed to initialize SQLite storage${pathInfo}: ${message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -146,13 +148,13 @@ export class SQLiteAdapter implements StorageAdapter {
         if (error.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
           throw new Error(
             `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id})`,
-            { cause: error }
+            { cause: error },
           );
         }
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
           throw new Error(
             `[actionfence] Failed to insert receipt: Duplicate receipt_hash (${receipt.receipt_hash})`,
-            { cause: error }
+            { cause: error },
           );
         }
       }
@@ -294,9 +296,7 @@ function buildFilterQuery(baseSql: string, filters?: ReceiptFilters): FilterQuer
     params.push(filters.until.toISOString());
   }
 
-  const sql = clauses.length > 0
-    ? `${baseSql} WHERE ${clauses.join(' AND ')}`
-    : baseSql;
+  const sql = clauses.length > 0 ? `${baseSql} WHERE ${clauses.join(' AND ')}` : baseSql;
 
   return { sql, params };
 }

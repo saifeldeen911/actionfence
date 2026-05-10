@@ -1,12 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createServer, type Server } from 'node:http';
 import { generateKeyPairSync } from 'node:crypto';
-import {
-  exportJWK,
-  SignJWT,
-  type JWK,
-  type KeyLike,
-} from 'jose';
+import { exportJWK, SignJWT, type JWK, type KeyLike } from 'jose';
 import { IdentityReader } from '../../src/core/identity-reader.js';
 import type { RequestContext } from '../../src/core/identity-reader.js';
 
@@ -141,9 +136,7 @@ describe('IdentityReader', () => {
       });
 
       expect(identity.classification).toBe('anonymous');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to decode JWT'),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to decode JWT'));
       consoleSpy.mockRestore();
     });
 
@@ -267,9 +260,13 @@ describe('IdentityReader with JWKS', () => {
   });
 
   it('should return anonymous when issuer validation fails', async () => {
-    const token = await signJwt(primaryKeys.privateKey, { sub: 'issuer-agent' }, {
-      issuer: 'https://wrong-issuer.example',
-    });
+    const token = await signJwt(
+      primaryKeys.privateKey,
+      { sub: 'issuer-agent' },
+      {
+        issuer: 'https://wrong-issuer.example',
+      },
+    );
     const reader = new IdentityReader({
       jwksUri: serverUrl,
       issuer,
@@ -285,9 +282,13 @@ describe('IdentityReader with JWKS', () => {
   });
 
   it('should return anonymous when audience validation fails', async () => {
-    const token = await signJwt(primaryKeys.privateKey, { sub: 'audience-agent' }, {
-      audience: 'wrong-audience',
-    });
+    const token = await signJwt(
+      primaryKeys.privateKey,
+      { sub: 'audience-agent' },
+      {
+        audience: 'wrong-audience',
+      },
+    );
     const reader = new IdentityReader({
       jwksUri: serverUrl,
       issuer,

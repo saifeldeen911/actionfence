@@ -32,7 +32,5 @@
     "daily_max": 5000,
     "currency": "USD"
   },
-  "regulations": [
-    "EU_AI_Act_Art50"
-  ]
+  "regulations": ["EU_AI_Act_Art50"]
 }

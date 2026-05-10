@@ -231,11 +231,7 @@ export class RateLimiter {
   }
 
   /** Remove map entries where all timestamps have expired. */
-  private cleanupStore(
-    store: Map<string, number[]>,
-    now: number,
-    windowMs: number,
-  ): void {
+  private cleanupStore(store: Map<string, number[]>, now: number, windowMs: number): void {
     const cutoff = now - windowMs;
     for (const [key, timestamps] of store) {
       const lastTimestamp = timestamps[timestamps.length - 1];

@@ -2,9 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ConsoleReporter } from '../../src/reporters/console.js';
 import type { EvaluationDecision } from '../../src/types/decision.js';
 
-function makeDecision(
-  overrides: Partial<EvaluationDecision> = {},
-): EvaluationDecision {
+function makeDecision(overrides: Partial<EvaluationDecision> = {}): EvaluationDecision {
   return {
     status: 'PASSED',
     action: 'search_flights',

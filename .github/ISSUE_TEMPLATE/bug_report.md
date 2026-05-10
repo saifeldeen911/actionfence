@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Report a reproducible defect in AgentGuard
-title: "[Bug] "
+title: '[Bug] '
 labels: bug
-assignees: ""
+assignees: ''
 ---
 
 ## Summary
@@ -12,9 +12,9 @@ Describe the bug clearly and concisely.
 
 ## Steps To Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
