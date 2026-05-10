@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS actionfence_receipts (
   policy_ref     TEXT NOT NULL,
   status         TEXT NOT NULL CHECK (status IN ('PASSED', 'BLOCKED')),
   block_reason   TEXT,
-  identity_tier  TEXT NOT NULL,
+  identity_tier  TEXT NOT NULL CHECK (identity_tier IN ('anonymous', 'token', 'verified')),
   spend_amount   DOUBLE PRECISION,
   prev_hash      TEXT NOT NULL,
   receipt_hash   TEXT NOT NULL UNIQUE,
@@ -118,13 +118,11 @@ export class PostgresAdapter implements StorageAdapter {
       INSERT INTO actionfence_receipts (
         receipt_id, timestamp, agent_id, owner_id, action, tool_name,
         payload_json, payload_hash, policy_ref, status, block_reason,
-        identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig,
-        created_at
+        identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
       ) VALUES (
         $1, $2, $3, $4, $5, $6,
         $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16,
-        $2
+        $12, $13, $14, $15, $16
       )
     `;
 
@@ -151,15 +149,21 @@ export class PostgresAdapter implements StorageAdapter {
       await this.pool.query(text, values);
     } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === '23505') {
-        const detail = 'detail' in error ? String(error.detail) : '';
-        if (detail.includes('receipt_hash')) {
+        const constraint = 'constraint' in error ? String(error.constraint) : '';
+        if (constraint === 'actionfence_receipts_receipt_hash_key' || constraint.includes('receipt_hash')) {
           throw new Error(
             `[actionfence] Failed to insert receipt: Duplicate receipt_hash (${receipt.receipt_hash})`,
             { cause: error },
           );
         }
+        if (constraint === 'actionfence_receipts_pkey' || constraint.includes('pkey')) {
+          throw new Error(
+            `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id})`,
+            { cause: error },
+          );
+        }
         throw new Error(
-          `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id})`,
+          `[actionfence] Failed to insert receipt: Unique constraint violation`,
           { cause: error },
         );
       }
