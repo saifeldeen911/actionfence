@@ -11,6 +11,7 @@ import type { RateLimiter } from '../core/rate-limiter.js';
 import type { ReceiptStore, ReceiptStoreOptions } from '../core/receipt-store.js';
 import type { SpendTracker } from '../core/spend-tracker.js';
 import type { ConsoleReporter } from '../reporters/console.js';
+import type { PoolConfig } from 'pg';
 
 export interface SqliteStorageConfig {
   /**
@@ -28,7 +29,7 @@ export interface PostgresStorageConfig {
   /** Connection string for the PostgreSQL database. Required for postgres adapter. */
   readonly connectionString: string;
   /** Advanced: raw pg.Pool config. Only valid for postgres. */
-  readonly poolConfig?: Record<string, unknown>;
+  readonly poolConfig?: PoolConfig;
 }
 
 export type StorageConfig = SqliteStorageConfig | PostgresStorageConfig;

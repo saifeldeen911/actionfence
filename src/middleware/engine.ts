@@ -206,7 +206,7 @@ export class GuardEngine {
         const { PostgresAdapter } = await import('../storage/postgres-adapter.js');
         adapter = await PostgresAdapter.create({
           connectionString: storageConfig.connectionString,
-          poolConfig: storageConfig.poolConfig as import('pg').PoolConfig | undefined,
+          poolConfig: storageConfig.poolConfig,
         });
       }
 
