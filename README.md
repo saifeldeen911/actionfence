@@ -160,6 +160,10 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
   "spend_limits": {
     "session_max": 1000,
     "daily_max": 2500,
+    "window": {
+      "max_amount": 500,
+      "duration_minutes": 60
+    },
     "currency": "USD"
   },
   "regulations": ["EU_AI_Act_Art50"]
@@ -175,7 +179,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `default_rule` | `"allow" \| "deny"` | No       | Defaults to `"deny"`                            |
 | `actions`      | `object`            | Yes      | Action rules keyed by action name               |
 | `rate_limits`  | `object`            | No       | Request and transaction limits                  |
-| `spend_limits` | `object`            | No       | Global session/day spend limits in major units  |
+| `spend_limits` | `object`            | No       | Session, daily, and rolling-window spend limits |
 | `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields

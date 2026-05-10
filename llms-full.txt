@@ -1,6 +1,6 @@
 # ActionFence — Complete Integration Reference
 
-> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps, rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), and simulation mode. Node.js >= 20 required.
+> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), and simulation mode. Node.js >= 20 required.
 
 ## Install
 
@@ -136,6 +136,10 @@ Create with `npx actionfence init` or write manually:
   "spend_limits": {
     "session_max": 1000,
     "daily_max": 2500,
+    "window": {
+      "max_amount": 500,
+      "duration_minutes": 60
+    },
     "currency": "USD"
   }
 }
@@ -148,8 +152,31 @@ Create with `npx actionfence init` or write manually:
 - `default_rule` ("allow" | "deny", optional): What to do when an action is not listed. Defaults to "deny".
 - `actions` (object, required): Map of action name to rule object.
 - `rate_limits` (object, optional): `requests_per_minute` and `transactions_per_day`.
-- `spend_limits` (object, optional): `session_max`, `daily_max`, and `currency`.
+- `spend_limits` (object, optional): `session_max`, `daily_max`, `window` (rolling-window cap), and `currency`.
 - `regulations` (string[], optional): Stored in receipts but not enforced in v0.1.
+
+### Rolling-window spend caps
+
+The `spend_limits.window` field adds time-based spend protection. It prevents agents from exhausting budgets through many small transactions ("death by a thousand cuts").
+
+```json
+"spend_limits": {
+  "session_max": 1000,
+  "daily_max": 2500,
+  "window": {
+    "max_amount": 500,
+    "duration_minutes": 60
+  },
+  "currency": "USD"
+}
+```
+
+Behavior:
+- `max_amount`: Maximum cumulative spend allowed within the rolling window
+- `duration_minutes`: Window duration in minutes (sliding, not fixed)
+- Entries older than `duration_minutes` are automatically evicted (lazy eviction)
+- Window check runs in the same pipeline as session/daily checks — whichever limit triggers first blocks the action
+- Fully optional — omitting `window` preserves v0.1 behavior exactly
 
 ### Action rule fields
 
@@ -363,6 +390,9 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - `AsyncMutex` protects hash-chain integrity during concurrent inserts
 - `pg` is an optional peer dependency (`npm install pg` only when using Postgres storage)
 - `GuardEngine` uses lazy async initialization — `withGuard()` and `guard()` remain synchronous
+- **Rolling-window spend caps** via `spend_limits.window` with `max_amount` and `duration_minutes`
+- New `SpendTracker.checkWindow()` for rolling-window enforcement with lazy eviction
+- `SpendSnapshot` now includes optional `windowTotal` and `windowResetMs` fields
 
 ## Current Limitations
 

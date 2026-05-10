@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `ReceiptFilters` type for querying receipts by agent, action, status, and time range
   - New `count()` and `query()` methods on all adapters for introspection and dashboards
   - `AsyncMutex` in `ReceiptStore` to prevent hash-chain corruption from concurrent inserts
+- **Rolling-Window Spend Caps**
+  - New `spend_limits.window` policy field with `max_amount` and `duration_minutes`
+  - Protects against fragmented small-amount spend exhaustion ("death by a thousand cuts")
+  - Uses sliding window log with lazy eviction (same pattern as `RateLimiter`)
+  - New `SpendWindowConfig` type and `WindowCheckResult` interface
+  - `SpendTracker.checkWindow()` and `previewCheckWindow()` methods for enforcement and simulation
+  - Integrated into `GuardEngine.enforceSpendLimits()` pipeline
+  - Window totals included in `SpendSnapshot` (`windowTotal`, `windowResetMs`)
+
 
 ### Changed
 

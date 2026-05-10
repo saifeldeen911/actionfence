@@ -26,12 +26,22 @@ export interface ActionRule {
   readonly requires_human_approval?: boolean;
 }
 
+/** Rolling-window spend cap configuration. */
+export interface SpendWindowConfig {
+  /** Maximum spend amount allowed within the rolling window. */
+  readonly max_amount: number;
+  /** Duration of the rolling window in minutes. */
+  readonly duration_minutes: number;
+}
+
 /** Global spend limits for one policy in major units. */
 export interface SpendLimitsConfig {
   /** Maximum projected session spend per agent. */
   readonly session_max?: number;
   /** Maximum projected UTC-day spend per agent. */
   readonly daily_max?: number;
+  /** Rolling-window spend cap. Blocks when cumulative spend within duration_minutes exceeds max_amount. */
+  readonly window?: SpendWindowConfig;
   /** ISO 4217 currency code for spend reporting, if known. */
   readonly currency?: string;
 }

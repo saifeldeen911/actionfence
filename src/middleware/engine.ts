@@ -18,6 +18,7 @@ import type { AgentIdentity, IdentityReaderLike } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
 import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
+import type { WindowCheckResult } from '../core/spend-tracker.js';
 import { createSimulationPreview, type SimulationPreview } from './simulation.js';
 
 /** Whether a guard evaluation is enforcing or dry-running. */
@@ -362,12 +363,33 @@ export class GuardEngine {
         : null;
     }
 
-    return this.recordSpend(agentId, decision.spendAmount, mode);
+    const snapshot = this.recordSpend(agentId, decision.spendAmount, mode);
+    return this.enrichWithWindowData(agentId, snapshot);
   }
 
   private previewSpend(agentId: string, amount: number): SpendSnapshot | null {
     const result = this.spendTracker.previewRecord(agentId, amount);
     return result.recorded ? result.snapshot : null;
+  }
+
+  /**
+   * Enrich a spend snapshot with rolling-window data if configured.
+   */
+  private enrichWithWindowData(
+    agentId: string,
+    snapshot: SpendSnapshot | null,
+  ): SpendSnapshot | null {
+    if (!snapshot) return null;
+
+    const windowConfig = this.policy.spend_limits?.window;
+    if (!windowConfig) return snapshot;
+
+    const windowResult = this.spendTracker.checkWindow(agentId, windowConfig);
+    return Object.freeze({
+      ...snapshot,
+      windowTotal: windowResult.windowTotal,
+      windowResetMs: windowResult.windowResetMs,
+    });
   }
 
   private enforceCapabilities(
@@ -403,7 +425,18 @@ export class GuardEngine {
     }
 
     const projected = this.spendTracker.previewRecord(identity.agentId, amount);
-    const blockedReason = resolveSpendLimitReason(this.policy.spend_limits, projected.snapshot);
+
+    // Check rolling-window spend cap
+    const windowConfig = this.policy.spend_limits?.window;
+    const windowResult = windowConfig
+      ? this.spendTracker.checkWindow(identity.agentId, windowConfig, amount)
+      : null;
+
+    const blockedReason = resolveSpendLimitReason(
+      this.policy.spend_limits,
+      projected.snapshot,
+      windowResult,
+    );
 
     if (!blockedReason) {
       return decision;
@@ -473,6 +506,7 @@ function createBlockedDecision(input: {
 function resolveSpendLimitReason(
   config: SpendLimitsConfig | undefined,
   snapshot: SpendSnapshot,
+  windowResult: WindowCheckResult | null = null,
 ): string | null {
   if (!config) {
     return null;
@@ -484,6 +518,11 @@ function resolveSpendLimitReason(
 
   if (config.daily_max !== undefined && snapshot.dailyTotal > config.daily_max) {
     return `Action would exceed daily spend limit of ${formatMoney(config.daily_max, config.currency)}`;
+  }
+
+  if (windowResult && !windowResult.allowed) {
+    const windowDuration = config.window?.duration_minutes ?? 0;
+    return `Action would exceed rolling window spend limit of ${formatMoney(windowResult.windowMax, config.currency)} per ${windowDuration} minutes`;
   }
 
   return null;

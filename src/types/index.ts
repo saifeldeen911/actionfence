@@ -9,6 +9,7 @@ export type {
   ActionRule,
   RateLimitsConfig,
   SpendLimitsConfig,
+  SpendWindowConfig,
   GuardPolicy,
 } from './policy.js';
 

@@ -92,6 +92,24 @@
           "minimum": 0,
           "description": "Maximum projected UTC-day spend per agent in major units."
         },
+        "window": {
+          "type": "object",
+          "description": "Rolling-window spend cap. Blocks when cumulative spend within duration_minutes exceeds max_amount.",
+          "additionalProperties": false,
+          "properties": {
+            "max_amount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Maximum spend allowed within the rolling window in major units."
+            },
+            "duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Duration of the rolling window in minutes."
+            }
+          },
+          "required": ["max_amount", "duration_minutes"]
+        },
         "currency": {
           "type": "string",
           "pattern": "^[A-Z]{3}$",

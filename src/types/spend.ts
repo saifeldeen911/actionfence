@@ -9,6 +9,10 @@ export interface SpendSnapshot {
   readonly sessionTotal: number;
   readonly dailyTotal: number;
   readonly dayKeyUtc: string;
+  /** Total spend within the rolling window, if configured. */
+  readonly windowTotal?: number;
+  /** Milliseconds until the oldest entry in the window expires, if configured. */
+  readonly windowResetMs?: number;
 }
 
 /** Result returned after recording a spend amount. */

@@ -11,6 +11,7 @@ export type {
   ActionRule,
   RateLimitsConfig,
   SpendLimitsConfig,
+  SpendWindowConfig,
   GuardPolicy,
 } from './types/policy.js';
 
