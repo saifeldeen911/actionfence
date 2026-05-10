@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GuardEngine.finalize()` is now async to support the async `ReceiptStore.insert()`
 - Custom adapters can be injected via `ReceiptStoreOptions.adapter`
 
+### Fixed
+
+- Fixed unhandled promise rejection during engine disposal when closing the receipt store
+- Improved SQLite storage adapter error handling by preserving original stack traces and parsing constraint violations robustly
+
+
 ## [0.1.2] — 2026-05-08
 
 ### Changed
