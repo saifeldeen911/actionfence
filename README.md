@@ -340,7 +340,6 @@ const middleware = guard({
 - No APoP / LAS-WG adapters yet
 - No wildcard scope patterns or path-policy DSL
 - `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval workflow yet (use the callback to build your own)
-- SQLite receipt store is single-instance only — PostgreSQL backend coming in v0.2
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 
 ## CLI Reference

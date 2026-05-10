@@ -12,14 +12,26 @@ import type { ReceiptStore, ReceiptStoreOptions } from '../core/receipt-store.js
 import type { SpendTracker } from '../core/spend-tracker.js';
 import type { ConsoleReporter } from '../reporters/console.js';
 
-export interface StorageConfig {
-  /** Which adapter to use. Defaults to 'sqlite'. */
-  readonly adapter: 'sqlite' | 'postgres';
-  /** SQLite: file path. Postgres: connection string. */
+export interface SqliteStorageConfig {
+  /**
+   * Which adapter to use. Required on the configuration object.
+   * If `GuardOptions.storage` is omitted entirely, ActionFence defaults to 'sqlite'.
+   */
+  readonly adapter: 'sqlite';
+  /** File path for the SQLite database. If omitted, a default path in .actionfence/ is used. */
   readonly connectionString?: string;
-  /** Advanced: raw pg.Pool config. Only used with 'postgres'. */
+}
+
+export interface PostgresStorageConfig {
+  /** Which adapter to use. Required. */
+  readonly adapter: 'postgres';
+  /** Connection string for the PostgreSQL database. Required for postgres adapter. */
+  readonly connectionString: string;
+  /** Advanced: raw pg.Pool config. Only valid for postgres. */
   readonly poolConfig?: Record<string, unknown>;
 }
+
+export type StorageConfig = SqliteStorageConfig | PostgresStorageConfig;
 
 /**
  * Options passed to `withGuard()` or `guard()` middleware.
@@ -72,7 +84,10 @@ export interface GuardOptions {
   /** Options used when ActionFence creates its default ReceiptStore. */
   readonly receiptStoreOptions?: ReceiptStoreOptions;
 
-  /** Storage backend configuration. Defaults to SQLite. */
+  /**
+   * Storage backend configuration. Defaults to a SQLite backend if undefined.
+   * Note: If `receiptStore` is provided, it takes precedence and this `storage` config is ignored.
+   */
   readonly storage?: StorageConfig;
 
   /** Dependency injection hooks for tests or advanced integrations. */

@@ -76,7 +76,6 @@ export class GuardEngine {
   private readonly identityReader: IdentityReaderLike;
   private readonly rateLimiter: RateLimiter;
   private readonly spendTracker: SpendTracker;
-  private readonly receiptStore: ReceiptStore;
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
