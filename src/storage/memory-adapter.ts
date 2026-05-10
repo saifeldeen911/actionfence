@@ -21,7 +21,7 @@ export class MemoryAdapter implements StorageAdapter {
     if (this.byId.has(receipt.receipt_id)) {
       throw new Error(`Duplicate receipt_id: ${receipt.receipt_id}`);
     }
-    const frozen = Object.freeze({ ...receipt });
+    const frozen = deepFreeze({ ...receipt });
     this.receipts.push(frozen);
     this.byId.set(frozen.receipt_id, frozen);
   }
@@ -91,4 +91,20 @@ function applyFilters(
     if (filters.until !== undefined && r.timestamp > filters.until.toISOString()) return false;
     return true;
   });
+}
+
+function deepFreeze<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  
+  const propNames = Object.getOwnPropertyNames(obj);
+  for (const name of propNames) {
+    const value = (obj as Record<string, unknown>)[name];
+    if (value !== null && typeof value === 'object') {
+      deepFreeze(value);
+    }
+  }
+  
+  return Object.freeze(obj);
 }

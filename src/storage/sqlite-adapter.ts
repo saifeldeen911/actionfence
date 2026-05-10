@@ -82,57 +82,76 @@ export class SQLiteAdapter implements StorageAdapter {
   private readonly getAllOrderedStmt: Database.Statement;
 
   constructor(options: SQLiteAdapterOptions = {}) {
-    const databasePath = resolveDatabasePath(options.databasePath);
-    mkdirSync(dirname(databasePath), { recursive: true });
+    let databasePath: string | undefined;
+    try {
+      databasePath = resolveDatabasePath(options.databasePath);
+      mkdirSync(dirname(databasePath), { recursive: true });
 
-    this.db = new Database(databasePath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('synchronous = FULL');
+      this.db = new Database(databasePath);
+      this.db.pragma('journal_mode = WAL');
+      this.db.pragma('synchronous = FULL');
 
-    this.initializeSchema();
+      this.initializeSchema();
 
-    this.insertStmt = this.db.prepare(`
-      INSERT INTO receipts (
-        receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-        payload_json, payload_hash, policy_ref, status, block_reason,
-        identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig,
-        created_at
-      ) VALUES (
-        @receipt_id, @timestamp, @agent_id, @owner_id, @action, @tool_name,
-        @payload_json, @payload_hash, @policy_ref, @status, @block_reason,
-        @identity_tier, @spend_amount, @prev_hash, @receipt_hash, @receipt_sig,
-        @timestamp
-      )
-    `);
+      this.insertStmt = this.db.prepare(`
+        INSERT INTO receipts (
+          receipt_id, timestamp, agent_id, owner_id, action, tool_name,
+          payload_json, payload_hash, policy_ref, status, block_reason,
+          identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig,
+          created_at
+        ) VALUES (
+          @receipt_id, @timestamp, @agent_id, @owner_id, @action, @tool_name,
+          @payload_json, @payload_hash, @policy_ref, @status, @block_reason,
+          @identity_tier, @spend_amount, @prev_hash, @receipt_hash, @receipt_sig,
+          @timestamp
+        )
+      `);
 
-    this.getLastHashStmt = this.db.prepare(`
-      SELECT receipt_hash FROM receipts ORDER BY rowid DESC LIMIT 1
-    `);
+      this.getLastHashStmt = this.db.prepare(`
+        SELECT receipt_hash FROM receipts ORDER BY rowid DESC LIMIT 1
+      `);
 
-    this.getByIdStmt = this.db.prepare(`
-      SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-             payload_json, payload_hash, policy_ref, status, block_reason,
-             identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
-      FROM receipts WHERE receipt_id = ?
-    `);
+      this.getByIdStmt = this.db.prepare(`
+        SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
+               payload_json, payload_hash, policy_ref, status, block_reason,
+               identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
+        FROM receipts WHERE receipt_id = ?
+      `);
 
-    this.listByAgentStmt = this.db.prepare(`
-      SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-             payload_json, payload_hash, policy_ref, status, block_reason,
-             identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
-      FROM receipts WHERE agent_id = ? ORDER BY rowid ASC
-    `);
+      this.listByAgentStmt = this.db.prepare(`
+        SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
+               payload_json, payload_hash, policy_ref, status, block_reason,
+               identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
+        FROM receipts WHERE agent_id = ? ORDER BY rowid ASC
+      `);
 
-    this.getAllOrderedStmt = this.db.prepare(`
-      SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-             payload_json, payload_hash, policy_ref, status, block_reason,
-             identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
-      FROM receipts ORDER BY rowid ASC
-    `);
+      this.getAllOrderedStmt = this.db.prepare(`
+        SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
+               payload_json, payload_hash, policy_ref, status, block_reason,
+               identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
+        FROM receipts ORDER BY rowid ASC
+      `);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const pathInfo = databasePath ? ` at path "${databasePath}"` : '';
+      throw new Error(`[actionfence] Failed to initialize SQLite storage${pathInfo}: ${message}`);
+    }
   }
 
   insert(receipt: ActionReceipt): void {
-    this.insertStmt.run(receipt);
+    try {
+      this.insertStmt.run(receipt);
+    } catch (error: unknown) {
+      if (
+        error instanceof Error && 
+        (error.message.includes('UNIQUE') || error.message.includes('PRIMARY KEY'))
+      ) {
+        throw new Error(
+          `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id}) or receipt_hash (${receipt.receipt_hash})`,
+        );
+      }
+      throw error;
+    }
   }
 
   getLastHash(): string {

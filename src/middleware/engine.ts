@@ -185,7 +185,9 @@ export class GuardEngine {
     }
 
     if (this.ownsReceiptStore) {
-      void this.receiptStore.close();
+      void this.receiptStore.close().catch((err: unknown) => {
+        console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
+      });
     }
   }
 

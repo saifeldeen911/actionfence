@@ -40,7 +40,7 @@ export interface StorageAdapter {
   /** Count receipts matching optional filters. */
   count(filters?: ReceiptFilters): number | Promise<number>;
 
-  /** Query receipts with filters and an optional row limit. */
+  /** Query receipts with filters and an optional row limit. Returns receipts in insertion order (oldest first). */
   query(
     filters?: ReceiptFilters,
     limit?: number,
