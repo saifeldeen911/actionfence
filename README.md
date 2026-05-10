@@ -334,13 +334,14 @@ const middleware = guard({
 | `issuer`   | `string \| string[]` | Optional issuer check   |
 | `audience` | `string \| string[]` | Optional audience check |
 
-## `0.1.0` Limits
+## Current Limitations
 
 - Capability checks are exact string matches only
 - No APoP / LAS-WG adapters yet
 - No wildcard scope patterns or path-policy DSL
 - `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval workflow yet (use the callback to build your own)
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
+- SQLite storage is single-instance only (use the `postgres` adapter for multi-instance deployments)
 
 ## CLI Reference
 
