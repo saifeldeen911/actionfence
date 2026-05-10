@@ -102,6 +102,31 @@ Copy this prompt into Claude, Cursor, Copilot, or any LLM and let it handle the 
 Install and integrate the "actionfence" npm package into my current project. Read the full integration guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt then: install the package, create a guard-policy.json for my use case, and wire up the middleware.
 ```
 
+## Storage
+
+ActionFence stores signed receipts in SQLite by default (zero-config).
+For serverless or horizontally-scaled deployments, use PostgreSQL:
+
+### PostgreSQL Setup
+
+1. Install the `pg` driver:
+   ```bash
+   npm install pg
+   ```
+
+2. Configure storage in your guard setup:
+   ```typescript
+   withGuard(server, {
+     policy: './guard-policy.json',
+     storage: {
+       adapter: 'postgres',
+       connectionString: process.env.DATABASE_URL,
+     },
+   });
+   ```
+
+ActionFence auto-creates the `actionfence_receipts` table on first use.
+
 ## Policy File
 
 `guard-policy.json` defines what agents can do in your system.
@@ -241,7 +266,7 @@ Receipts are:
 - Append-only
 - Verifiable with `ReceiptStore.verifyChain()`
 
-> **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`). This works perfectly for single-instance deployments. If you run multiple server instances, each will maintain its own receipt chain. PostgreSQL backend for multi-instance deployments is planned for v0.2.
+> **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`) by default. This works perfectly for single-instance deployments. If you run multiple server instances, use the `postgres` storage adapter to maintain a single global receipt chain.
 
 Signing key resolution order:
 
@@ -299,6 +324,7 @@ const middleware = guard({
 | `transactionResolver`   | `(toolName, params, decision) => boolean` | -       | Override transaction classification      |
 | `onDecision`            | `(decision) => void`                      | -       | Metrics, logging, hooks                  |
 | `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
+| `storage`               | `StorageConfig`                           | -       | Storage backend (SQLite/PostgreSQL)      |
 
 ### `IdentityReaderOptions`
 

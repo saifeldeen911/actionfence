@@ -12,6 +12,15 @@ import type { ReceiptStore, ReceiptStoreOptions } from '../core/receipt-store.js
 import type { SpendTracker } from '../core/spend-tracker.js';
 import type { ConsoleReporter } from '../reporters/console.js';
 
+export interface StorageConfig {
+  /** Which adapter to use. Defaults to 'sqlite'. */
+  readonly adapter: 'sqlite' | 'postgres';
+  /** SQLite: file path. Postgres: connection string. */
+  readonly connectionString?: string;
+  /** Advanced: raw pg.Pool config. Only used with 'postgres'. */
+  readonly poolConfig?: Record<string, unknown>;
+}
+
 /**
  * Options passed to `withGuard()` or `guard()` middleware.
  */
@@ -62,6 +71,9 @@ export interface GuardOptions {
 
   /** Options used when ActionFence creates its default ReceiptStore. */
   readonly receiptStoreOptions?: ReceiptStoreOptions;
+
+  /** Storage backend configuration. Defaults to SQLite. */
+  readonly storage?: StorageConfig;
 
   /** Dependency injection hooks for tests or advanced integrations. */
   readonly identityReader?: IdentityReaderLike;

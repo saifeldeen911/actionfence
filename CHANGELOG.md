@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Storage Adapter Layer**
   - New `StorageAdapter` interface (`src/storage/adapter.ts`) for pluggable receipt storage backends
   - `SQLiteAdapter` — extracted from the former monolithic `ReceiptStore`, same SQLite behavior
+  - `PostgresAdapter` — new PostgreSQL adapter for horizontally-scaled deployments (`pg.Pool` based)
   - `MemoryAdapter` — lightweight in-memory adapter for tests and ephemeral use
   - New `ReceiptFilters` type for querying receipts by agent, action, status, and time range
   - New `count()` and `query()` methods on all adapters for introspection and dashboards
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All `ReceiptStore` public methods are now `async` (return `Promise<T>`)
 - `GuardEngine.finalize()` is now async to support the async `ReceiptStore.insert()`
 - Custom adapters can be injected via `ReceiptStoreOptions.adapter`
+- `GuardEngine` uses lazy asynchronous initialization for its storage adapter, keeping top-level middleware calls (`withGuard`, `guard`) synchronous.
 
 ### Fixed
 

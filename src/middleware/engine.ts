@@ -9,6 +9,7 @@ import { IdentityReader, type RequestContext } from '../core/identity-reader.js'
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
 import { RateLimiter, type RateLimitResult } from '../core/rate-limiter.js';
 import { ReceiptStore } from '../core/receipt-store.js';
+import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import type { GuardOptions } from '../types/config.js';
@@ -80,6 +81,8 @@ export class GuardEngine {
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
   private readonly ownsReceiptStore: boolean;
+  private receiptStore?: ReceiptStore;
+  private receiptStorePromise?: Promise<ReceiptStore>;
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
 
@@ -92,15 +95,9 @@ export class GuardEngine {
       options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker();
-    this.receiptStore =
-      options.receiptStore ??
-      new ReceiptStore({
-        ...options.receiptStoreOptions,
-        signerOptions: {
-          ...options.receiptStoreOptions?.signerOptions,
-          secret: options.secret ?? options.receiptStoreOptions?.signerOptions?.secret,
-        },
-      });
+    if (options.receiptStore) {
+      this.receiptStore = options.receiptStore;
+    }
     this.reporter = options.reporter ?? new ConsoleReporter({ silent: options.silent });
     this.ownsRateLimiter = options.rateLimiter === undefined;
     this.ownsReceiptStore = options.receiptStore === undefined;
@@ -185,7 +182,7 @@ export class GuardEngine {
       this.rateLimiter.dispose();
     }
 
-    if (this.ownsReceiptStore) {
+    if (this.ownsReceiptStore && this.receiptStore) {
       void this.receiptStore.close().catch((err: unknown) => {
         console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
       });
@@ -196,6 +193,37 @@ export class GuardEngine {
     this.policy = policy;
     this.evaluator.updatePolicy(policy);
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
+  }
+
+  private async getReceiptStore(): Promise<ReceiptStore> {
+    if (this.receiptStore) return this.receiptStore;
+    if (this.receiptStorePromise) return this.receiptStorePromise;
+
+    this.receiptStorePromise = (async () => {
+      let adapter: StorageAdapter | undefined;
+      const storageConfig = this.options.storage;
+
+      if (storageConfig?.adapter === 'postgres') {
+        const { PostgresAdapter } = await import('../storage/postgres-adapter.js');
+        adapter = await PostgresAdapter.create({
+          connectionString: storageConfig.connectionString,
+          poolConfig: storageConfig.poolConfig as import('pg').PoolConfig | undefined,
+        });
+      }
+
+      this.receiptStore = new ReceiptStore({
+        ...this.options.receiptStoreOptions,
+        adapter,
+        signerOptions: {
+          ...this.options.receiptStoreOptions?.signerOptions,
+          secret: this.options.secret ?? this.options.receiptStoreOptions?.signerOptions?.secret,
+        },
+      });
+
+      return this.receiptStore;
+    })();
+
+    return this.receiptStorePromise;
   }
 
   private async finalize(input: {
@@ -223,7 +251,7 @@ export class GuardEngine {
         : null;
     const receipt =
       input.mode === 'enforce'
-        ? await this.receiptStore.insert({
+        ? await (await this.getReceiptStore()).insert({
             decision: input.decision,
             identity: input.identity,
             params: input.params,
