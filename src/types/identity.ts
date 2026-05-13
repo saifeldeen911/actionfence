@@ -23,6 +23,9 @@ export interface AgentIdentity {
   readonly rawToken: string | null;
 }
 
+/** An agent identity suitable for safe exposure — identical to AgentIdentity but without the raw JWT token. */
+export type SafeAgentIdentity = Omit<AgentIdentity, 'rawToken'>;
+
 /** An identity reader may resolve identity synchronously or asynchronously. */
 export interface IdentityReaderLike {
   readIdentity(context: unknown): AgentIdentity | Promise<AgentIdentity>;

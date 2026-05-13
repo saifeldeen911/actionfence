@@ -18,6 +18,7 @@ export type {
 export type {
   IdentityClassification,
   AgentIdentity,
+  SafeAgentIdentity,
   IdentityReaderLike,
 } from './types/identity.js';
 
@@ -41,7 +42,7 @@ export { PolicyValidationError, PolicyLoadError, IdentityError } from './types/e
 // --- Core ---
 export { loadPolicy, watchPolicy } from './core/policy-loader.js';
 export { PolicyEvaluator } from './core/policy-evaluator.js';
-export { IdentityReader } from './core/identity-reader.js';
+export { IdentityReader, sanitizeIdentity } from './core/identity-reader.js';
 export type { IdentityReaderOptions, RequestContext } from './core/identity-reader.js';
 export { RateLimiter } from './core/rate-limiter.js';
 export type { RateLimitResult } from './core/rate-limiter.js';

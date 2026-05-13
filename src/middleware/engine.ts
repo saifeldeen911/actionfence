@@ -5,7 +5,7 @@
 
 import { basename } from 'node:path';
 import { loadPolicy, watchPolicy } from '../core/policy-loader.js';
-import { IdentityReader, type RequestContext } from '../core/identity-reader.js';
+import { IdentityReader, sanitizeIdentity, type RequestContext } from '../core/identity-reader.js';
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
 import { RateLimiter, type RateLimitResult } from '../core/rate-limiter.js';
 import { ReceiptStore } from '../core/receipt-store.js';
@@ -14,7 +14,7 @@ import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import type { GuardOptions } from '../types/config.js';
 import type { EvaluationDecision } from '../types/decision.js';
-import type { AgentIdentity, IdentityReaderLike } from '../types/identity.js';
+import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
 import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
@@ -55,7 +55,7 @@ export interface GuardEvaluationResult {
   readonly mode: GuardMode;
   readonly statusCode: number;
   readonly decision: EvaluationDecision;
-  readonly identity: AgentIdentity;
+  readonly identity: SafeAgentIdentity;
   readonly receipt: ActionReceipt | null;
   readonly spendSnapshot: SpendSnapshot | null;
   readonly preview: SimulationPreview | null;
@@ -286,7 +286,7 @@ export class GuardEngine {
       mode: input.mode,
       statusCode: input.decision.status === 'PASSED' ? 200 : input.statusCode,
       decision: input.decision,
-      identity: input.identity,
+      identity: sanitizeIdentity(input.identity),
       receipt,
       spendSnapshot,
       preview,

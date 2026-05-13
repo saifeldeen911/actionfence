@@ -89,6 +89,40 @@ describe('GuardEngine', () => {
     store.close();
   });
 
+  it('should strip rawToken from the returned identity', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'agent-1',
+        ownerId: 'owner-1',
+        capabilities: ['search_flights'],
+        rawToken: 'secret-jwt-token',
+      }),
+    };
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      silent: true,
+    });
+
+    const result = await engine.evaluate({
+      toolName: 'search_flights',
+      params: {},
+    });
+
+    expect(result.identity).not.toHaveProperty('rawToken');
+    expect(result.identity.classification).toBe('verified');
+    expect(result.identity.agentId).toBe('agent-1');
+    expect(result.identity.ownerId).toBe('owner-1');
+    expect(result.identity.capabilities).toEqual(['search_flights']);
+
+    engine.dispose();
+    store.close();
+  });
+
   it('should block allowed actions that are outside declared capabilities', async () => {
     const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);
