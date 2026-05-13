@@ -36,17 +36,14 @@ export default async function HomePage() {
             style={{ zIndex: 0 }}
           />
 
-          <div
-            className="relative mx-auto flex max-w-5xl flex-col gap-12 px-5 py-20 sm:py-28"
-            style={{ zIndex: 1 }}
-          >
+          <div className="page-shell relative flex flex-col gap-12 py-20 sm:py-28" style={{ zIndex: 1 }}>
             <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-start sm:justify-between">
               {/* Left: headline + CTA */}
               <div className="flex max-w-md flex-col gap-6">
                 <h1
                   className="animate-fade-up stagger-1"
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
                     lineHeight: 1.15,
@@ -204,11 +201,11 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+          <div className="page-shell py-20 sm:py-24">
             <div className="animate-fade-up stagger-1">
               <h2
                 style={{
-                  fontFamily: 'var(--font-head)',
+                  fontFamily: 'var(--font-sans)',
                   fontWeight: 700,
                   fontSize: 'clamp(1.4rem, 3.5vw, 1.8rem)',
                   lineHeight: 1.25,
@@ -361,7 +358,7 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+          <div className="page-shell py-20 sm:py-24">
             <h2
               className="animate-fade-up stagger-1"
               style={{
@@ -381,7 +378,7 @@ export default async function HomePage() {
                 <span className="step-num">01</span>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '1rem',
                     color: 'var(--color-text)',
@@ -407,7 +404,7 @@ export default async function HomePage() {
                 <span className="step-num">02</span>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '1rem',
                     color: 'var(--color-text)',
@@ -432,7 +429,7 @@ export default async function HomePage() {
                 <span className="step-num">03</span>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '1rem',
                     color: 'var(--color-text)',
@@ -462,7 +459,7 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+          <div className="page-shell py-20 sm:py-24">
             <h2
               className="animate-fade-up stagger-1"
               style={{
@@ -482,7 +479,7 @@ export default async function HomePage() {
               <div className="animate-fade-up stagger-2 card" style={{ padding: '24px' }}>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     color: 'var(--color-text)',
@@ -542,7 +539,7 @@ export default async function HomePage() {
               <div className="animate-fade-up stagger-3 card" style={{ padding: '24px' }}>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     color: 'var(--color-text)',
@@ -612,7 +609,7 @@ export default async function HomePage() {
               <div className="animate-fade-up stagger-4 card" style={{ padding: '24px' }}>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     color: 'var(--color-text)',
@@ -672,7 +669,7 @@ export default async function HomePage() {
               <div className="animate-fade-up stagger-5 card" style={{ padding: '24px' }}>
                 <h3
                   style={{
-                    fontFamily: 'var(--font-head)',
+                    fontFamily: 'var(--font-sans)',
                     fontWeight: 700,
                     fontSize: '0.95rem',
                     color: 'var(--color-text)',
@@ -738,11 +735,11 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-20 sm:py-24">
+          <div className="page-shell py-20 sm:py-24">
             <h2
               className="animate-fade-up stagger-1"
               style={{
-                fontFamily: 'var(--font-head)',
+                fontFamily: 'var(--font-sans)',
                 fontWeight: 700,
                 fontSize: 'clamp(1.4rem, 3.5vw, 1.8rem)',
                 lineHeight: 1.25,
@@ -790,7 +787,7 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-14">
+          <div className="page-shell py-14">
             <div className="animate-fade-up stagger-1">
               <p
                 style={{
@@ -814,7 +811,7 @@ export default async function HomePage() {
             borderBottom: '1px solid #1f2424',
           }}
         >
-          <div className="mx-auto max-w-5xl px-5 py-14">
+          <div className="page-shell py-14">
             <div className="animate-fade-up stagger-1">
               <AiPrompt />
             </div>
@@ -823,7 +820,7 @@ export default async function HomePage() {
 
         {/* ═════════════════ FOOTER ═════════════════ */}
         <footer>
-          <div className="mx-auto max-w-5xl px-5 py-8">
+          <div className="page-shell py-8">
             <div
               style={{
                 display: 'flex',

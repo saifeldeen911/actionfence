@@ -19,7 +19,7 @@ export function AiPrompt() {
           <h2
             id="ai-prompt-title"
             style={{
-              fontFamily: 'var(--font-head)',
+              fontFamily: 'var(--font-sans)',
               fontWeight: 700,
               fontSize: '1.05rem',
               color: 'var(--color-text)',

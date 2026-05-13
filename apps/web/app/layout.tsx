@@ -7,7 +7,7 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   display: 'swap',
-  variable: '--font-head',
+  variable: '--font-sans',
 });
 
 const jetbrainsMono = JetBrains_Mono({

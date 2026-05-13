@@ -37,19 +37,39 @@ html, body {
   overflow-x: clip;
 }
 
-* {
+*,
+::before,
+::after {
   box-sizing: border-box;
+}
+
+body {
   margin: 0;
-  padding: 0;
 }
 
 body {
   min-height: 100vh;
   background: var(--color-bg);
-  font-family: var(--font-head), 'Space Grotesk', system-ui, sans-serif;
+  font-family: var(--font-sans), 'Space Grotesk', system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans), 'Space Grotesk', system-ui, sans-serif;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* ── Content container ─────────────────────────────────── */
@@ -61,6 +81,14 @@ body {
   margin-right: auto;
   padding-left: 20px;
   padding-right: 20px;
+}
+
+.page-shell {
+  width: min(100%, 64rem);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 a {
@@ -231,7 +259,8 @@ a {
 
 .btn-mono:active {
   transform: translateY(1px);
-}\n
+}
+
 .btn-mono-secondary {
   display: inline-flex;
   align-items: center;
@@ -240,7 +269,7 @@ a {
   border: none;
   background: transparent;
   color: var(--color-text-muted);
-  font-family: var(--font-head);
+  font-family: var(--font-sans), 'Space Grotesk', system-ui, sans-serif;
   font-size: 0.9rem;
   cursor: pointer;
   transition: color 0.18s ease;
@@ -255,7 +284,7 @@ a {
 
 .ghost-link {
   color: var(--color-text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans), 'Space Grotesk', system-ui, sans-serif;
   font-size: 0.78rem;
   letter-spacing: 0.03em;
   transition: color 0.18s ease;
@@ -281,7 +310,8 @@ a {
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
   white-space: nowrap;
-}\n
+}
+
 .badge-amber {
   border-color: rgba(240, 165, 0, 0.3);
   color: var(--color-accent);

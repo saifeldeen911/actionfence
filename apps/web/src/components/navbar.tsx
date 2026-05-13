@@ -14,16 +14,16 @@ export async function Navbar() {
         background: '#0c0e0e',
       }}
     >
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+      <div className="page-shell flex items-center justify-between py-4">
         {/* Brand */}
         <a
           href="/"
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-            fontWeight: 500,
+            fontFamily: 'var(--font-sans)',
+            fontSize: '0.9rem',
+            fontWeight: 700,
             color: 'var(--color-text)',
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.03em',
           }}
         >
           actionfence
