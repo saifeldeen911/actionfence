@@ -255,7 +255,6 @@ describe('IdentityReader with JWKS', () => {
     expect(identity.agentId).toBe('anonymous');
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('JWT verification failed'),
-      expect.anything(),
     );
   });
 
@@ -303,7 +302,7 @@ describe('IdentityReader with JWKS', () => {
     expect(identity.agentId).toBe('anonymous');
   });
 
-  it('should fall back to token when the JWKS endpoint cannot be reached', async () => {
+  it('should return anonymous when the JWKS endpoint cannot be reached', async () => {
     const token = await signJwt(primaryKeys.privateKey, {
       sub: 'network-agent',
     });
@@ -338,8 +337,8 @@ describe('IdentityReader with JWKS', () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    expect(identity.classification).toBe('token');
-    expect(identity.agentId).toBe('network-agent');
+    expect(identity.classification).toBe('anonymous');
+    expect(identity.agentId).toBe('anonymous');
   });
 });
 

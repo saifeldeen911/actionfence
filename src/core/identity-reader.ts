@@ -122,26 +122,13 @@ export class IdentityReader {
       return createIdentityFromPayload(payload, token, 'verified');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      const shouldFallbackToToken = !isJoseVerificationError(error);
-
       console.warn(
         `[actionfence] JWT verification failed for agent=${decodedIdentity.agentId}; ` +
-          `returning ${shouldFallbackToToken ? 'token' : 'anonymous'} identity: ${message}`,
-        error,
+          `returning anonymous identity: ${message}`,
       );
-
-      return shouldFallbackToToken ? decodedIdentity : ANONYMOUS_IDENTITY;
+      return ANONYMOUS_IDENTITY;
     }
   }
-}
-
-function isJoseVerificationError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-
-  const code = (error as { code?: unknown }).code;
-  return typeof code === 'string' && code.startsWith('ERR_J');
 }
 
 function normalizeVerifyOption(
