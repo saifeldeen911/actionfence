@@ -10,7 +10,11 @@ import {
   type JWTPayload,
   type JWTVerifyOptions,
 } from 'jose';
-import type { AgentIdentity, IdentityClassification, SafeAgentIdentity } from '../types/identity.js';
+import type {
+  AgentIdentity,
+  IdentityClassification,
+  SafeAgentIdentity,
+} from '../types/identity.js';
 
 /** Configuration for the IdentityReader. */
 export interface IdentityReaderOptions {
@@ -178,10 +182,10 @@ function extractStringArrayClaim(payload: JWTPayload, key: string): readonly str
 }
 
 export function sanitizeIdentity(identity: AgentIdentity): SafeAgentIdentity {
-  return {
+  return Object.freeze({
     classification: identity.classification,
     agentId: identity.agentId,
     ownerId: identity.ownerId,
-    capabilities: identity.capabilities,
-  };
+    capabilities: Object.freeze([...identity.capabilities]),
+  });
 }

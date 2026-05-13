@@ -4,6 +4,8 @@ import { generateKeyPairSync } from 'node:crypto';
 import { exportJWK, SignJWT, type JWK, type KeyLike } from 'jose';
 import { IdentityReader } from '../../src/core/identity-reader.js';
 import type { RequestContext } from '../../src/core/identity-reader.js';
+import { sanitizeIdentity } from '../../src/core/identity-reader.js';
+import type { AgentIdentity } from '../../src/types/identity.js';
 
 function makeUnsignedJwt(payload: Record<string, unknown>): string {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
@@ -100,6 +102,30 @@ describe('IdentityReader', () => {
 
       expect(identity.classification).toBe('token');
       expect(identity.agentId).toBe('agent-case');
+    });
+
+    it('should sanitize identities without aliasing the capabilities array', () => {
+      const capabilities = ['search', 'book'];
+      const identity: AgentIdentity = {
+        classification: 'verified',
+        agentId: 'agent-1',
+        ownerId: 'owner-1',
+        capabilities,
+        rawToken: 'secret-token',
+      };
+
+      const sanitized = sanitizeIdentity(identity);
+
+      expect(sanitized).toEqual({
+        classification: 'verified',
+        agentId: 'agent-1',
+        ownerId: 'owner-1',
+        capabilities: ['search', 'book'],
+      });
+      expect(sanitized).not.toHaveProperty('rawToken');
+      expect(sanitized.capabilities).not.toBe(capabilities);
+      expect(Object.isFrozen(sanitized)).toBe(true);
+      expect(Object.isFrozen(sanitized.capabilities)).toBe(true);
     });
   });
 
@@ -253,9 +279,7 @@ describe('IdentityReader with JWKS', () => {
 
     expect(identity.classification).toBe('anonymous');
     expect(identity.agentId).toBe('anonymous');
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('JWT verification failed'),
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('JWT verification failed'));
   });
 
   it('should return anonymous when issuer validation fails', async () => {
@@ -339,6 +363,81 @@ describe('IdentityReader with JWKS', () => {
 
     expect(identity.classification).toBe('anonymous');
     expect(identity.agentId).toBe('anonymous');
+  });
+});
+
+describe('sanitizeIdentity', () => {
+  it('should strip rawToken from the identity', () => {
+    const identity: AgentIdentity = {
+      classification: 'verified',
+      agentId: 'agent-1',
+      ownerId: 'owner-1',
+      capabilities: ['search_flights'],
+      rawToken: 'secret-jwt-token',
+    };
+
+    const result = sanitizeIdentity(identity);
+
+    expect(result).not.toHaveProperty('rawToken');
+    expect(result.classification).toBe('verified');
+    expect(result.agentId).toBe('agent-1');
+    expect(result.ownerId).toBe('owner-1');
+    expect(result.capabilities).toEqual(['search_flights']);
+  });
+
+  it('should handle anonymous identity with null rawToken', () => {
+    const identity: AgentIdentity = {
+      classification: 'anonymous',
+      agentId: 'anonymous',
+      ownerId: null,
+      capabilities: [],
+      rawToken: null,
+    };
+
+    const result = sanitizeIdentity(identity);
+
+    expect(result).not.toHaveProperty('rawToken');
+    expect(result.classification).toBe('anonymous');
+    expect(result.agentId).toBe('anonymous');
+    expect(result.ownerId).toBeNull();
+    expect(result.capabilities).toEqual([]);
+  });
+
+  it('should handle token identity with empty capabilities', () => {
+    const identity: AgentIdentity = {
+      classification: 'token',
+      agentId: 'token-agent',
+      ownerId: null,
+      capabilities: [],
+      rawToken: 'some-token',
+    };
+
+    const result = sanitizeIdentity(identity);
+
+    expect(result).not.toHaveProperty('rawToken');
+    expect(result.classification).toBe('token');
+    expect(result.agentId).toBe('token-agent');
+    expect(result.ownerId).toBeNull();
+    expect(result.capabilities).toEqual([]);
+  });
+
+  it('should not mutate the input identity', () => {
+    const identity: AgentIdentity = {
+      classification: 'verified',
+      agentId: 'agent-1',
+      ownerId: 'owner-1',
+      capabilities: ['search_flights'],
+      rawToken: 'secret-jwt-token',
+    };
+
+    const original = { ...identity, capabilities: [...identity.capabilities] };
+    sanitizeIdentity(identity);
+
+    expect(identity.classification).toBe(original.classification);
+    expect(identity.agentId).toBe(original.agentId);
+    expect(identity.ownerId).toBe(original.ownerId);
+    expect(identity.capabilities).toEqual(original.capabilities);
+    expect(identity.rawToken).toBe(original.rawToken);
   });
 });
 

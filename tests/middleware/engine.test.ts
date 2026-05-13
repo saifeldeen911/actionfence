@@ -149,6 +149,7 @@ describe('GuardEngine', () => {
 
     expect(result.allowed).toBe(false);
     expect(result.statusCode).toBe(403);
+    expect(result.identity).not.toHaveProperty('rawToken');
     expect(result.decision.reason).toContain("outside the agent's declared capabilities");
 
     engine.dispose();
@@ -188,6 +189,7 @@ describe('GuardEngine', () => {
     expect(first.allowed).toBe(true);
     expect(second.allowed).toBe(false);
     expect(second.statusCode).toBe(403);
+    expect(second.identity).not.toHaveProperty('rawToken');
     expect(second.decision.reason).toContain('session spend limit of 600.00 USD');
     expect(second.spendSnapshot?.sessionTotal).toBe(650);
 
@@ -235,6 +237,7 @@ describe('GuardEngine', () => {
 
     expect(seed.allowed).toBe(true);
     expect(preview.allowed).toBe(false);
+    expect(preview.identity).not.toHaveProperty('rawToken');
     expect(preview.preview?.reason).toContain('daily spend limit of 500.00 USD');
     expect(preview.preview?.spendSnapshot?.sessionTotal).toBe(550);
     expect(preview.preview?.spendSnapshot?.dailyTotal).toBe(550);
