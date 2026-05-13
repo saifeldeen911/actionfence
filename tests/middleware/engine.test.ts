@@ -153,6 +153,7 @@ describe('GuardEngine', () => {
 
     expect(first.allowed).toBe(true);
     expect(second.allowed).toBe(false);
+    expect(second.statusCode).toBe(403);
     expect(second.decision.reason).toContain('session spend limit of 600.00 USD');
     expect(second.spendSnapshot?.sessionTotal).toBe(650);
 

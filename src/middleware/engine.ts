@@ -142,6 +142,9 @@ export class GuardEngine {
 
     if (decision.status === 'PASSED') {
       decision = this.enforceSpendLimits(action, decision, identity);
+      if (decision.status === 'BLOCKED') {
+        statusCode = 403;
+      }
     }
 
     if (
