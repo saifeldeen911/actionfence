@@ -14,6 +14,7 @@ function createDummyReceipt(id: string): ActionReceipt {
     action: 'test_action',
     tool_name: 'test_tool',
     payload_json: '{}',
+    payload_json_hash: `jsonhash-${id}`,
     payload_hash: `hash-${id}`,
     policy_ref: 'v1',
     status: 'PASSED',
@@ -45,7 +46,7 @@ describe('SQLiteAdapter', () => {
   it('should initialize schema and insert a receipt', () => {
     const receipt = createDummyReceipt('r-1');
     adapter.insert(receipt);
-    
+
     const fetched = adapter.getById('r-1');
     expect(fetched).toEqual(receipt);
   });
@@ -53,7 +54,7 @@ describe('SQLiteAdapter', () => {
   it('should throw on duplicate receipt_id', () => {
     const receipt = createDummyReceipt('r-1');
     adapter.insert(receipt);
-    
+
     const duplicateId = { ...receipt, receipt_hash: 'rhash-r-1-diff' };
     expect(() => adapter.insert(duplicateId)).toThrow(/Duplicate receipt_id/);
   });
@@ -61,7 +62,7 @@ describe('SQLiteAdapter', () => {
   it('should throw on duplicate receipt_hash', () => {
     const receipt = createDummyReceipt('r-1');
     adapter.insert(receipt);
-    
+
     const duplicateHash = { ...receipt, receipt_id: 'r-1-diff' };
     expect(() => adapter.insert(duplicateHash)).toThrow(/Duplicate receipt_hash/);
   });
@@ -97,7 +98,7 @@ describe('SQLiteAdapter', () => {
     r1.status = 'PASSED';
     const r2 = createDummyReceipt('r-2');
     r2.status = 'BLOCKED';
-    
+
     adapter.insert(r1);
     adapter.insert(r2);
 
@@ -112,7 +113,7 @@ describe('SQLiteAdapter', () => {
   it('should get all ordered', () => {
     const r1 = createDummyReceipt('r-1');
     const r2 = createDummyReceipt('r-2');
-    
+
     adapter.insert(r1);
     adapter.insert(r2);
 
@@ -121,4 +122,29 @@ describe('SQLiteAdapter', () => {
     expect(all[0]?.receipt_id).toBe('r-1');
     expect(all[1]?.receipt_id).toBe('r-2');
   });
+
+  it('should parameterize finite positive query limits', () => {
+    for (let index = 1; index <= 12; index += 1) {
+      adapter.insert(createDummyReceipt(`r-${index}`));
+    }
+
+    const results = adapter.query(undefined, 10);
+
+    expect(results).toHaveLength(10);
+    expect(results[0]?.receipt_id).toBe('r-1');
+    expect(results[9]?.receipt_id).toBe('r-10');
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, -5])(
+    'should ignore invalid query limits (%s)',
+    (limit) => {
+      for (let index = 1; index <= 3; index += 1) {
+        adapter.insert(createDummyReceipt(`r-${index}`));
+      }
+
+      const results = adapter.query(undefined, limit);
+
+      expect(results).toHaveLength(3);
+    },
+  );
 });

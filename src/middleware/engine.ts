@@ -5,16 +5,17 @@
 
 import { basename } from 'node:path';
 import { loadPolicy, watchPolicy } from '../core/policy-loader.js';
-import { IdentityReader, type RequestContext } from '../core/identity-reader.js';
+import { IdentityReader, sanitizeIdentity, type RequestContext } from '../core/identity-reader.js';
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
 import { RateLimiter, type RateLimitResult } from '../core/rate-limiter.js';
 import { ReceiptStore } from '../core/receipt-store.js';
 import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
+import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
 import type { EvaluationDecision } from '../types/decision.js';
-import type { AgentIdentity, IdentityReaderLike } from '../types/identity.js';
+import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
 import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
@@ -55,7 +56,7 @@ export interface GuardEvaluationResult {
   readonly mode: GuardMode;
   readonly statusCode: number;
   readonly decision: EvaluationDecision;
-  readonly identity: AgentIdentity;
+  readonly identity: SafeAgentIdentity;
   readonly receipt: ActionReceipt | null;
   readonly spendSnapshot: SpendSnapshot | null;
   readonly preview: SimulationPreview | null;
@@ -70,8 +71,15 @@ export interface GuardInstance {
 
 /**
  * GuardEngine composes the core modules into one request/tool evaluation path.
+ *
+ * Lock ordering: when both the per-agent mutex (evaluate) and the
+ * ReceiptStore insert mutex are needed, the agent mutex MUST be acquired
+ * first to prevent deadlocks. ReceiptStore.insert() acquires its internal
+ * mutex inside the agent-mutex critical section.
  */
 export class GuardEngine {
+  private static readonly MAX_MUTEX_ENTRIES = 10_000;
+
   private policy: GuardPolicy;
   private readonly evaluator: PolicyEvaluator;
   private readonly identityReader: IdentityReaderLike;
@@ -80,11 +88,15 @@ export class GuardEngine {
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
+  private readonly ownsSpendTracker: boolean;
   private readonly ownsReceiptStore: boolean;
   private receiptStore?: ReceiptStore;
   private receiptStorePromise?: Promise<ReceiptStore>;
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
+  private readonly agentMutexes = new Map<string, AsyncMutex>();
+  /** Adapter created internally by getReceiptStore() — closed on dispose. */
+  private ownedAdapter?: StorageAdapter;
 
   constructor(options: GuardOptions) {
     this.options = options;
@@ -94,12 +106,14 @@ export class GuardEngine {
     this.identityReader =
       options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
-    this.spendTracker = options.spendTracker ?? new SpendTracker();
+    this.spendTracker = options.spendTracker ?? new SpendTracker(this.policy.spend_limits);
+    this.spendTracker.updateConfig(this.policy.spend_limits);
     if (options.receiptStore) {
       this.receiptStore = options.receiptStore;
     }
     this.reporter = options.reporter ?? new ConsoleReporter({ silent: options.silent });
     this.ownsRateLimiter = options.rateLimiter === undefined;
+    this.ownsSpendTracker = options.spendTracker === undefined;
     this.ownsReceiptStore = options.receiptStore === undefined;
     this.cleanupPolicyWatcher =
       typeof options.policy === 'string' && options.watchPolicy === true
@@ -113,66 +127,77 @@ export class GuardEngine {
     const identity = await this.identityReader.readIdentity(context);
     const action = this.resolveAction(input.toolName, input.params);
     const spendAmount = this.extractSpend(input.params);
-    const requestRate = this.checkRequestRate(identity.agentId, mode);
 
-    if (!requestRate.allowed) {
-      return this.finalize({
-        mode,
-        decision: createBlockedDecision({
-          action,
-          toolName: input.toolName,
+    const mutex = this.acquireMutex(identity.agentId);
+    try {
+      return await mutex.runExclusive(async () => {
+        const requestRate = this.checkRequestRate(identity.agentId, mode);
+
+        if (!requestRate.allowed) {
+          return this.finalize({
+            mode,
+            decision: createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: `Request rate limit exceeded for agent "${identity.agentId}"`,
+            }),
+            identity,
+            params: input.params,
+            statusCode: 429,
+            errorCode: 'ACTIONFENCE_RATE_LIMITED',
+            rateLimit: requestRate,
+          });
+        }
+
+        let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
+        decision = this.enforceCapabilities(action, decision, identity);
+
+        let statusCode = decision.status === 'PASSED' ? 200 : 403;
+        let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
+        let effectiveRateLimit: RateLimitResult | null = requestRate;
+
+        if (decision.status === 'PASSED') {
+          decision = this.enforceSpendLimits(action, decision, identity);
+          if (decision.status === 'BLOCKED') {
+            statusCode = 403;
+          }
+        }
+
+        if (
+          decision.status === 'PASSED' &&
+          this.isTransaction(input.toolName, input.params, decision)
+        ) {
+          const transactionRate = this.checkTransactionRate(identity.agentId, mode);
+          effectiveRateLimit = transactionRate;
+
+          if (!transactionRate.allowed) {
+            decision = createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: `Transaction rate limit exceeded for agent "${identity.agentId}"`,
+            });
+            statusCode = 429;
+            errorCode = 'ACTIONFENCE_RATE_LIMITED';
+          }
+        }
+
+        return this.finalize({
+          mode,
+          decision,
           identity,
-          spendAmount,
-          reason: `Request rate limit exceeded for agent "${identity.agentId}"`,
-        }),
-        identity,
-        params: input.params,
-        statusCode: 429,
-        errorCode: 'ACTIONFENCE_RATE_LIMITED',
-        rateLimit: requestRate,
-      });
-    }
-
-    let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
-    decision = this.enforceCapabilities(action, decision, identity);
-
-    let statusCode = decision.status === 'PASSED' ? 200 : 403;
-    let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
-    let effectiveRateLimit: RateLimitResult | null = requestRate;
-
-    if (decision.status === 'PASSED') {
-      decision = this.enforceSpendLimits(action, decision, identity);
-    }
-
-    if (
-      decision.status === 'PASSED' &&
-      this.isTransaction(input.toolName, input.params, decision)
-    ) {
-      const transactionRate = this.checkTransactionRate(identity.agentId, mode);
-      effectiveRateLimit = transactionRate;
-
-      if (!transactionRate.allowed) {
-        decision = createBlockedDecision({
-          action,
-          toolName: input.toolName,
-          identity,
-          spendAmount,
-          reason: `Transaction rate limit exceeded for agent "${identity.agentId}"`,
+          params: input.params,
+          statusCode,
+          errorCode,
+          rateLimit: effectiveRateLimit,
         });
-        statusCode = 429;
-        errorCode = 'ACTIONFENCE_RATE_LIMITED';
-      }
+      });
+    } finally {
+      this.releaseMutexIfIdle(identity.agentId, mutex);
     }
-
-    return this.finalize({
-      mode,
-      decision,
-      identity,
-      params: input.params,
-      statusCode,
-      errorCode,
-      rateLimit: effectiveRateLimit,
-    });
   }
 
   dispose(): void {
@@ -182,9 +207,19 @@ export class GuardEngine {
       this.rateLimiter.dispose();
     }
 
+    if (this.ownsSpendTracker) {
+      this.spendTracker.dispose();
+    }
+
     if (this.ownsReceiptStore && this.receiptStore) {
       void this.receiptStore.close().catch((err: unknown) => {
         console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
+      });
+    }
+
+    if (this.ownedAdapter) {
+      void Promise.resolve(this.ownedAdapter.close()).catch((err: unknown) => {
+        console.error('[actionfence] Failed to close owned storage adapter:', err);
       });
     }
   }
@@ -193,6 +228,36 @@ export class GuardEngine {
     this.policy = policy;
     this.evaluator.updatePolicy(policy);
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
+    this.spendTracker.updateConfig(policy.spend_limits);
+  }
+
+  private acquireMutex(agentId: string): AsyncMutex {
+    if (this.agentMutexes.size > GuardEngine.MAX_MUTEX_ENTRIES) {
+      for (const [key, mutex] of this.agentMutexes) {
+        if (!mutex.hasWaiters) {
+          this.agentMutexes.delete(key);
+        }
+
+        if (this.agentMutexes.size <= GuardEngine.MAX_MUTEX_ENTRIES / 2) {
+          break;
+        }
+      }
+    }
+
+    const existing = this.agentMutexes.get(agentId);
+    if (existing) {
+      return existing;
+    }
+    const mutex = new AsyncMutex();
+    this.agentMutexes.set(agentId, mutex);
+    return mutex;
+  }
+
+  private releaseMutexIfIdle(agentId: string, mutex: AsyncMutex): void {
+    // Intentionally retain one mutex instance per agent to avoid TOCTOU races
+    // between a release and a concurrent acquire.
+    void agentId;
+    void mutex;
   }
 
   private async getReceiptStore(): Promise<ReceiptStore> {
@@ -209,6 +274,7 @@ export class GuardEngine {
           connectionString: storageConfig.connectionString,
           poolConfig: storageConfig.poolConfig,
         });
+        this.ownedAdapter = adapter;
       }
 
       this.receiptStore = new ReceiptStore({
@@ -217,6 +283,9 @@ export class GuardEngine {
         signerOptions: {
           ...this.options.receiptStoreOptions?.signerOptions,
           secret: this.options.secret ?? this.options.receiptStoreOptions?.signerOptions?.secret,
+          maxPayloadBytes:
+            this.options.maxPayloadBytes ??
+            this.options.receiptStoreOptions?.signerOptions?.maxPayloadBytes,
         },
       });
 
@@ -235,11 +304,12 @@ export class GuardEngine {
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
   }): Promise<GuardEvaluationResult> {
-    const spendSnapshot = this.resolveSpendSnapshot(
-      input.identity.agentId,
-      input.decision,
-      input.mode,
-    );
+    let spendSnapshot: SpendSnapshot | null = null;
+
+    if (input.mode === 'simulate') {
+      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+    }
+
     const preview =
       input.mode === 'simulate'
         ? createSimulationPreview({
@@ -251,13 +321,20 @@ export class GuardEngine {
         : null;
     const receipt =
       input.mode === 'enforce'
-        ? await (await this.getReceiptStore()).insert({
+        ? await (
+            await this.getReceiptStore()
+          ).insert({
             decision: input.decision,
             identity: input.identity,
-            params: input.params,
+            params: this.redactPayload(input.params),
+            originalParams: input.params,
             policyRef: this.policyRef,
           })
         : null;
+
+    if (input.mode === 'enforce') {
+      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+    }
 
     this.reporter.report({
       decision: input.decision,
@@ -283,12 +360,29 @@ export class GuardEngine {
       mode: input.mode,
       statusCode: input.decision.status === 'PASSED' ? 200 : input.statusCode,
       decision: input.decision,
-      identity: input.identity,
+      identity: sanitizeIdentity(input.identity),
       receipt,
       spendSnapshot,
       preview,
       error,
     });
+  }
+
+  private redactPayload(params: unknown): unknown {
+    if (!this.options.payloadRedactor) {
+      return params;
+    }
+
+    try {
+      const redacted = this.options.payloadRedactor(params);
+      if (redacted === undefined) {
+        throw new TypeError('payloadRedactor must return a JSON-serializable value');
+      }
+      return redacted;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`ActionFence payloadRedactor failed closed: ${message}`);
+    }
   }
 
   private resolveAction(toolName: string, params: unknown): string {

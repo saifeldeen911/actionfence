@@ -13,7 +13,7 @@ export type {
   GuardPolicy,
 } from './policy.js';
 
-export type { IdentityClassification, AgentIdentity, IdentityReaderLike } from './identity.js';
+export type { IdentityClassification, AgentIdentity, SafeAgentIdentity, IdentityReaderLike } from './identity.js';
 
 export type { DecisionStatus, EvaluationDecision } from './decision.js';
 

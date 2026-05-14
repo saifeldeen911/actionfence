@@ -114,6 +114,11 @@
           "type": "string",
           "pattern": "^[A-Z]{3}$",
           "description": "ISO 4217 currency code for spend reporting."
+        },
+        "session_timeout_minutes": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Idle timeout in minutes after which sessionTotal resets to 0. When omitted and session_max is configured, defaults to 60 minutes. Set to 0 to disable idle-timeout resets."
         }
       },
       "dependencies": {

@@ -40,6 +40,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unhandled promise rejection during engine disposal when closing the receipt store
 - Improved SQLite storage adapter error handling by preserving original stack traces and parsing constraint violations robustly
 
+### Security
+
+- **H2 — Receipt payload PII retention:** Added `payloadRedactor` option to strip sensitive fields from tool params before receipt storage. Added `maxPayloadBytes` option (default 64 KB) to truncate oversized payloads. Receipt hash integrity uses the original params; only the stored view is redacted/truncated.
+- **H3 — Weak HMAC key accepted:** `ReceiptSigner` now rejects signing secrets shorter than 16 bytes (128 bits) with a clear error at startup.
+- **H5 — Postgres receipt chain fork:** `PostgresAdapter.insertAtomic()` uses `BEGIN` → `pg_advisory_xact_lock` → read last hash → insert → `COMMIT` to prevent concurrent writers from forking the hash chain. `ReceiptStore.insert()` auto-detects and prefers the atomic path.
+- **H6 — Policy file path traversal:** `loadPolicy()` now rejects policy paths that resolve outside the working directory, preventing `../../` directory escapes.
+- **H7 — Agent ID injection via JWT:** `agentId` and `ownerId` extracted from JWT claims are now sanitized: control characters stripped, length capped at 256, empty values default to `'unknown'`.
+- **M3 — Spend/receipt atomicity:** In enforce mode, spend is now committed only after receipt insertion succeeds. If receipt insertion fails, spend totals are not advanced.
+- **M5 — Unbounded map growth:** `SpendTracker`, `RateLimiter`, and `GuardEngine.agentMutexes` now enforce map size caps with periodic or on-access idle eviction to prevent memory exhaustion from many distinct agent IDs.
+- **M7 — Weak migrated key permissions:** Legacy signing key migration now forces `0o600` file permissions (best-effort on non-POSIX platforms).
+- **M8 — Postgres pool not closed:** `GuardEngine.dispose()` now explicitly closes any Postgres adapter it created, preventing connection pool leaks.
+- **M9 — Postgres credentials in errors:** Connection failure error messages now mask passwords in `postgres://` connection strings.
+- **L1 — SQLite LIMIT interpolation:** The `LIMIT` clause in `SQLiteAdapter.query()` is now parameterized instead of interpolated.
+- **L2 — Canonical JSON limitations:** `canonicalJsonStringify()` now documents supported types, lossy conversions, and values that will throw. Tool authors should ensure params are JSON-serializable.
+
 ## [0.1.2] — 2026-05-08
 
 ### Changed

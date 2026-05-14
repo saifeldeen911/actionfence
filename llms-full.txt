@@ -216,6 +216,8 @@ interface GuardOptions {
   transactionResolver?: (toolName: string, params: unknown, decision: EvaluationDecision) => boolean; // Override transaction classification for rate limiting.
   onDecision?: (decision: GuardEvaluationResult) => void;          // Hook for logging, metrics, approval workflows.
   watchPolicy?: boolean;               // Default false. Hot-reload policy file on changes.
+  payloadRedactor?: (params: unknown) => unknown;                  // Redact sensitive fields before receipt storage.
+  maxPayloadBytes?: number;                                        // Maximum stored payload_json size before truncation (default 65536).
 }
 ```
 
@@ -377,6 +379,17 @@ Signing key resolution order:
 2. `ACTIONFENCE_SECRET` environment variable
 3. Auto-generated `.actionfence/key` file
 
+## Trust Model
+
+### Payload Requirements
+
+- `params` must be JSON-serializable.
+- Unsupported values such as `BigInt`, `Symbols`, and circular references fail before receipt creation.
+- `undefined` values are omitted by canonicalization, and `NaN` or `Infinity` become `null`.
+- If you configure `payloadRedactor`, return a sanitized copy and avoid mutating the input.
+- Payloads larger than `maxPayloadBytes` are replaced with a truncation marker in the stored receipt.
+- Receipts bind both the original request hash and the stored payload-view hash.
+
 ## Scope Enforcement
 
 If a verified JWT includes a `capabilities` claim (string array), ActionFence treats it as an allowlist. A request passing policy checks but not listed in `capabilities` is blocked.
@@ -393,6 +406,19 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - **Rolling-window spend caps** via `spend_limits.window` with `max_amount` and `duration_minutes`
 - New `SpendTracker.checkWindow()` for rolling-window enforcement with lazy eviction
 - `SpendSnapshot` now includes optional `windowTotal` and `windowResetMs` fields
+
+### Security hardening in v0.2.0
+
+- HMAC signing secrets must be ≥16 bytes (128 bits); shorter keys are rejected at startup
+- `payloadRedactor` option strips sensitive fields from receipts; `maxPayloadBytes` (default 64 KB) truncates oversized payloads
+- Postgres receipt inserts use advisory-lock transactions to prevent hash-chain fork under concurrent writers
+- Policy file paths that resolve outside `process.cwd()` are rejected (path traversal guard)
+- JWT `sub` and `owner`/`azp` claims are sanitized: control characters stripped, length capped at 256
+- Spend is committed only after receipt insertion succeeds (atomicity)
+- Map size caps and periodic eviction for SpendTracker, RateLimiter, and engine mutexes prevent unbounded memory growth
+- `engine.dispose()` closes any Postgres adapter the engine created
+- Postgres connection errors mask passwords in connection strings
+- Legacy key migration forces 0o600 file permissions
 
 ## Current Limitations
 

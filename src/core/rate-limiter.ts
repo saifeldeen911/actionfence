@@ -41,6 +41,8 @@ const CLEANUP_INTERVAL_MS = 60 * 1000; // Run cleanup every 60s
  * Supports both per-minute request limits and per-day transaction limits.
  */
 export class RateLimiter {
+  private static readonly MAX_ENTRIES = 50_000;
+
   private config: RateLimitsConfig;
 
   /** Map of key → array of request timestamps (epoch ms). */
@@ -232,11 +234,19 @@ export class RateLimiter {
 
   /** Remove map entries where all timestamps have expired. */
   private cleanupStore(store: Map<string, number[]>, now: number, windowMs: number): void {
+    if (store.size <= RateLimiter.MAX_ENTRIES) {
+      return;
+    }
+
     const cutoff = now - windowMs;
     for (const [key, timestamps] of store) {
       const lastTimestamp = timestamps[timestamps.length - 1];
       if (lastTimestamp === undefined || lastTimestamp <= cutoff) {
         store.delete(key);
+      }
+
+      if (store.size <= RateLimiter.MAX_ENTRIES / 2) {
+        break;
       }
     }
   }

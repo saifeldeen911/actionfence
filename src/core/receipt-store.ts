@@ -15,6 +15,7 @@ import type {
   CreateReceiptInput,
   ReceiptVerificationResult,
 } from '../types/receipt.js';
+import { AsyncMutex } from '../utils/async-mutex.js';
 
 /** Module-specific options for receipt storage. */
 export interface ReceiptStoreOptions {
@@ -24,32 +25,6 @@ export interface ReceiptStoreOptions {
   readonly signerOptions?: ReceiptSignerOptions;
   /** Custom storage adapter. When omitted, a SQLiteAdapter is created using `databasePath`. */
   readonly adapter?: StorageAdapter;
-}
-
-/**
- * Simple async mutex that serialises insert operations so the
- * getLastHash → createReceipt → insert sequence cannot interleave
- * across concurrent `evaluate()` calls.
- */
-class AsyncMutex {
-  private tail: Promise<void> = Promise.resolve();
-
-  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-
-    const previous = this.tail;
-    this.tail = gate;
-
-    await previous;
-    try {
-      return await fn();
-    } finally {
-      release();
-    }
-  }
 }
 
 /**
@@ -83,6 +58,15 @@ export class ReceiptStore {
    * `prevHash`, which would break the hash chain.
    */
   async insert(input: CreateReceiptInput): Promise<ActionReceipt> {
+    if (this.adapter.insertAtomic) {
+      return this.adapter.insertAtomic((prevHash) =>
+        this.signer.createReceipt({
+          ...input,
+          prevHash,
+        }),
+      );
+    }
+
     return this.insertMutex.runExclusive(async () => {
       const lastHash = await this.adapter.getLastHash();
       const receipt = this.signer.createReceipt({
@@ -139,7 +123,7 @@ export class ReceiptStore {
       }
 
       const expectedPayloadHash = this.signer.hashCanonicalJson(receipt.payload_json);
-      if (receipt.payload_hash !== expectedPayloadHash) {
+      if (receipt.payload_json_hash !== expectedPayloadHash) {
         return {
           valid: false,
           checkedCount,
@@ -156,6 +140,7 @@ export class ReceiptStore {
         action: receipt.action,
         tool_name: receipt.tool_name,
         payload_json: receipt.payload_json,
+        payload_json_hash: receipt.payload_json_hash,
         payload_hash: receipt.payload_hash,
         policy_ref: receipt.policy_ref,
         status: receipt.status,

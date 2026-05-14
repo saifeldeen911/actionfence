@@ -10,7 +10,11 @@ import {
   type JWTPayload,
   type JWTVerifyOptions,
 } from 'jose';
-import type { AgentIdentity, IdentityClassification } from '../types/identity.js';
+import type {
+  AgentIdentity,
+  IdentityClassification,
+  SafeAgentIdentity,
+} from '../types/identity.js';
 
 /** Configuration for the IdentityReader. */
 export interface IdentityReaderOptions {
@@ -42,6 +46,8 @@ const ANONYMOUS_IDENTITY: AgentIdentity = Object.freeze({
   capabilities: [],
   rawToken: null,
 });
+
+const MAX_AGENT_ID_LENGTH = 256;
 
 /**
  * IdentityReader extracts and classifies agent identity from request context.
@@ -122,26 +128,13 @@ export class IdentityReader {
       return createIdentityFromPayload(payload, token, 'verified');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      const shouldFallbackToToken = !isJoseVerificationError(error);
-
       console.warn(
         `[actionfence] JWT verification failed for agent=${decodedIdentity.agentId}; ` +
-          `returning ${shouldFallbackToToken ? 'token' : 'anonymous'} identity: ${message}`,
-        error,
+          `returning anonymous identity: ${message}`,
       );
-
-      return shouldFallbackToToken ? decodedIdentity : ANONYMOUS_IDENTITY;
+      return ANONYMOUS_IDENTITY;
     }
   }
-}
-
-function isJoseVerificationError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-
-  const code = (error as { code?: unknown }).code;
-  return typeof code === 'string' && code.startsWith('ERR_J');
 }
 
 function normalizeVerifyOption(
@@ -163,9 +156,11 @@ function createIdentityFromPayload(
   token: string,
   classification: IdentityClassification,
 ): AgentIdentity {
-  const agentId = typeof payload.sub === 'string' ? payload.sub : 'unknown';
+  const agentId = sanitizeAgentId(payload.sub);
   const ownerId =
-    extractStringClaim(payload, 'azp') ?? extractStringClaim(payload, 'owner') ?? null;
+    sanitizeClaimString(extractStringClaim(payload, 'azp')) ??
+    sanitizeClaimString(extractStringClaim(payload, 'owner')) ??
+    null;
   const capabilities = extractStringArrayClaim(payload, 'capabilities');
 
   return Object.freeze({
@@ -182,10 +177,47 @@ function extractStringClaim(payload: JWTPayload, key: string): string | undefine
   return typeof value === 'string' ? value : undefined;
 }
 
+function sanitizeAgentId(raw: unknown): string {
+  if (typeof raw !== 'string' || raw.length === 0) {
+    return 'unknown';
+  }
+
+  // eslint-disable-next-line no-control-regex -- intentional: strip C0 control chars + DEL
+  const cleaned = raw.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (cleaned.length === 0) {
+    return 'unknown';
+  }
+
+  return cleaned.length > MAX_AGENT_ID_LENGTH ? cleaned.slice(0, MAX_AGENT_ID_LENGTH) : cleaned;
+}
+
+function sanitizeClaimString(value: string | undefined | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  // eslint-disable-next-line no-control-regex -- intentional: strip C0 control chars + DEL
+  const cleaned = value.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (cleaned.length === 0) {
+    return null;
+  }
+
+  return cleaned.length > MAX_AGENT_ID_LENGTH ? cleaned.slice(0, MAX_AGENT_ID_LENGTH) : cleaned;
+}
+
 function extractStringArrayClaim(payload: JWTPayload, key: string): readonly string[] {
   const value = payload[key];
   if (Array.isArray(value) && value.every((entry) => typeof entry === 'string')) {
     return Object.freeze([...value]);
   }
   return Object.freeze([]);
+}
+
+export function sanitizeIdentity(identity: AgentIdentity): SafeAgentIdentity {
+  return Object.freeze({
+    classification: identity.classification,
+    agentId: identity.agentId,
+    ownerId: identity.ownerId,
+    capabilities: Object.freeze([...identity.capabilities]),
+  });
 }

@@ -106,7 +106,9 @@ describe('cli/init', () => {
     runInit(makeArgs({ service: 'ValidService' }), ctx);
 
     const filePath = join(tempDir, 'guard-policy.json');
-    const policy = loadPolicy(filePath);
+    // Read as JSON object to avoid path-traversal guard rejecting temp paths
+    const rawContent = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const policy = loadPolicy(rawContent);
 
     expect(policy.service).toBe('ValidService');
     expect(policy.version).toBe('1.0');

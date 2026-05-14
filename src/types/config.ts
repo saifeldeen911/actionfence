@@ -68,6 +68,15 @@ export interface GuardOptions {
   readonly spendExtractor?: (params: unknown) => number | null;
 
   /**
+   * Redact sensitive fields before receipt storage.
+   * Return a sanitized copy and avoid mutating the input value.
+   */
+  readonly payloadRedactor?: (params: unknown) => unknown;
+
+  /** Maximum persisted payload size in bytes before truncation. Defaults to 65536. */
+  readonly maxPayloadBytes?: number;
+
+  /**
    * Classify whether a passed action should count toward transaction-per-day limits.
    * Defaults to true when spend was extracted or human approval is required.
    */

@@ -110,6 +110,7 @@ For serverless or horizontally-scaled deployments, use PostgreSQL:
 ### PostgreSQL Setup
 
 1. Install the `pg` driver:
+
    ```bash
    npm install pg
    ```
@@ -206,6 +207,39 @@ Verified identity is built in when you configure `identityReaderOptions.jwksUri`
 
 If a decoded or verified token includes a `capabilities` claim, ActionFence treats it as an exact allowlist of policy action names. A request that passes policy checks but is not listed in `capabilities` is blocked.
 
+## Trust Model
+
+ActionFence canonicalizes tool params before hashing receipts. That keeps the receipt chain deterministic, but it also means tool payloads must stay JSON-friendly.
+
+### Payload Redaction
+
+By default, full tool params are stored in receipts. To strip sensitive fields (passwords, API keys, PII) before persistence, use `payloadRedactor`:
+
+```ts
+withGuard(server, {
+  policy: './guard-policy.json',
+  payloadRedactor: (params) => {
+    const safe = { ...(params as Record<string, unknown>) };
+    delete safe.password;
+    delete safe.apiKey;
+    return safe;
+  },
+  maxPayloadBytes: 32_768, // optional: truncate stored payloads above 32 KB
+});
+```
+
+- The receipt hash is computed from the **original** params (integrity is preserved).
+- Only the **stored** `payload_json` is redacted/truncated (privacy).
+- `payloadRedactor` must return a sanitized copy — do not mutate the input.
+- `maxPayloadBytes` defaults to 65 536 (64 KB). Payloads exceeding this are replaced with a truncation marker that includes the original hash.
+
+### Payload Requirements
+
+- `params` must be JSON-serializable.
+- Unsupported values such as `BigInt`, `Symbols`, and circular references will fail before receipt creation.
+- `undefined` values are omitted by canonicalization, and `NaN` or `Infinity` become `null`.
+- Tool authors should validate their params are JSON-friendly before calling ActionFence-protected endpoints.
+
 ## Simulation Mode
 
 Simulation mode runs the full policy pipeline without executing the handler or storing a receipt.
@@ -251,6 +285,8 @@ SIMULATION - actionfence
 ## Action Receipts
 
 Every enforced decision stores a signed receipt in SQLite.
+
+Stored payloads may be redacted or truncated before persistence. The receipt binds the original request hash and the stored payload-view hash so chain verification can still detect tampering.
 
 ```text
 receipt_id:     a1b2c3d4-...
@@ -329,6 +365,8 @@ const middleware = guard({
 | `onDecision`            | `(decision) => void`                      | -       | Metrics, logging, hooks                  |
 | `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
 | `storage`               | `StorageConfig`                           | -       | Storage backend (SQLite/PostgreSQL)      |
+| `payloadRedactor`       | `(params: unknown) => unknown`            | -       | Strip sensitive fields before receipt storage |
+| `maxPayloadBytes`       | `number`                                  | `65536` | Max stored `payload_json` size; larger payloads are truncated |
 
 ### `IdentityReaderOptions`
 

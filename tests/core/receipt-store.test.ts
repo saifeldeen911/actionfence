@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import Database from 'better-sqlite3';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
 import { MemoryAdapter } from '../../src/storage/memory-adapter.js';
+import type { StorageAdapter } from '../../src/storage/adapter.js';
 import type { AgentIdentity } from '../../src/types/identity.js';
 import type { EvaluationDecision } from '../../src/types/decision.js';
 
@@ -281,5 +282,48 @@ describe('ReceiptStore', () => {
     await store.close();
     // MemoryAdapter.close() is a no-op — adapter should still be usable
     expect(adapter.size).toBe(1);
+  });
+
+  it('should prefer insertAtomic when the adapter provides it', async () => {
+    const insertAtomic = vi.fn(
+      async (
+        buildReceipt: (
+          prevHash: string,
+        ) => ReturnType<ReceiptStore['insert']> extends Promise<infer Receipt> ? Receipt : never,
+      ) => {
+        return buildReceipt('atomic-prev');
+      },
+    );
+    const adapter: StorageAdapter = {
+      insert: vi.fn(),
+      insertAtomic,
+      getLastHash: vi.fn(),
+      getById: vi.fn(),
+      listByAgent: vi.fn(),
+      count: vi.fn(),
+      query: vi.fn(),
+      getAllOrdered: vi.fn(),
+      close: vi.fn(),
+    };
+    const store = new ReceiptStore({
+      adapter,
+      signerOptions: { secret: FIXED_SECRET },
+    });
+
+    const receipt = await store.insert({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { itinerary: 'CAI-LHR' },
+      policyRef: 'policy',
+      receiptId: 'receipt-atomic',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    expect(insertAtomic).toHaveBeenCalledTimes(1);
+    expect(adapter.getLastHash).not.toHaveBeenCalled();
+    expect(adapter.insert).not.toHaveBeenCalled();
+    expect(receipt.prev_hash).toBe('atomic-prev');
+
+    await store.close();
   });
 });

@@ -95,6 +95,18 @@ describe('loadPolicy', () => {
       const validationError = caughtError as PolicyValidationError;
       expect(validationError.validationErrors.length).toBeGreaterThan(0);
     });
+
+    it('should allow a relative path that stays within the working directory', () => {
+      const policy = loadPolicy('tests/fixtures/../fixtures/valid-policy.json');
+
+      expect(policy.service).toBe('TestService');
+    });
+
+    it('should reject a path that escapes the working directory', () => {
+      const escapedPath = resolve(process.cwd(), '..', 'outside-policy.json');
+
+      expect(() => loadPolicy(escapedPath)).toThrow(PolicyLoadError);
+    });
   });
 
   describe('from inline object', () => {
