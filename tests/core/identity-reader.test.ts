@@ -94,6 +94,44 @@ describe('IdentityReader', () => {
       expect(identity.capabilities).toEqual([]);
     });
 
+    it('should sanitize an empty sub claim to unknown', async () => {
+      const token = makeUnsignedJwt({ sub: '' });
+      const identity = await reader.readIdentity({
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(identity.agentId).toBe('unknown');
+    });
+
+    it('should strip control characters from sub claims', async () => {
+      const token = makeUnsignedJwt({ sub: 'agent\u0000injected' });
+      const identity = await reader.readIdentity({
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(identity.agentId).toBe('agentinjected');
+    });
+
+    it('should truncate overly long sub claims to 256 characters', async () => {
+      const longSub = `agent-${'a'.repeat(500)}`;
+      const token = makeUnsignedJwt({ sub: longSub });
+      const identity = await reader.readIdentity({
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(identity.agentId).toHaveLength(256);
+      expect(identity.agentId).toBe(longSub.slice(0, 256));
+    });
+
+    it('should sanitize owner claims with control characters', async () => {
+      const token = makeUnsignedJwt({ sub: 'agent-1', owner: 'owner\u0000injected' });
+      const identity = await reader.readIdentity({
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(identity.ownerId).toBe('ownerinjected');
+    });
+
     it('should handle case-insensitive Bearer prefix', async () => {
       const token = makeUnsignedJwt({ sub: 'agent-case' });
       const identity = await reader.readIdentity({

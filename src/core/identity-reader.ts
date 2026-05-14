@@ -47,6 +47,8 @@ const ANONYMOUS_IDENTITY: AgentIdentity = Object.freeze({
   rawToken: null,
 });
 
+const MAX_AGENT_ID_LENGTH = 256;
+
 /**
  * IdentityReader extracts and classifies agent identity from request context.
  * It always decodes JWTs for metadata extraction and optionally upgrades
@@ -154,9 +156,11 @@ function createIdentityFromPayload(
   token: string,
   classification: IdentityClassification,
 ): AgentIdentity {
-  const agentId = typeof payload.sub === 'string' ? payload.sub : 'unknown';
+  const agentId = sanitizeAgentId(payload.sub);
   const ownerId =
-    extractStringClaim(payload, 'azp') ?? extractStringClaim(payload, 'owner') ?? null;
+    sanitizeClaimString(extractStringClaim(payload, 'azp')) ??
+    sanitizeClaimString(extractStringClaim(payload, 'owner')) ??
+    null;
   const capabilities = extractStringArrayClaim(payload, 'capabilities');
 
   return Object.freeze({
@@ -171,6 +175,32 @@ function createIdentityFromPayload(
 function extractStringClaim(payload: JWTPayload, key: string): string | undefined {
   const value = payload[key];
   return typeof value === 'string' ? value : undefined;
+}
+
+function sanitizeAgentId(raw: unknown): string {
+  if (typeof raw !== 'string' || raw.length === 0) {
+    return 'unknown';
+  }
+
+  const cleaned = raw.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (cleaned.length === 0) {
+    return 'unknown';
+  }
+
+  return cleaned.length > MAX_AGENT_ID_LENGTH ? cleaned.slice(0, MAX_AGENT_ID_LENGTH) : cleaned;
+}
+
+function sanitizeClaimString(value: string | undefined | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const cleaned = value.replace(/[\x00-\x1f\x7f]/g, '').trim();
+  if (cleaned.length === 0) {
+    return null;
+  }
+
+  return cleaned.length > MAX_AGENT_ID_LENGTH ? cleaned.slice(0, MAX_AGENT_ID_LENGTH) : cleaned;
 }
 
 function extractStringArrayClaim(payload: JWTPayload, key: string): readonly string[] {
