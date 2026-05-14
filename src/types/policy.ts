@@ -44,6 +44,13 @@ export interface SpendLimitsConfig {
   readonly window?: SpendWindowConfig;
   /** ISO 4217 currency code for spend reporting, if known. */
   readonly currency?: string;
+  /**
+   * Idle timeout in minutes after which `sessionTotal` resets to 0.
+   * When omitted and `session_max` is configured, defaults to 60 minutes
+   * so sessions don't grow indefinitely across idle periods.
+   * Set to 0 to disable idle-timeout resets entirely.
+   */
+  readonly session_timeout_minutes?: number;
 }
 
 /** Rate limiting configuration. */

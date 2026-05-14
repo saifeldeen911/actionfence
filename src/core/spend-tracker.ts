@@ -4,7 +4,7 @@
  */
 
 import type { SpendRecordResult, SpendSnapshot } from '../types/spend.js';
-import type { SpendWindowConfig } from '../types/policy.js';
+import type { SpendLimitsConfig, SpendWindowConfig } from '../types/policy.js';
 
 /** A single timestamped spend entry within the rolling window log. */
 interface TimestampedSpend {
@@ -29,14 +29,41 @@ interface SpendEntry {
   dailyTotal: number;
   dayKeyUtc: string;
   windowLog: TimestampedSpend[];
+  /** Epoch ms of the last committed spend. Used for idle-timeout session resets. */
+  lastActivity: number;
 }
+
+/**
+ * Default idle timeout in minutes applied when `session_max` is configured
+ * but `session_timeout_minutes` is not explicitly set.
+ */
+const DEFAULT_SESSION_TIMEOUT_MINUTES = 60;
 
 /**
  * SpendTracker maintains per-agent session and UTC-day totals,
  * plus an optional rolling-window spend log for time-based caps.
+ *
+ * When an idle timeout is configured (or defaulted), a session's
+ * `sessionTotal` is automatically reset to 0 if the agent has been
+ * idle for longer than the timeout.
  */
 export class SpendTracker {
   private readonly spendByAgent = new Map<string, SpendEntry>();
+  private sessionTimeoutMs: number | null = null;
+
+  constructor(config?: SpendLimitsConfig) {
+    if (config) {
+      this.applyConfig(config);
+    }
+  }
+
+  /**
+   * Hot-reload the spend-limits configuration.
+   * Updates the idle timeout immediately without resetting tracked state.
+   */
+  updateConfig(config: SpendLimitsConfig): void {
+    this.applyConfig(config);
+  }
 
   /**
    * Preview spend recording without mutating tracked totals.
@@ -86,6 +113,7 @@ export class SpendTracker {
     entry.sessionTotal += amount;
     entry.dailyTotal += amount;
     entry.windowLog.push({ amount, timestamp: now });
+    entry.lastActivity = now;
 
     const evictionWindow = maxWindowMillis ?? 7 * 24 * 60 * 60 * 1000;
     evictExpired(entry.windowLog, now - evictionWindow);
@@ -199,6 +227,7 @@ export class SpendTracker {
 
   private getOrCreateEntry(agentId: string): SpendEntry {
     const dayKeyUtc = getUtcDayKey();
+    const now = Date.now();
     const existing = this.spendByAgent.get(agentId);
 
     if (!existing) {
@@ -207,6 +236,7 @@ export class SpendTracker {
         dailyTotal: 0,
         dayKeyUtc,
         windowLog: [],
+        lastActivity: now,
       };
       this.spendByAgent.set(agentId, freshEntry);
       return freshEntry;
@@ -215,6 +245,11 @@ export class SpendTracker {
     if (existing.dayKeyUtc !== dayKeyUtc) {
       existing.dayKeyUtc = dayKeyUtc;
       existing.dailyTotal = 0;
+    }
+
+    // Reset session total when idle timeout has elapsed
+    if (this.sessionTimeoutMs !== null && now - existing.lastActivity >= this.sessionTimeoutMs) {
+      existing.sessionTotal = 0;
     }
 
     return existing;
@@ -230,24 +265,44 @@ export class SpendTracker {
         dailyTotal: 0,
         dayKeyUtc,
         windowLog: [],
+        lastActivity: Date.now(),
       };
     }
 
-    if (existing.dayKeyUtc !== dayKeyUtc) {
-      return {
-        sessionTotal: existing.sessionTotal,
-        dailyTotal: 0,
-        dayKeyUtc,
-        windowLog: existing.windowLog,
-      };
-    }
+    const dailyTotal = existing.dayKeyUtc !== dayKeyUtc ? 0 : existing.dailyTotal;
+
+    // Reflect the idle-timeout reset in previews without mutating the real entry
+    const sessionTimedOut =
+      this.sessionTimeoutMs !== null &&
+      Date.now() - existing.lastActivity >= this.sessionTimeoutMs;
 
     return {
-      sessionTotal: existing.sessionTotal,
-      dailyTotal: existing.dailyTotal,
+      sessionTotal: sessionTimedOut ? 0 : existing.sessionTotal,
+      dailyTotal,
       dayKeyUtc,
       windowLog: existing.windowLog,
+      lastActivity: existing.lastActivity,
     };
+  }
+
+  /**
+   * Resolve the idle-timeout milliseconds from a policy config.
+   *
+   * - Explicit `session_timeout_minutes` → use that (0 means disabled).
+   * - `session_max` configured but no explicit timeout → default 60 min.
+   * - Neither → null (no timeout).
+   */
+  private applyConfig(config: SpendLimitsConfig): void {
+    if (config.session_timeout_minutes !== undefined) {
+      this.sessionTimeoutMs =
+        config.session_timeout_minutes > 0
+          ? config.session_timeout_minutes * 60 * 1000
+          : null; // 0 disables the timeout
+    } else if (config.session_max !== undefined) {
+      this.sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MINUTES * 60 * 1000;
+    } else {
+      this.sessionTimeoutMs = null;
+    }
   }
 }
 

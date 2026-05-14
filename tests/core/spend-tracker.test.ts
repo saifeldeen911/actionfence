@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpendTracker } from '../../src/core/spend-tracker.js';
-import type { SpendWindowConfig } from '../../src/types/policy.js';
+import type { SpendLimitsConfig, SpendWindowConfig } from '../../src/types/policy.js';
 
 describe('SpendTracker — rolling window', () => {
   let tracker: SpendTracker;
@@ -290,5 +290,257 @@ describe('SpendTracker — existing behavior preserved', () => {
     const result = tracker.record('agent-1', 7);
     expect(result.snapshot.sessionTotal).toBe(17);
     expect(result.snapshot.dailyTotal).toBe(7);
+  });
+});
+
+describe('SpendTracker — session idle timeout', () => {
+  let tracker: SpendTracker;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should reset sessionTotal after the configured idle timeout elapses', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+    expect(tracker.getTotals('agent-1').sessionTotal).toBe(50);
+
+    // Advance 31 minutes — past the 30-minute idle timeout
+    vi.advanceTimersByTime(31 * 60 * 1000);
+
+    // Session should have reset; new record starts from 0
+    const result = tracker.record('agent-1', 10);
+    expect(result.snapshot.sessionTotal).toBe(10);
+  });
+
+  it('should NOT reset sessionTotal before the idle timeout', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+
+    // Advance only 29 minutes — within the timeout window
+    vi.advanceTimersByTime(29 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 10);
+    expect(result.snapshot.sessionTotal).toBe(60);
+  });
+
+  it('should apply default 60-minute timeout when session_max is set but session_timeout_minutes is omitted', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 200,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 100);
+
+    // Advance 61 minutes — past the default 60-minute timeout
+    vi.advanceTimersByTime(61 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(5);
+  });
+
+  it('should NOT apply idle timeout when session_timeout_minutes is 0 (disabled)', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 200,
+      session_timeout_minutes: 0,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 100);
+
+    // Advance 2 hours — no reset expected
+    vi.advanceTimersByTime(120 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(105);
+  });
+
+  it('should NOT apply idle timeout when neither session_max nor session_timeout_minutes is set', () => {
+    tracker = new SpendTracker();
+
+    tracker.record('agent-1', 100);
+
+    // Advance 2 hours — no reset expected
+    vi.advanceTimersByTime(120 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(105);
+  });
+
+  it('should reset sessionTotal at exactly the timeout boundary', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+
+    // Advance exactly 30 minutes — at the boundary, should reset
+    vi.advanceTimersByTime(30 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 10);
+    expect(result.snapshot.sessionTotal).toBe(10);
+  });
+
+  it('should preserve dailyTotal across session resets', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+
+    vi.advanceTimersByTime(31 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 10);
+    expect(result.snapshot.sessionTotal).toBe(10);
+    expect(result.snapshot.dailyTotal).toBe(60); // 50 + 10
+  });
+
+  it('should reflect idle-timeout reset in previewRecord without mutating lastActivity', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+
+    vi.advanceTimersByTime(31 * 60 * 1000);
+
+    // Preview should show the reset
+    const preview = tracker.previewRecord('agent-1', 10);
+    expect(preview.snapshot.sessionTotal).toBe(10); // reset to 0 + 10
+
+    // The real entry's lastActivity should be unchanged — a subsequent preview still shows reset
+    const preview2 = tracker.previewRecord('agent-1', 20);
+    expect(preview2.snapshot.sessionTotal).toBe(20); // still reset to 0 + 20
+  });
+
+  it('should isolate idle-timeout resets per agent', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 50);
+
+    // Advance 20 minutes and record for agent-2
+    vi.advanceTimersByTime(20 * 60 * 1000);
+    tracker.record('agent-2', 30);
+
+    // Advance another 11 minutes — agent-1 is past 30-min timeout, agent-2 is not
+    vi.advanceTimersByTime(11 * 60 * 1000);
+
+    const result1 = tracker.record('agent-1', 10);
+    expect(result1.snapshot.sessionTotal).toBe(10); // reset
+
+    const result2 = tracker.record('agent-2', 10);
+    expect(result2.snapshot.sessionTotal).toBe(40); // 30 + 10, not reset
+  });
+});
+
+describe('SpendTracker — updateConfig', () => {
+  let tracker: SpendTracker;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should apply a new timeout via updateConfig', () => {
+    tracker = new SpendTracker();
+    tracker.record('agent-1', 50);
+
+    // No timeout initially — advancing should not reset
+    vi.advanceTimersByTime(120 * 60 * 1000);
+    expect(tracker.getTotals('agent-1').sessionTotal).toBe(50);
+
+    // Now hot-reload a timeout of 10 minutes
+    tracker.updateConfig({ session_max: 100, session_timeout_minutes: 10, currency: 'USD' });
+
+    // Advance 11 minutes from the last activity (which was 120 mins ago + initial record)
+    // lastActivity was set at T=0, now we're at T+120min, so it's already past the timeout
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(5); // reset + 5
+  });
+
+  it('should disable timeout when updateConfig sets session_timeout_minutes to 0', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+    tracker.record('agent-1', 50);
+
+    // Disable the timeout
+    tracker.updateConfig({ session_max: 100, session_timeout_minutes: 0, currency: 'USD' });
+
+    vi.advanceTimersByTime(120 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(55); // no reset
+  });
+
+  it('should not clear existing tracked state when updateConfig is called', () => {
+    const config: SpendLimitsConfig = {
+      session_max: 100,
+      session_timeout_minutes: 60,
+      currency: 'USD',
+    };
+    tracker = new SpendTracker(config);
+
+    tracker.record('agent-1', 30);
+    tracker.record('agent-2', 40);
+
+    // Hot-reload with a different timeout
+    tracker.updateConfig({ session_max: 100, session_timeout_minutes: 120, currency: 'USD' });
+
+    // Existing state should still be there
+    expect(tracker.getTotals('agent-1').sessionTotal).toBe(30);
+    expect(tracker.getTotals('agent-2').sessionTotal).toBe(40);
+  });
+
+  it('should fall back to default 60-minute timeout when updateConfig has session_max but no explicit timeout', () => {
+    tracker = new SpendTracker();
+    tracker.record('agent-1', 50);
+
+    tracker.updateConfig({ session_max: 100, currency: 'USD' });
+
+    vi.advanceTimersByTime(61 * 60 * 1000);
+
+    const result = tracker.record('agent-1', 5);
+    expect(result.snapshot.sessionTotal).toBe(5); // reset
   });
 });
