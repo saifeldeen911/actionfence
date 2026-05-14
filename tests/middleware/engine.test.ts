@@ -126,6 +126,46 @@ describe('GuardEngine', () => {
     store.close();
   });
 
+  it('should retain a stable mutex instance per agent', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'mutex-agent',
+        ownerId: 'owner-1',
+        capabilities: ['search_flights'],
+        rawToken: 'token',
+      }),
+    };
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      silent: true,
+    });
+    const mutexes = engine as unknown as { readonly agentMutexes: Map<string, unknown> };
+
+    await engine.evaluate({
+      toolName: 'search_flights',
+      params: {},
+    });
+
+    const firstMutex = mutexes.agentMutexes.get('mutex-agent');
+    expect(firstMutex).toBeDefined();
+
+    await engine.evaluate({
+      toolName: 'search_flights',
+      params: {},
+    });
+
+    expect(mutexes.agentMutexes.get('mutex-agent')).toBe(firstMutex);
+    expect(mutexes.agentMutexes.size).toBe(1);
+
+    engine.dispose();
+    store.close();
+  });
+
   it('should redact stored payloads while preserving original payload integrity', async () => {
     const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);

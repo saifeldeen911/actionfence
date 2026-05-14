@@ -226,9 +226,10 @@ export class GuardEngine {
   }
 
   private releaseMutexIfIdle(agentId: string, mutex: AsyncMutex): void {
-    if (!mutex.hasWaiters) {
-      this.agentMutexes.delete(agentId);
-    }
+    // Intentionally retain one mutex instance per agent to avoid TOCTOU races
+    // between a release and a concurrent acquire.
+    void agentId;
+    void mutex;
   }
 
   private async getReceiptStore(): Promise<ReceiptStore> {
