@@ -5,7 +5,7 @@
 
 import { readFileSync } from 'node:fs';
 import { watch, type FSWatcher } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve, sep } from 'node:path';
 import { Ajv, type ErrorObject } from 'ajv';
 import type { GuardPolicy } from '../types/policy.js';
 import { PolicyLoadError, PolicyValidationError } from '../types/errors.js';
@@ -82,6 +82,14 @@ export function watchPolicy(filePath: string, callback: (policy: GuardPolicy) =>
  */
 function readPolicyFile(filePath: string): unknown {
   const resolvedPath = resolve(filePath);
+  const cwd = resolve(process.cwd());
+
+  if (!resolvedPath.startsWith(cwd + sep) && resolvedPath !== cwd) {
+    throw new PolicyLoadError(
+      `Policy path resolves outside the working directory: ${basename(resolvedPath)}`,
+      resolvedPath,
+    );
+  }
 
   let content: string;
   try {
