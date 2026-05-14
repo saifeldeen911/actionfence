@@ -6,6 +6,7 @@ import { ReceiptStore } from '../../src/core/receipt-store.js';
 import type { IdentityReaderLike } from '../../src/types/identity.js';
 import { RateLimiter } from '../../src/core/rate-limiter.js';
 import { GuardEngine } from '../../src/middleware/engine.js';
+import { SpendTracker } from '../../src/core/spend-tracker.js';
 import type { GuardPolicy } from '../../src/types/policy.js';
 
 const FIXED_SECRET = Buffer.alloc(32, 9).toString('base64url');
@@ -241,6 +242,94 @@ describe('GuardEngine', () => {
     expect(preview.preview?.reason).toContain('daily spend limit of 500.00 USD');
     expect(preview.preview?.spendSnapshot?.sessionTotal).toBe(550);
     expect(preview.preview?.spendSnapshot?.dailyTotal).toBe(550);
+
+    engine.dispose();
+    store.close();
+  });
+
+  it('should serialize concurrent evaluate() calls for the same agent and enforce spend limits', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const spendTracker = new SpendTracker();
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'concurrent-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const engine = new GuardEngine({
+      policy: {
+        ...POLICY,
+        spend_limits: { session_max: 500, daily_max: 1000, currency: 'USD' },
+      },
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    const [first, second] = await Promise.all([
+      engine.evaluate({ toolName: 'book_flight', params: { amount: 300 } }),
+      engine.evaluate({ toolName: 'book_flight', params: { amount: 300 } }),
+    ]);
+
+    const passed = [first, second].filter((r) => r.allowed);
+    const blocked = [first, second].filter((r) => !r.allowed);
+
+    expect(passed).toHaveLength(1);
+    expect(blocked).toHaveLength(1);
+    expect(blocked[0]!.statusCode).toBe(403);
+    expect(passed[0]!.identity).not.toHaveProperty('rawToken');
+    expect(
+      [first.spendSnapshot?.sessionTotal, second.spendSnapshot?.sessionTotal].filter(
+        (t): t is number => t !== undefined,
+      ),
+    ).toContain(300);
+
+    engine.dispose();
+    store.close();
+  });
+
+  it('should not block concurrent evaluate() calls for different agents', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+
+    let agentCallCount = 0;
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => {
+        agentCallCount++;
+        return {
+          classification: 'verified',
+          agentId: `agent-${agentCallCount}`,
+          ownerId: 'owner-1',
+          capabilities: ['search_flights'],
+          rawToken: 'token',
+        };
+      },
+    };
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      silent: true,
+    });
+
+    const results = await Promise.all([
+      engine.evaluate({ toolName: 'search_flights', params: { q: 'A' } }),
+      engine.evaluate({ toolName: 'search_flights', params: { q: 'B' } }),
+      engine.evaluate({ toolName: 'search_flights', params: { q: 'C' } }),
+    ]);
+
+    expect(results).toHaveLength(3);
+    for (const result of results) {
+      expect(result.allowed).toBe(true);
+      expect(result.identity).not.toHaveProperty('rawToken');
+    }
 
     engine.dispose();
     store.close();

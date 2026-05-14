@@ -12,6 +12,7 @@ import { ReceiptStore } from '../core/receipt-store.js';
 import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
 import { ConsoleReporter } from '../reporters/console.js';
+import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
 import type { EvaluationDecision } from '../types/decision.js';
 import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity } from '../types/identity.js';
@@ -70,6 +71,11 @@ export interface GuardInstance {
 
 /**
  * GuardEngine composes the core modules into one request/tool evaluation path.
+ *
+ * Lock ordering: when both the per-agent mutex (evaluate) and the
+ * ReceiptStore insert mutex are needed, the agent mutex MUST be acquired
+ * first to prevent deadlocks. ReceiptStore.insert() acquires its internal
+ * mutex inside the agent-mutex critical section.
  */
 export class GuardEngine {
   private policy: GuardPolicy;
@@ -85,6 +91,7 @@ export class GuardEngine {
   private receiptStorePromise?: Promise<ReceiptStore>;
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
+  private readonly agentMutexes = new Map<string, AsyncMutex>();
 
   constructor(options: GuardOptions) {
     this.options = options;
@@ -113,69 +120,77 @@ export class GuardEngine {
     const identity = await this.identityReader.readIdentity(context);
     const action = this.resolveAction(input.toolName, input.params);
     const spendAmount = this.extractSpend(input.params);
-    const requestRate = this.checkRequestRate(identity.agentId, mode);
 
-    if (!requestRate.allowed) {
-      return this.finalize({
-        mode,
-        decision: createBlockedDecision({
-          action,
-          toolName: input.toolName,
+    const mutex = this.acquireMutex(identity.agentId);
+    try {
+      return await mutex.runExclusive(async () => {
+        const requestRate = this.checkRequestRate(identity.agentId, mode);
+
+        if (!requestRate.allowed) {
+          return this.finalize({
+            mode,
+            decision: createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: `Request rate limit exceeded for agent "${identity.agentId}"`,
+            }),
+            identity,
+            params: input.params,
+            statusCode: 429,
+            errorCode: 'ACTIONFENCE_RATE_LIMITED',
+            rateLimit: requestRate,
+          });
+        }
+
+        let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
+        decision = this.enforceCapabilities(action, decision, identity);
+
+        let statusCode = decision.status === 'PASSED' ? 200 : 403;
+        let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
+        let effectiveRateLimit: RateLimitResult | null = requestRate;
+
+        if (decision.status === 'PASSED') {
+          decision = this.enforceSpendLimits(action, decision, identity);
+          if (decision.status === 'BLOCKED') {
+            statusCode = 403;
+          }
+        }
+
+        if (
+          decision.status === 'PASSED' &&
+          this.isTransaction(input.toolName, input.params, decision)
+        ) {
+          const transactionRate = this.checkTransactionRate(identity.agentId, mode);
+          effectiveRateLimit = transactionRate;
+
+          if (!transactionRate.allowed) {
+            decision = createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: `Transaction rate limit exceeded for agent "${identity.agentId}"`,
+            });
+            statusCode = 429;
+            errorCode = 'ACTIONFENCE_RATE_LIMITED';
+          }
+        }
+
+        return this.finalize({
+          mode,
+          decision,
           identity,
-          spendAmount,
-          reason: `Request rate limit exceeded for agent "${identity.agentId}"`,
-        }),
-        identity,
-        params: input.params,
-        statusCode: 429,
-        errorCode: 'ACTIONFENCE_RATE_LIMITED',
-        rateLimit: requestRate,
-      });
-    }
-
-    let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
-    decision = this.enforceCapabilities(action, decision, identity);
-
-    let statusCode = decision.status === 'PASSED' ? 200 : 403;
-    let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
-    let effectiveRateLimit: RateLimitResult | null = requestRate;
-
-    if (decision.status === 'PASSED') {
-      decision = this.enforceSpendLimits(action, decision, identity);
-      if (decision.status === 'BLOCKED') {
-        statusCode = 403;
-      }
-    }
-
-    if (
-      decision.status === 'PASSED' &&
-      this.isTransaction(input.toolName, input.params, decision)
-    ) {
-      const transactionRate = this.checkTransactionRate(identity.agentId, mode);
-      effectiveRateLimit = transactionRate;
-
-      if (!transactionRate.allowed) {
-        decision = createBlockedDecision({
-          action,
-          toolName: input.toolName,
-          identity,
-          spendAmount,
-          reason: `Transaction rate limit exceeded for agent "${identity.agentId}"`,
+          params: input.params,
+          statusCode,
+          errorCode,
+          rateLimit: effectiveRateLimit,
         });
-        statusCode = 429;
-        errorCode = 'ACTIONFENCE_RATE_LIMITED';
-      }
+      });
+    } finally {
+      this.releaseMutexIfIdle(identity.agentId, mutex);
     }
-
-    return this.finalize({
-      mode,
-      decision,
-      identity,
-      params: input.params,
-      statusCode,
-      errorCode,
-      rateLimit: effectiveRateLimit,
-    });
   }
 
   dispose(): void {
@@ -196,6 +211,22 @@ export class GuardEngine {
     this.policy = policy;
     this.evaluator.updatePolicy(policy);
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
+  }
+
+  private acquireMutex(agentId: string): AsyncMutex {
+    const existing = this.agentMutexes.get(agentId);
+    if (existing) {
+      return existing;
+    }
+    const mutex = new AsyncMutex();
+    this.agentMutexes.set(agentId, mutex);
+    return mutex;
+  }
+
+  private releaseMutexIfIdle(agentId: string, mutex: AsyncMutex): void {
+    if (!mutex.hasWaiters) {
+      this.agentMutexes.delete(agentId);
+    }
   }
 
   private async getReceiptStore(): Promise<ReceiptStore> {

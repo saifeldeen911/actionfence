@@ -15,6 +15,7 @@ import type {
   CreateReceiptInput,
   ReceiptVerificationResult,
 } from '../types/receipt.js';
+import { AsyncMutex } from '../utils/async-mutex.js';
 
 /** Module-specific options for receipt storage. */
 export interface ReceiptStoreOptions {
@@ -27,30 +28,11 @@ export interface ReceiptStoreOptions {
 }
 
 /**
- * Simple async mutex that serialises insert operations so the
- * getLastHash → createReceipt → insert sequence cannot interleave
+ * AsyncMutex is imported from ../utils/async-mutex.js.
+ * It serialises insert operations so the getLastHash →
+ * createReceipt → insert sequence cannot interleave
  * across concurrent `evaluate()` calls.
  */
-class AsyncMutex {
-  private tail: Promise<void> = Promise.resolve();
-
-  async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-
-    const previous = this.tail;
-    this.tail = gate;
-
-    await previous;
-    try {
-      return await fn();
-    } finally {
-      release();
-    }
-  }
-}
 
 /**
  * ReceiptStore provides signed, append-only persistence and chain verification.
