@@ -49,7 +49,9 @@ describe('PostgresAdapter', () => {
   it('should run migration on create', async () => {
     await PostgresAdapter.create({ connectionString: 'postgres://localhost' });
     expect(mockQuery).toHaveBeenCalledTimes(1);
-    expect(mockQuery.mock.calls[0]?.[0]).toContain('CREATE TABLE IF NOT EXISTS actionfence_receipts');
+    expect(mockQuery.mock.calls[0]?.[0]).toContain(
+      'CREATE TABLE IF NOT EXISTS actionfence_receipts',
+    );
   });
 
   it('should parameterize insert correctly', async () => {
@@ -62,7 +64,7 @@ describe('PostgresAdapter', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
     const sql = mockQuery.mock.calls[0]?.[0];
     const values = mockQuery.mock.calls[0]?.[1];
-    
+
     expect(sql).toContain('INSERT INTO actionfence_receipts');
     expect(values).toEqual([
       'r-1',
@@ -87,11 +89,11 @@ describe('PostgresAdapter', () => {
 
   it('should get last hash', async () => {
     const adapter = await PostgresAdapter.create({ autoMigrate: false });
-    
+
     mockQuery.mockResolvedValueOnce({ rows: [{ receipt_hash: 'rhash-latest' }] });
     const hash = await adapter.getLastHash();
     expect(hash).toBe('rhash-latest');
-    
+
     mockQuery.mockResolvedValueOnce({ rows: [] });
     const emptyHash = await adapter.getLastHash();
     expect(emptyHash).toBe('');

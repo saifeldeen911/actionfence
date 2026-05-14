@@ -110,6 +110,7 @@ For serverless or horizontally-scaled deployments, use PostgreSQL:
 ### PostgreSQL Setup
 
 1. Install the `pg` driver:
+
    ```bash
    npm install pg
    ```

@@ -56,7 +56,9 @@ export class ReceiptSigner {
   createReceipt(input: CreateReceiptInput): ActionReceipt {
     const payloadJson = canonicalJsonStringify(input.params);
     const originalPayloadJson =
-      input.originalParams === undefined ? payloadJson : canonicalJsonStringify(input.originalParams);
+      input.originalParams === undefined
+        ? payloadJson
+        : canonicalJsonStringify(input.originalParams);
     const payloadHash = this.hashCanonicalJson(originalPayloadJson);
     const storedPayloadJson = this.applyPayloadLimit(payloadJson, payloadHash);
     const payloadJsonHash = this.hashCanonicalJson(storedPayloadJson);

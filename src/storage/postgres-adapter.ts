@@ -151,7 +151,10 @@ export class PostgresAdapter implements StorageAdapter {
     } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === '23505') {
         const constraint = 'constraint' in error ? String(error.constraint) : '';
-        if (constraint === 'actionfence_receipts_receipt_hash_key' || constraint.includes('receipt_hash')) {
+        if (
+          constraint === 'actionfence_receipts_receipt_hash_key' ||
+          constraint.includes('receipt_hash')
+        ) {
           throw new Error(
             `[actionfence] Failed to insert receipt: Duplicate receipt_hash (${receipt.receipt_hash})`,
             { cause: error },
@@ -163,10 +166,9 @@ export class PostgresAdapter implements StorageAdapter {
             { cause: error },
           );
         }
-        throw new Error(
-          `[actionfence] Failed to insert receipt: Unique constraint violation`,
-          { cause: error },
-        );
+        throw new Error(`[actionfence] Failed to insert receipt: Unique constraint violation`, {
+          cause: error,
+        });
       }
       throw error;
     }
