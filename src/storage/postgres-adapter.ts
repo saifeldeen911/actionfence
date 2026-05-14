@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS actionfence_receipts (
   action         TEXT NOT NULL,
   tool_name      TEXT NOT NULL,
   payload_json   TEXT NOT NULL,
+  payload_json_hash   TEXT NOT NULL,
   payload_hash   TEXT NOT NULL,
   policy_ref     TEXT NOT NULL,
   status         TEXT NOT NULL CHECK (status IN ('PASSED', 'BLOCKED')),
@@ -117,12 +118,12 @@ export class PostgresAdapter implements StorageAdapter {
     const text = `
       INSERT INTO actionfence_receipts (
         receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-        payload_json, payload_hash, policy_ref, status, block_reason,
+        payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
         identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
       ) VALUES (
         $1, $2, $3, $4, $5, $6,
         $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16
+        $12, $13, $14, $15, $16, $17
       )
     `;
 
@@ -134,6 +135,7 @@ export class PostgresAdapter implements StorageAdapter {
       receipt.action,
       receipt.tool_name,
       receipt.payload_json,
+      receipt.payload_json_hash,
       receipt.payload_hash,
       receipt.policy_ref,
       receipt.status,
@@ -244,6 +246,7 @@ function rowToReceipt(row: Record<string, unknown>): ActionReceipt {
     action: row.action as string,
     tool_name: row.tool_name as string,
     payload_json: row.payload_json as string,
+    payload_json_hash: row.payload_json_hash as string,
     payload_hash: row.payload_hash as string,
     policy_ref: row.policy_ref as string,
     status: row.status as 'PASSED' | 'BLOCKED',

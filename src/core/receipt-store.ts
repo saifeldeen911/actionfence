@@ -114,7 +114,7 @@ export class ReceiptStore {
       }
 
       const expectedPayloadHash = this.signer.hashCanonicalJson(receipt.payload_json);
-      if (receipt.payload_hash !== expectedPayloadHash) {
+      if (receipt.payload_json_hash !== expectedPayloadHash) {
         return {
           valid: false,
           checkedCount,
@@ -131,6 +131,7 @@ export class ReceiptStore {
         action: receipt.action,
         tool_name: receipt.tool_name,
         payload_json: receipt.payload_json,
+        payload_json_hash: receipt.payload_json_hash,
         payload_hash: receipt.payload_hash,
         policy_ref: receipt.policy_ref,
         status: receipt.status,

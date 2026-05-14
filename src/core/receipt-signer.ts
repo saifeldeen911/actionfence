@@ -22,6 +22,7 @@ import type { ActionReceipt, CreateReceiptInput } from '../types/receipt.js';
 export interface ReceiptSignerOptions {
   readonly secret?: string;
   readonly keyFilePath?: string;
+  readonly maxPayloadBytes?: number;
 }
 
 type CanonicalJsonValue = CanonicalJsonPrimitive | CanonicalJsonArray | CanonicalJsonObject;
@@ -33,16 +34,19 @@ interface CanonicalJsonObject {
 
 const DEFAULT_KEY_PATH = '.actionfence/key';
 const LEGACY_KEY_PATH = '.agentguard/key';
+const DEFAULT_MAX_PAYLOAD_BYTES = 65_536;
 
 /**
  * ReceiptSigner signs and verifies immutable action receipts.
  */
 export class ReceiptSigner {
   private readonly keyBytes: Uint8Array;
+  private readonly maxPayloadBytes: number;
   readonly keyFilePath: string;
 
   constructor(options: ReceiptSignerOptions = {}) {
     this.keyFilePath = resolve(options.keyFilePath ?? DEFAULT_KEY_PATH);
+    this.maxPayloadBytes = normalizeMaxPayloadBytes(options.maxPayloadBytes);
     this.keyBytes = this.resolveSigningKey(options.secret);
   }
 
@@ -51,7 +55,11 @@ export class ReceiptSigner {
    */
   createReceipt(input: CreateReceiptInput): ActionReceipt {
     const payloadJson = canonicalJsonStringify(input.params);
-    const payloadHash = this.hashCanonicalJson(payloadJson);
+    const originalPayloadJson =
+      input.originalParams === undefined ? payloadJson : canonicalJsonStringify(input.originalParams);
+    const payloadHash = this.hashCanonicalJson(originalPayloadJson);
+    const storedPayloadJson = this.applyPayloadLimit(payloadJson, payloadHash);
+    const payloadJsonHash = this.hashCanonicalJson(storedPayloadJson);
     const receiptId = input.receiptId ?? randomUUID();
     const timestamp = input.timestamp ?? input.decision.timestamp;
     const prevHash = input.prevHash ?? '';
@@ -63,7 +71,8 @@ export class ReceiptSigner {
       owner_id: input.identity.ownerId,
       action: input.decision.action,
       tool_name: input.decision.toolName,
-      payload_json: payloadJson,
+      payload_json: storedPayloadJson,
+      payload_json_hash: payloadJsonHash,
       payload_hash: payloadHash,
       policy_ref: input.policyRef,
       status: input.decision.status,
@@ -109,6 +118,7 @@ export class ReceiptSigner {
       action: receipt.action,
       tool_name: receipt.tool_name,
       payload_hash: receipt.payload_hash,
+      payload_json_hash: receipt.payload_json_hash,
       policy_ref: receipt.policy_ref,
       status: receipt.status,
       block_reason: receipt.block_reason,
@@ -213,6 +223,17 @@ export class ReceiptSigner {
   private signHash(receiptHash: string): string {
     return createHmac('sha256', this.keyBytes).update(receiptHash, 'utf8').digest('hex');
   }
+
+  private applyPayloadLimit(payloadJson: string, payloadHash: string): string {
+    if (Buffer.byteLength(payloadJson, 'utf8') <= this.maxPayloadBytes) {
+      return payloadJson;
+    }
+
+    return canonicalJsonStringify({
+      _originalHash: payloadHash,
+      _truncated: true,
+    });
+  }
 }
 
 function parseSecretMaterial(value: string, source: string): Uint8Array {
@@ -243,6 +264,25 @@ function persistGeneratedSecret(filePath: string, secretBytes: Uint8Array): void
     encoding: 'utf8',
     mode: 0o600,
   });
+}
+
+function normalizeMaxPayloadBytes(value: number | undefined): number {
+  if (value === undefined) {
+    return DEFAULT_MAX_PAYLOAD_BYTES;
+  }
+
+  if (!Number.isFinite(value)) {
+    throw new TypeError(`Receipt payload size limit must be finite. Received: ${value}`);
+  }
+
+  const normalized = Math.floor(value);
+  if (normalized <= 0) {
+    throw new TypeError(
+      `Receipt payload size limit must be greater than 0 bytes. Received: ${value}`,
+    );
+  }
+
+  return normalized;
 }
 
 function sha256Hex(value: string): string {

@@ -23,6 +23,9 @@ export interface ActionReceipt {
   readonly tool_name: string;
   /** Canonical JSON payload captured for later verification. */
   readonly payload_json: string;
+  /** Hash of the stored payload_json view for tamper detection. */
+  readonly payload_json_hash: string;
+  /** Hash of the original request payload used for integrity attestation. */
   readonly payload_hash: string;
   readonly policy_ref: string;
   readonly status: 'PASSED' | 'BLOCKED';
@@ -39,6 +42,7 @@ export interface CreateReceiptInput {
   readonly decision: EvaluationDecision;
   readonly identity: AgentIdentity;
   readonly params: unknown;
+  readonly originalParams?: unknown;
   readonly policyRef: string;
   readonly prevHash?: string | null;
   /** Optional override for deterministic tests. */

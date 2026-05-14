@@ -128,6 +128,61 @@ describe('ReceiptSigner', () => {
     expect(hashA).toBe(hashB);
   });
 
+  it('should keep original and stored payload hashes separate when originalParams are provided', () => {
+    const signer = new ReceiptSigner({ secret: FIXED_SECRET });
+    const storedParams = {
+      itinerary: 'CAI-LHR',
+      secret: '[redacted]',
+    };
+    const originalParams = {
+      itinerary: 'CAI-LHR',
+      secret: 'super-secret',
+    };
+
+    const receipt = signer.createReceipt({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: storedParams,
+      originalParams,
+      policyRef: 'policy v1',
+      receiptId: 'receipt-redacted',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    expect(receipt.payload_json).toBe('{"itinerary":"CAI-LHR","secret":"[redacted]"}');
+    expect(receipt.payload_hash).toBe(signer.hashPayload(originalParams));
+    expect(receipt.payload_json_hash).toBe(signer.hashPayload(storedParams));
+    expect(signer.verifySignature(receipt)).toBe(true);
+  });
+
+  it('should truncate oversized payloads to a marker payload', () => {
+    const signer = new ReceiptSigner({ secret: FIXED_SECRET, maxPayloadBytes: 64 });
+    const largeParams = {
+      blob: 'x'.repeat(256),
+      nested: { value: 'y'.repeat(128) },
+    };
+
+    const receipt = signer.createReceipt({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: largeParams,
+      originalParams: largeParams,
+      policyRef: 'policy v1',
+      receiptId: 'receipt-truncated',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    const payload = JSON.parse(receipt.payload_json) as {
+      readonly _originalHash: string;
+      readonly _truncated: boolean;
+    };
+
+    expect(payload._truncated).toBe(true);
+    expect(payload._originalHash).toBe(receipt.payload_hash);
+    expect(receipt.payload_json_hash).toBe(signer.hashPayload(payload));
+    expect(signer.verifySignature(receipt)).toBe(true);
+  });
+
   it('should prefer an explicit secret over env and file secrets', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
     const keyFilePath = join(tempDir, 'key');
@@ -264,29 +319,31 @@ describe('ReceiptSigner', () => {
       };
     });
 
-    return import('../../src/core/receipt-signer.js').then(({ ReceiptSigner: MockedReceiptSigner }) => {
-      const signer = new MockedReceiptSigner();
-      const receipt = signer.createReceipt({
-        decision: makeDecision(),
-        identity: makeIdentity(),
-        params: { value: 1 },
-        policyRef: 'policy v1',
-        receiptId: 'receipt-legacy-chmod',
-        timestamp: '2026-05-06T20:00:00.000Z',
+    return import('../../src/core/receipt-signer.js')
+      .then(({ ReceiptSigner: MockedReceiptSigner }) => {
+        const signer = new MockedReceiptSigner();
+        const receipt = signer.createReceipt({
+          decision: makeDecision(),
+          identity: makeIdentity(),
+          params: { value: 1 },
+          policyRef: 'policy v1',
+          receiptId: 'receipt-legacy-chmod',
+          timestamp: '2026-05-06T20:00:00.000Z',
+        });
+
+        const verifier = new ReceiptSigner({ secret: FILE_SECRET });
+
+        expect(existsSync(migratedKeyPath)).toBe(true);
+        expect(existsSync(legacyKeyPath)).toBe(false);
+        expect(verifier.verifySignature(receipt)).toBe(true);
+      })
+      .finally(() => {
+        vi.doUnmock('node:fs');
+        vi.resetModules();
+        warnSpy.mockRestore();
+        cwdSpy.mockRestore();
+        rmSync(tempDir, { recursive: true, force: true });
       });
-
-      const verifier = new ReceiptSigner({ secret: FILE_SECRET });
-
-      expect(existsSync(migratedKeyPath)).toBe(true);
-      expect(existsSync(legacyKeyPath)).toBe(false);
-      expect(verifier.verifySignature(receipt)).toBe(true);
-    }).finally(() => {
-      vi.doUnmock('node:fs');
-      vi.resetModules();
-      warnSpy.mockRestore();
-      cwdSpy.mockRestore();
-      rmSync(tempDir, { recursive: true, force: true });
-    });
   });
 
   it('should load the stored secret file when no explicit or env secret exists', () => {

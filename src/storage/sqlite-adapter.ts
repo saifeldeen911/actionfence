@@ -26,6 +26,7 @@ interface ReceiptRow {
   readonly action: string;
   readonly tool_name: string;
   readonly payload_json: string;
+  readonly payload_json_hash: string;
   readonly payload_hash: string;
   readonly policy_ref: string;
   readonly status: 'PASSED' | 'BLOCKED';
@@ -96,12 +97,12 @@ export class SQLiteAdapter implements StorageAdapter {
       this.insertStmt = this.db.prepare(`
         INSERT INTO receipts (
           receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-          payload_json, payload_hash, policy_ref, status, block_reason,
+          payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
           identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig,
           created_at
         ) VALUES (
           @receipt_id, @timestamp, @agent_id, @owner_id, @action, @tool_name,
-          @payload_json, @payload_hash, @policy_ref, @status, @block_reason,
+          @payload_json, @payload_json_hash, @payload_hash, @policy_ref, @status, @block_reason,
           @identity_tier, @spend_amount, @prev_hash, @receipt_hash, @receipt_sig,
           @timestamp
         )
@@ -113,21 +114,21 @@ export class SQLiteAdapter implements StorageAdapter {
 
       this.getByIdStmt = this.db.prepare(`
         SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-               payload_json, payload_hash, policy_ref, status, block_reason,
+           payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
                identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
         FROM receipts WHERE receipt_id = ?
       `);
 
       this.listByAgentStmt = this.db.prepare(`
         SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-               payload_json, payload_hash, policy_ref, status, block_reason,
+           payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
                identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
         FROM receipts WHERE agent_id = ? ORDER BY rowid ASC
       `);
 
       this.getAllOrderedStmt = this.db.prepare(`
         SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-               payload_json, payload_hash, policy_ref, status, block_reason,
+           payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
                identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
         FROM receipts ORDER BY rowid ASC
       `);
@@ -186,7 +187,7 @@ export class SQLiteAdapter implements StorageAdapter {
   query(filters?: ReceiptFilters, limit?: number): readonly ActionReceipt[] {
     const selectCols = `
       SELECT receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-             payload_json, payload_hash, policy_ref, status, block_reason,
+            payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
              identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
       FROM receipts`;
     const { sql: baseSql, params } = buildFilterQuery(selectCols, filters);
@@ -225,6 +226,7 @@ export class SQLiteAdapter implements StorageAdapter {
         identity_tier TEXT NOT NULL,
         spend_amount REAL,
         prev_hash TEXT NOT NULL,
+        payload_json_hash TEXT NOT NULL,
         receipt_hash TEXT NOT NULL UNIQUE,
         receipt_sig TEXT NOT NULL,
         created_at TEXT NOT NULL
@@ -251,6 +253,7 @@ function freezeReceipt(row: ReceiptRow): ActionReceipt {
     action: row.action,
     tool_name: row.tool_name,
     payload_json: row.payload_json,
+    payload_json_hash: row.payload_json_hash,
     payload_hash: row.payload_hash,
     policy_ref: row.policy_ref,
     status: row.status,

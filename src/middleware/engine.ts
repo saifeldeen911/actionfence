@@ -253,6 +253,9 @@ export class GuardEngine {
         signerOptions: {
           ...this.options.receiptStoreOptions?.signerOptions,
           secret: this.options.secret ?? this.options.receiptStoreOptions?.signerOptions?.secret,
+          maxPayloadBytes:
+            this.options.maxPayloadBytes ??
+            this.options.receiptStoreOptions?.signerOptions?.maxPayloadBytes,
         },
       });
 
@@ -292,7 +295,8 @@ export class GuardEngine {
           ).insert({
             decision: input.decision,
             identity: input.identity,
-            params: input.params,
+            params: this.redactPayload(input.params),
+            originalParams: input.params,
             policyRef: this.policyRef,
           })
         : null;
@@ -327,6 +331,23 @@ export class GuardEngine {
       preview,
       error,
     });
+  }
+
+  private redactPayload(params: unknown): unknown {
+    if (!this.options.payloadRedactor) {
+      return params;
+    }
+
+    try {
+      const redacted = this.options.payloadRedactor(params);
+      if (redacted === undefined) {
+        throw new TypeError('payloadRedactor must return a JSON-serializable value');
+      }
+      return redacted;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`ActionFence payloadRedactor failed closed: ${message}`);
+    }
   }
 
   private resolveAction(toolName: string, params: unknown): string {

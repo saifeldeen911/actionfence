@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
+import { ReceiptSigner } from '../../src/core/receipt-signer.js';
 import type { IdentityReaderLike } from '../../src/types/identity.js';
 import { RateLimiter } from '../../src/core/rate-limiter.js';
 import { GuardEngine } from '../../src/middleware/engine.js';
@@ -119,6 +120,47 @@ describe('GuardEngine', () => {
     expect(result.identity.agentId).toBe('agent-1');
     expect(result.identity.ownerId).toBe('owner-1');
     expect(result.identity.capabilities).toEqual(['search_flights']);
+
+    engine.dispose();
+    store.close();
+  });
+
+  it('should redact stored payloads while preserving original payload integrity', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const signer = new ReceiptSigner({ secret: FIXED_SECRET });
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+      actionResolver: () => 'search_flights',
+      payloadRedactor: (params) => {
+        const record = params as { password?: string; query?: string } | null;
+        if (!record) {
+          return params;
+        }
+
+        const { password: _password, ...safe } = record;
+        return safe;
+      },
+    });
+
+    const params = {
+      query: 'CAI',
+      password: 'super-secret',
+    };
+
+    const result = await engine.evaluate({
+      toolName: 'search_flights',
+      params,
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.receipt).not.toBeNull();
+    expect(result.receipt?.payload_json).toBe('{"query":"CAI"}');
+    expect(result.receipt?.payload_hash).toBe(signer.hashPayload(params));
+    expect(result.receipt?.payload_json_hash).toBe(signer.hashPayload({ query: 'CAI' }));
+    expect(await store.verifyChain()).toEqual({ valid: true, checkedCount: 1 });
 
     engine.dispose();
     store.close();
