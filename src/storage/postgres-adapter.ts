@@ -91,8 +91,7 @@ export class PostgresAdapter implements StorageAdapter {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `[actionfence] Failed to initialize Postgres storage. Ensure 'pg' is installed (npm install pg). Original error: ${message}`,
-        { cause: error },
+        `[actionfence] Failed to initialize Postgres storage. Ensure 'pg' is installed (npm install pg). Original error: ${sanitizeConnectionError(message)}`,
       );
     }
 
@@ -257,6 +256,10 @@ function rowToReceipt(row: Record<string, unknown>): ActionReceipt {
     receipt_hash: row.receipt_hash as string,
     receipt_sig: row.receipt_sig as string,
   });
+}
+
+function sanitizeConnectionError(message: string): string {
+  return message.replace(/(postgres(?:ql)?:\/\/[^:\s]+:)([^@]+)(@)/gi, '$1***$3');
 }
 
 interface FilterQueryResult {

@@ -4,18 +4,16 @@ import type { ActionReceipt } from '../../src/types/receipt.js';
 
 const mockQuery = vi.fn();
 const mockEnd = vi.fn();
+const mockPoolConstructor = vi.fn().mockImplementation(() => ({
+  query: mockQuery,
+  end: mockEnd,
+}));
 
 vi.mock('pg', () => {
   return {
-    Pool: vi.fn().mockImplementation(() => ({
-      query: mockQuery,
-      end: mockEnd,
-    })),
+    Pool: mockPoolConstructor,
     default: {
-      Pool: vi.fn().mockImplementation(() => ({
-        query: mockQuery,
-        end: mockEnd,
-      })),
+      Pool: mockPoolConstructor,
     },
   };
 });
@@ -117,5 +115,41 @@ describe('PostgresAdapter', () => {
     const adapter = await PostgresAdapter.create({ autoMigrate: false });
     await adapter.close();
     expect(mockEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('should sanitize credentials in initialization error messages', async () => {
+    mockPoolConstructor.mockImplementationOnce(() => {
+      throw new Error('connect failed for postgres://user:secret@db.example/app');
+    });
+
+    let caughtError: unknown;
+    try {
+      await PostgresAdapter.create({ connectionString: 'postgres://user:secret@db.example/app' });
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBeInstanceOf(Error);
+    const error = caughtError as Error & { cause?: unknown };
+    expect(error.message).toContain('postgres://user:***@db.example/app');
+    expect(error.message).not.toContain('secret');
+    expect(error).not.toHaveProperty('cause');
+  });
+
+  it('should preserve useful messages for non-credential errors', async () => {
+    mockPoolConstructor.mockImplementationOnce(() => {
+      throw new Error('database not ready');
+    });
+
+    let caughtError: unknown;
+    try {
+      await PostgresAdapter.create({ connectionString: 'postgres://user@db.example/app' });
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBeInstanceOf(Error);
+    const error = caughtError as Error;
+    expect(error.message).toContain('database not ready');
   });
 });
