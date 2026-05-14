@@ -192,6 +192,12 @@ export class ReceiptSigner {
         }
       }
 
+      try {
+        chmodSync(defaultKeyPath, 0o600);
+      } catch {
+        // Best-effort — Windows does not support POSIX file modes.
+      }
+
       console.warn(
         `[actionfence] Migrated legacy signing key from ${legacyKeyPath} to ${defaultKeyPath}`,
       );

@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ReceiptSigner } from '../../src/core/receipt-signer.js';
@@ -222,6 +230,9 @@ describe('ReceiptSigner', () => {
     expect(existsSync(migratedKeyPath)).toBe(true);
     expect(existsSync(legacyKeyPath)).toBe(false);
     expect(readFileSync(migratedKeyPath, 'utf8').trim()).toBe(FILE_SECRET);
+    if (process.platform !== 'win32') {
+      expect(statSync(migratedKeyPath).mode & 0o777).toBe(0o600);
+    }
     expect(verifier.verifySignature(receipt)).toBe(true);
     expect(warnSpy).toHaveBeenCalledWith(
       `[actionfence] Migrated legacy signing key from ${legacyKeyPath} to ${migratedKeyPath}`,
@@ -230,6 +241,52 @@ describe('ReceiptSigner', () => {
     warnSpy.mockRestore();
     cwdSpy.mockRestore();
     rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should keep migrating when chmod is unavailable', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-signer-'));
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const legacyKeyPath = join(tempDir, '.agentguard', 'key');
+    const migratedKeyPath = join(tempDir, '.actionfence', 'key');
+
+    mkdirSync(join(tempDir, '.agentguard'), { recursive: true });
+    writeFileSync(legacyKeyPath, FILE_SECRET, 'utf8');
+
+    vi.resetModules();
+    vi.doMock('node:fs', async () => {
+      const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+      return {
+        ...actual,
+        chmodSync: () => {
+          throw new Error('chmod unavailable');
+        },
+      };
+    });
+
+    return import('../../src/core/receipt-signer.js').then(({ ReceiptSigner: MockedReceiptSigner }) => {
+      const signer = new MockedReceiptSigner();
+      const receipt = signer.createReceipt({
+        decision: makeDecision(),
+        identity: makeIdentity(),
+        params: { value: 1 },
+        policyRef: 'policy v1',
+        receiptId: 'receipt-legacy-chmod',
+        timestamp: '2026-05-06T20:00:00.000Z',
+      });
+
+      const verifier = new ReceiptSigner({ secret: FILE_SECRET });
+
+      expect(existsSync(migratedKeyPath)).toBe(true);
+      expect(existsSync(legacyKeyPath)).toBe(false);
+      expect(verifier.verifySignature(receipt)).toBe(true);
+    }).finally(() => {
+      vi.doUnmock('node:fs');
+      vi.resetModules();
+      warnSpy.mockRestore();
+      cwdSpy.mockRestore();
+      rmSync(tempDir, { recursive: true, force: true });
+    });
   });
 
   it('should load the stored secret file when no explicit or env secret exists', () => {
