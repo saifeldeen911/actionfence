@@ -274,11 +274,12 @@ export class GuardEngine {
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
   }): Promise<GuardEvaluationResult> {
-    const spendSnapshot = this.resolveSpendSnapshot(
-      input.identity.agentId,
-      input.decision,
-      input.mode,
-    );
+    let spendSnapshot: SpendSnapshot | null = null;
+
+    if (input.mode === 'simulate') {
+      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+    }
+
     const preview =
       input.mode === 'simulate'
         ? createSimulationPreview({
@@ -300,6 +301,10 @@ export class GuardEngine {
             policyRef: this.policyRef,
           })
         : null;
+
+    if (input.mode === 'enforce') {
+      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+    }
 
     this.reporter.report({
       decision: input.decision,

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
 import { ReceiptSigner } from '../../src/core/receipt-signer.js';
+import type { StorageAdapter } from '../../src/storage/adapter.js';
 import type { IdentityReaderLike } from '../../src/types/identity.js';
 import { RateLimiter } from '../../src/core/rate-limiter.js';
 import { GuardEngine } from '../../src/middleware/engine.js';
@@ -164,6 +165,60 @@ describe('GuardEngine', () => {
 
     engine.dispose();
     store.close();
+  });
+
+  it('should not commit spend when receipt insertion fails', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-fail-'));
+    cleanupDirs.push(tempDir);
+    const store = new ReceiptStore({
+      adapter: {
+        insert: vi.fn(async () => {
+          throw new Error('receipt insert failed');
+        }),
+        getLastHash: vi.fn().mockResolvedValue(''),
+        getById: vi.fn(),
+        listByAgent: vi.fn(),
+        count: vi.fn(),
+        query: vi.fn(),
+        getAllOrdered: vi.fn(),
+        close: vi.fn(),
+      } satisfies StorageAdapter,
+      signerOptions: {
+        secret: FIXED_SECRET,
+        keyFilePath: join(tempDir, 'key'),
+      },
+    });
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'spender',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker(POLICY.spend_limits);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    await expect(
+      engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 150 },
+      }),
+    ).rejects.toThrow('receipt insert failed');
+
+    expect(spendTracker.getTotals('spender').sessionTotal).toBe(0);
+
+    engine.dispose();
+    await store.close();
   });
 
   it('should block allowed actions that are outside declared capabilities', async () => {
