@@ -7,6 +7,8 @@ import type { AgentIdentity } from '../../src/types/identity.js';
 import type { EvaluationDecision } from '../../src/types/decision.js';
 
 const FIXED_SECRET = Buffer.alloc(32, 1).toString('base64url');
+const MIN_SECRET = Buffer.alloc(16, 4).toString('base64url');
+const SHORT_SECRET = Buffer.alloc(15, 5).toString('base64url');
 const ENV_SECRET = Buffer.alloc(32, 2).toString('base64url');
 const FILE_SECRET = Buffer.alloc(32, 3).toString('base64url');
 
@@ -279,5 +281,25 @@ describe('ReceiptSigner', () => {
     expect(() => new ReceiptSigner({ secret: 'not valid!' })).toThrow(
       /Expected an unpadded base64url string/,
     );
+  });
+
+  it('should reject signing secrets shorter than 16 bytes', () => {
+    expect(() => new ReceiptSigner({ secret: SHORT_SECRET })).toThrow(
+      /Minimum 16 bytes required for HMAC-SHA256/,
+    );
+  });
+
+  it('should accept signing secrets that are exactly 16 bytes long', () => {
+    const signer = new ReceiptSigner({ secret: MIN_SECRET });
+    const receipt = signer.createReceipt({
+      decision: makeDecision(),
+      identity: makeIdentity(),
+      params: { value: 1 },
+      policyRef: 'policy v1',
+      receiptId: 'receipt-min-secret',
+      timestamp: '2026-05-06T20:00:00.000Z',
+    });
+
+    expect(signer.verifySignature(receipt)).toBe(true);
   });
 });

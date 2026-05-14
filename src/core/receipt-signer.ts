@@ -219,6 +219,11 @@ function parseSecretMaterial(value: string, source: string): Uint8Array {
   }
 
   const decoded = Buffer.from(trimmed, 'base64url');
+  if (decoded.length < 16) {
+    throw new TypeError(
+      `Receipt signing secret from ${source} is too short (${decoded.length} bytes). Minimum 16 bytes required for HMAC-SHA256.`,
+    );
+  }
   if (decoded.length === 0) {
     throw new TypeError(`Invalid receipt signing secret from ${source}. Secret cannot be empty.`);
   }
