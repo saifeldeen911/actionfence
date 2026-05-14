@@ -191,8 +191,9 @@ export class SQLiteAdapter implements StorageAdapter {
       FROM receipts`;
     const { sql: baseSql, params } = buildFilterQuery(selectCols, filters);
     let sql = `${baseSql} ORDER BY rowid ASC`;
-    if (limit !== undefined && limit > 0) {
-      sql += ` LIMIT ${Math.floor(limit)}`;
+    if (limit !== undefined && Number.isFinite(limit) && limit > 0) {
+      sql += ' LIMIT ?';
+      params.push(Math.floor(limit));
     }
     const rows = this.db.prepare(sql).all(...params) as ReceiptRow[];
     return Object.freeze(rows.map(freezeReceipt));
