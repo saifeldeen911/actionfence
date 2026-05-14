@@ -248,6 +248,208 @@ describe('GuardEngine', () => {
     }
   });
 
+  it('should apply explicit session_timeout_minutes from policy through the engine', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'explicit-timeout-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker();
+    const engine = new GuardEngine({
+      policy: {
+        ...POLICY,
+        spend_limits: {
+          session_max: 600,
+          daily_max: 700,
+          session_timeout_minutes: 15,
+          currency: 'USD',
+        },
+      },
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+
+    try {
+      const first = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 400 },
+      });
+      expect(first.allowed).toBe(true);
+
+      // 14 minutes — within the 15-minute timeout, session should accumulate
+      vi.advanceTimersByTime(14 * 60 * 1000);
+
+      const withinTimeout = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 100 },
+      });
+      expect(withinTimeout.allowed).toBe(true);
+      expect(withinTimeout.spendSnapshot?.sessionTotal).toBe(500);
+
+      // 16 minutes from last activity — past the 15-minute timeout, session resets
+      vi.advanceTimersByTime(16 * 60 * 1000);
+
+      const afterTimeout = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 200 },
+      });
+      expect(afterTimeout.allowed).toBe(true);
+      expect(afterTimeout.spendSnapshot?.sessionTotal).toBe(200);
+    } finally {
+      vi.useRealTimers();
+      engine.dispose();
+      store.close();
+    }
+  });
+
+  it('should disable session timeout when session_timeout_minutes is 0', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'no-timeout-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker();
+    const engine = new GuardEngine({
+      policy: {
+        ...POLICY,
+        spend_limits: {
+          session_max: 600,
+          daily_max: 700,
+          session_timeout_minutes: 0,
+          currency: 'USD',
+        },
+      },
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+
+    try {
+      const first = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 300 },
+      });
+      expect(first.allowed).toBe(true);
+
+      // Advance 3 hours — session should NOT reset because timeout is disabled
+      vi.advanceTimersByTime(180 * 60 * 1000);
+
+      const second = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 200 },
+      });
+      expect(second.allowed).toBe(true);
+      expect(second.spendSnapshot?.sessionTotal).toBe(500);
+    } finally {
+      vi.useRealTimers();
+      engine.dispose();
+      store.close();
+    }
+  });
+
+  it('should apply updated session timeout on policy hot-reload', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'hotreload-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const engine = new GuardEngine({
+      policy: {
+        ...POLICY,
+        spend_limits: {
+          session_max: 600,
+          daily_max: 700,
+          session_timeout_minutes: 0,
+          currency: 'USD',
+        },
+      },
+      receiptStore: store,
+      identityReader,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+
+    try {
+      // Initial spend — timeout is disabled (0), so no reset expected
+      const first = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 300 },
+      });
+      expect(first.allowed).toBe(true);
+
+      // Advance 2 hours — session stays because timeout is disabled
+      vi.advanceTimersByTime(120 * 60 * 1000);
+
+      const beforeReload = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 100 },
+      });
+      expect(beforeReload.allowed).toBe(true);
+      expect(beforeReload.spendSnapshot?.sessionTotal).toBe(400);
+
+      // Simulate hot-reload by invoking the engine update path directly.
+      (engine as unknown as { updatePolicy(policy: GuardPolicy): void }).updatePolicy({
+        ...POLICY,
+        spend_limits: {
+          session_max: 600,
+          daily_max: 700,
+          session_timeout_minutes: 10,
+          currency: 'USD',
+        },
+      });
+
+      // Advance 11 minutes — past the new 10-minute timeout
+      vi.advanceTimersByTime(11 * 60 * 1000);
+
+      const afterReload = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 50 },
+      });
+      expect(afterReload.allowed).toBe(true);
+      // Session should have reset due to the newly active timeout
+      expect(afterReload.spendSnapshot?.sessionTotal).toBe(50);
+    } finally {
+      vi.useRealTimers();
+      engine.dispose();
+      store.close();
+    }
+  });
+
   it('should return projected totals in simulation mode when daily spend would be exceeded', async () => {
     const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);
