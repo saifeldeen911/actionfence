@@ -796,4 +796,114 @@ describe('GuardEngine', () => {
     engine.dispose();
     store.close();
   });
+
+  it('should close owned adapter on dispose', async () => {
+    const closeSpy = vi.fn().mockResolvedValue(undefined);
+    const mockAdapter: StorageAdapter = {
+      insert: vi.fn(),
+      getLastHash: vi.fn().mockReturnValue(''),
+      getById: vi.fn(),
+      listByAgent: vi.fn().mockReturnValue([]),
+      count: vi.fn().mockReturnValue(0),
+      query: vi.fn().mockReturnValue([]),
+      getAllOrdered: vi.fn().mockReturnValue([]),
+      close: closeSpy,
+    };
+
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-owned-'));
+    cleanupDirs.push(tempDir);
+    const store = new ReceiptStore({
+      adapter: mockAdapter,
+      signerOptions: {
+        secret: FIXED_SECRET,
+        keyFilePath: join(tempDir, 'key'),
+      },
+    });
+
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+    });
+
+    // Simulate the engine having dynamically created an adapter
+    const internals = engine as unknown as { ownedAdapter?: StorageAdapter };
+    internals.ownedAdapter = mockAdapter;
+
+    engine.dispose();
+
+    // Allow the fire-and-forget close promise to settle
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should NOT close externally-provided adapters on dispose', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+    });
+
+    // Verify no ownedAdapter is set when the store is provided externally
+    const internals = engine as unknown as { ownedAdapter?: StorageAdapter };
+    expect(internals.ownedAdapter).toBeUndefined();
+
+    engine.dispose();
+    // Store is externally provided — engine.dispose() should NOT close it.
+    // We can still use it after dispose.
+    const hash = await store.getLastHash();
+    expect(typeof hash).toBe('string');
+
+    store.close();
+  });
+
+  it('should not double-close when both receiptStore and ownedAdapter are present', async () => {
+    const closeCount = { adapter: 0 };
+    const mockAdapter: StorageAdapter = {
+      insert: vi.fn(),
+      getLastHash: vi.fn().mockReturnValue(''),
+      getById: vi.fn(),
+      listByAgent: vi.fn().mockReturnValue([]),
+      count: vi.fn().mockReturnValue(0),
+      query: vi.fn().mockReturnValue([]),
+      getAllOrdered: vi.fn().mockReturnValue([]),
+      close: vi.fn().mockImplementation(() => {
+        closeCount.adapter++;
+        return Promise.resolve();
+      }),
+    };
+
+    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-dblclose-'));
+    cleanupDirs.push(tempDir);
+
+    // The ReceiptStore wraps the adapter with ownsAdapter = false (since we pass it in).
+    // So receiptStore.close() won't call adapter.close().
+    const store = new ReceiptStore({
+      adapter: mockAdapter,
+      signerOptions: {
+        secret: FIXED_SECRET,
+        keyFilePath: join(tempDir, 'key'),
+      },
+    });
+
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+    });
+
+    // Simulate the engine having dynamically created this adapter
+    const internals = engine as unknown as { ownedAdapter?: StorageAdapter };
+    internals.ownedAdapter = mockAdapter;
+
+    engine.dispose();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // The adapter.close() should only be called once (by the ownedAdapter path),
+    // not twice (receiptStore.close() does not close externally-provided adapters).
+    expect(closeCount.adapter).toBe(1);
+  });
 });

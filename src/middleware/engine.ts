@@ -95,6 +95,8 @@ export class GuardEngine {
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
   private readonly agentMutexes = new Map<string, AsyncMutex>();
+  /** Adapter created internally by getReceiptStore() — closed on dispose. */
+  private ownedAdapter?: StorageAdapter;
 
   constructor(options: GuardOptions) {
     this.options = options;
@@ -214,6 +216,12 @@ export class GuardEngine {
         console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
       });
     }
+
+    if (this.ownedAdapter) {
+      void Promise.resolve(this.ownedAdapter.close()).catch((err: unknown) => {
+        console.error('[actionfence] Failed to close owned storage adapter:', err);
+      });
+    }
   }
 
   private updatePolicy(policy: GuardPolicy): void {
@@ -266,6 +274,7 @@ export class GuardEngine {
           connectionString: storageConfig.connectionString,
           poolConfig: storageConfig.poolConfig,
         });
+        this.ownedAdapter = adapter;
       }
 
       this.receiptStore = new ReceiptStore({
