@@ -198,6 +198,56 @@ describe('GuardEngine', () => {
     store.close();
   });
 
+  it('should apply the default session timeout from policy through the engine', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'timeout-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker();
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+
+    try {
+      const first = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 400 },
+      });
+
+      vi.advanceTimersByTime(61 * 60 * 1000);
+
+      const second = await engine.evaluate({
+        toolName: 'book_flight',
+        params: { amount: 250 },
+      });
+
+      expect(first.allowed).toBe(true);
+      expect(second.allowed).toBe(true);
+      expect(second.statusCode).toBe(200);
+      expect(second.spendSnapshot?.sessionTotal).toBe(250);
+    } finally {
+      vi.useRealTimers();
+      engine.dispose();
+      store.close();
+    }
+  });
+
   it('should return projected totals in simulation mode when daily spend would be exceeded', async () => {
     const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);
@@ -280,11 +330,15 @@ describe('GuardEngine', () => {
 
     const passed = [first, second].filter((r) => r.allowed);
     const blocked = [first, second].filter((r) => !r.allowed);
+    const [passedResult] = passed;
+    const [blockedResult] = blocked;
 
     expect(passed).toHaveLength(1);
     expect(blocked).toHaveLength(1);
-    expect(blocked[0]!.statusCode).toBe(403);
-    expect(passed[0]!.identity).not.toHaveProperty('rawToken');
+    expect(blockedResult).toBeDefined();
+    expect(passedResult).toBeDefined();
+    expect(blockedResult?.statusCode).toBe(403);
+    expect(passedResult?.identity).not.toHaveProperty('rawToken');
     expect(
       [first.spendSnapshot?.sessionTotal, second.spendSnapshot?.sessionTotal].filter(
         (t): t is number => t !== undefined,
