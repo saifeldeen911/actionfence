@@ -28,13 +28,6 @@ export interface ReceiptStoreOptions {
 }
 
 /**
- * AsyncMutex is imported from ../utils/async-mutex.js.
- * It serialises insert operations so the getLastHash →
- * createReceipt → insert sequence cannot interleave
- * across concurrent `evaluate()` calls.
- */
-
-/**
  * ReceiptStore provides signed, append-only persistence and chain verification.
  *
  * Internally delegates to a {@link StorageAdapter} for actual I/O while
