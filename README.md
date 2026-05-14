@@ -206,6 +206,18 @@ Verified identity is built in when you configure `identityReaderOptions.jwksUri`
 
 If a decoded or verified token includes a `capabilities` claim, ActionFence treats it as an exact allowlist of policy action names. A request that passes policy checks but is not listed in `capabilities` is blocked.
 
+## Trust Model
+
+ActionFence canonicalizes tool params before hashing receipts. That keeps the receipt chain deterministic, but it also means tool payloads must stay JSON-friendly.
+
+### Payload Requirements
+
+- `params` must be JSON-serializable.
+- Unsupported values such as `BigInt`, `Symbols`, and circular references will fail before receipt creation.
+- `undefined` values are omitted by canonicalization, and `NaN` or `Infinity` become `null`.
+- If you configure `payloadRedactor`, return a sanitized copy and avoid mutating the input.
+- Payloads larger than the configured cap are stored as a truncation marker. The receipt still binds both the original request hash and the stored payload-view hash.
+
 ## Simulation Mode
 
 Simulation mode runs the full policy pipeline without executing the handler or storing a receipt.
@@ -251,6 +263,8 @@ SIMULATION - actionfence
 ## Action Receipts
 
 Every enforced decision stores a signed receipt in SQLite.
+
+Stored payloads may be redacted or truncated before persistence. The receipt binds the original request hash and the stored payload-view hash so chain verification can still detect tampering.
 
 ```text
 receipt_id:     a1b2c3d4-...

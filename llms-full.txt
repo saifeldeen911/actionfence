@@ -10,6 +10,8 @@ npm install actionfence
 
 For MCP server usage, also install the MCP SDK (optional peer dependency):
 
+  payloadRedactor?: (params: unknown) => unknown;                  // Redact sensitive fields before receipt storage.
+  maxPayloadBytes?: number;                                        // Maximum stored payload_json size before truncation (default 65536).
 ```bash
 npm install actionfence @modelcontextprotocol/sdk
 ```
@@ -376,6 +378,17 @@ Signing key resolution order:
 1. `options.secret`
 2. `ACTIONFENCE_SECRET` environment variable
 3. Auto-generated `.actionfence/key` file
+
+## Trust Model
+
+### Payload Requirements
+
+- `params` must be JSON-serializable.
+- Unsupported values such as `BigInt`, `Symbols`, and circular references fail before receipt creation.
+- `undefined` values are omitted by canonicalization, and `NaN` or `Infinity` become `null`.
+- If you configure `payloadRedactor`, return a sanitized copy and avoid mutating the input.
+- Payloads larger than `maxPayloadBytes` are replaced with a truncation marker in the stored receipt.
+- Receipts bind both the original request hash and the stored payload-view hash.
 
 ## Scope Enforcement
 

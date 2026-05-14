@@ -289,6 +289,15 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
+/**
+ * Serialize a value to canonical JSON for hashing.
+ *
+ * Supported types: string, finite number, boolean, null, plain objects, arrays.
+ * Unsupported: BigInt, circular references, Symbols. JSON serialization will throw.
+ * Lossy: undefined values are omitted, NaN/Infinity become null.
+ *
+ * Tool authors should ensure params are JSON-serializable before calling ActionFence.
+ */
 function canonicalJsonStringify(value: unknown): string {
   return stringifyCanonical(normalizeJsonValue(value));
 }
