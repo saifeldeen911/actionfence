@@ -78,6 +78,8 @@ export interface GuardInstance {
  * mutex inside the agent-mutex critical section.
  */
 export class GuardEngine {
+  private static readonly MAX_MUTEX_ENTRIES = 10_000;
+
   private policy: GuardPolicy;
   private readonly evaluator: PolicyEvaluator;
   private readonly identityReader: IdentityReaderLike;
@@ -86,6 +88,7 @@ export class GuardEngine {
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
+  private readonly ownsSpendTracker: boolean;
   private readonly ownsReceiptStore: boolean;
   private receiptStore?: ReceiptStore;
   private receiptStorePromise?: Promise<ReceiptStore>;
@@ -108,6 +111,7 @@ export class GuardEngine {
     }
     this.reporter = options.reporter ?? new ConsoleReporter({ silent: options.silent });
     this.ownsRateLimiter = options.rateLimiter === undefined;
+    this.ownsSpendTracker = options.spendTracker === undefined;
     this.ownsReceiptStore = options.receiptStore === undefined;
     this.cleanupPolicyWatcher =
       typeof options.policy === 'string' && options.watchPolicy === true
@@ -201,6 +205,10 @@ export class GuardEngine {
       this.rateLimiter.dispose();
     }
 
+    if (this.ownsSpendTracker) {
+      this.spendTracker.dispose();
+    }
+
     if (this.ownsReceiptStore && this.receiptStore) {
       void this.receiptStore.close().catch((err: unknown) => {
         console.error('[actionfence] Failed to close receipt store during engine disposal:', err);
@@ -216,6 +224,18 @@ export class GuardEngine {
   }
 
   private acquireMutex(agentId: string): AsyncMutex {
+    if (this.agentMutexes.size > GuardEngine.MAX_MUTEX_ENTRIES) {
+      for (const [key, mutex] of this.agentMutexes) {
+        if (!mutex.hasWaiters) {
+          this.agentMutexes.delete(key);
+        }
+
+        if (this.agentMutexes.size <= GuardEngine.MAX_MUTEX_ENTRIES / 2) {
+          break;
+        }
+      }
+    }
+
     const existing = this.agentMutexes.get(agentId);
     if (existing) {
       return existing;

@@ -48,13 +48,19 @@ const DEFAULT_SESSION_TIMEOUT_MINUTES = 60;
  * idle for longer than the timeout.
  */
 export class SpendTracker {
+  private static readonly MAX_ENTRIES = 50_000;
+  private static readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
   private readonly spendByAgent = new Map<string, SpendEntry>();
   private sessionTimeoutMs: number | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: SpendLimitsConfig) {
     if (config) {
       this.applyConfig(config);
     }
+
+    this.startCleanup();
   }
 
   /**
@@ -221,6 +227,14 @@ export class SpendTracker {
     this.spendByAgent.clear();
   }
 
+  /** Release the periodic cleanup interval. */
+  dispose(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+  }
+
   private getOrCreateEntry(agentId: string): SpendEntry {
     const dayKeyUtc = getUtcDayKey();
     const now = Date.now();
@@ -300,6 +314,31 @@ export class SpendTracker {
       this.sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MINUTES * 60 * 1000;
     } else {
       this.sessionTimeoutMs = null;
+    }
+  }
+
+  private startCleanup(): void {
+    this.cleanupInterval = setInterval(() => {
+      if (this.spendByAgent.size <= SpendTracker.MAX_ENTRIES) {
+        return;
+      }
+
+      const now = Date.now();
+      const idleThreshold = this.sessionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MINUTES * 60 * 1000;
+
+      for (const [key, entry] of this.spendByAgent) {
+        if (now - entry.lastActivity > idleThreshold) {
+          this.spendByAgent.delete(key);
+        }
+
+        if (this.spendByAgent.size <= SpendTracker.MAX_ENTRIES / 2) {
+          break;
+        }
+      }
+    }, SpendTracker.CLEANUP_INTERVAL_MS);
+
+    if (this.cleanupInterval.unref) {
+      this.cleanupInterval.unref();
     }
   }
 }

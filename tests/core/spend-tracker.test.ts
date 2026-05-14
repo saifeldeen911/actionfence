@@ -544,3 +544,45 @@ describe('SpendTracker — updateConfig', () => {
     expect(result.snapshot.sessionTotal).toBe(5); // reset
   });
 });
+
+describe('SpendTracker — cleanup and dispose', () => {
+  let tracker: SpendTracker;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-10T10:00:00.000Z'));
+    tracker = new SpendTracker({
+      session_max: 100,
+      session_timeout_minutes: 30,
+      currency: 'USD',
+    });
+  });
+
+  afterEach(() => {
+    tracker.dispose();
+    vi.useRealTimers();
+  });
+
+  it('should evict idle entries once the map exceeds the cap', () => {
+    for (let index = 0; index < 50_001; index += 1) {
+      tracker.record(`idle-${index}`, 1);
+    }
+
+    vi.advanceTimersByTime(31 * 60 * 1000);
+    tracker.record('active-agent', 1);
+    vi.advanceTimersByTime(5 * 60 * 1000);
+
+    const internal = tracker as unknown as { readonly spendByAgent: Map<string, unknown> };
+    expect(internal.spendByAgent.size).toBeLessThanOrEqual(25_001);
+    expect(internal.spendByAgent.has('active-agent')).toBe(true);
+  });
+
+  it('should clear the cleanup interval on dispose', () => {
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+    tracker.dispose();
+
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    clearIntervalSpy.mockRestore();
+  });
+});

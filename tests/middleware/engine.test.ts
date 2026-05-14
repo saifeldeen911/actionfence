@@ -9,6 +9,7 @@ import type { IdentityReaderLike } from '../../src/types/identity.js';
 import { RateLimiter } from '../../src/core/rate-limiter.js';
 import { GuardEngine } from '../../src/middleware/engine.js';
 import { SpendTracker } from '../../src/core/spend-tracker.js';
+import { AsyncMutex } from '../../src/utils/async-mutex.js';
 import type { GuardPolicy } from '../../src/types/policy.js';
 
 const FIXED_SECRET = Buffer.alloc(32, 9).toString('base64url');
@@ -161,6 +162,74 @@ describe('GuardEngine', () => {
 
     expect(mutexes.agentMutexes.get('mutex-agent')).toBe(firstMutex);
     expect(mutexes.agentMutexes.size).toBe(1);
+
+    engine.dispose();
+    store.close();
+  });
+
+  it('should evict idle mutexes when the mutex map exceeds the cap', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+    });
+    const internals = engine as unknown as {
+      readonly agentMutexes: Map<string, AsyncMutex>;
+      acquireMutex(agentId: string): AsyncMutex;
+    };
+
+    for (let index = 0; index < 10_001; index += 1) {
+      internals.acquireMutex(`idle-${index}`);
+    }
+
+    expect(internals.agentMutexes.size).toBe(10_001);
+
+    internals.acquireMutex('trigger-agent');
+
+    expect(internals.agentMutexes.size).toBeLessThanOrEqual(5_001);
+    expect(internals.agentMutexes.has('trigger-agent')).toBe(true);
+
+    engine.dispose();
+    store.close();
+  });
+
+  it('should keep mutexes with waiters during cleanup', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+    });
+    const internals = engine as unknown as {
+      readonly agentMutexes: Map<string, AsyncMutex>;
+      acquireMutex(agentId: string): AsyncMutex;
+    };
+
+    const heldMutex = new AsyncMutex();
+    let releaseGate!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+
+    const activeRun = heldMutex.runExclusive(async () => {
+      await gate;
+    });
+    const waitingRun = heldMutex.runExclusive(async () => undefined);
+    internals.agentMutexes.set('held-agent', heldMutex);
+
+    for (let index = 0; index < 10_001; index += 1) {
+      internals.acquireMutex(`idle-${index}`);
+    }
+
+    internals.acquireMutex('trigger-agent');
+
+    expect(internals.agentMutexes.has('held-agent')).toBe(true);
+
+    releaseGate();
+    await Promise.all([activeRun, waitingRun]);
 
     engine.dispose();
     store.close();
