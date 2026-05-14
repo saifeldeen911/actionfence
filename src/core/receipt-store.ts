@@ -58,6 +58,15 @@ export class ReceiptStore {
    * `prevHash`, which would break the hash chain.
    */
   async insert(input: CreateReceiptInput): Promise<ActionReceipt> {
+    if (this.adapter.insertAtomic) {
+      return this.adapter.insertAtomic((prevHash) =>
+        this.signer.createReceipt({
+          ...input,
+          prevHash,
+        }),
+      );
+    }
+
     return this.insertMutex.runExclusive(async () => {
       const lastHash = await this.adapter.getLastHash();
       const receipt = this.signer.createReceipt({

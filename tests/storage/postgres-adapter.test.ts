@@ -4,9 +4,13 @@ import type { ActionReceipt } from '../../src/types/receipt.js';
 
 const mockQuery = vi.fn();
 const mockEnd = vi.fn();
+const mockClientQuery = vi.fn();
+const mockRelease = vi.fn();
+const mockConnect = vi.fn();
 const mockPoolConstructor = vi.fn().mockImplementation(() => ({
   query: mockQuery,
   end: mockEnd,
+  connect: mockConnect,
 }));
 
 vi.mock('pg', () => {
@@ -43,7 +47,16 @@ function createDummyReceipt(id: string): ActionReceipt {
 describe('PostgresAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockQuery.mockReset();
+    mockClientQuery.mockReset();
+    mockRelease.mockReset();
+    mockConnect.mockReset();
     mockQuery.mockResolvedValue({ rows: [] });
+    mockClientQuery.mockResolvedValue({ rows: [] });
+    mockConnect.mockResolvedValue({
+      query: mockClientQuery,
+      release: mockRelease,
+    });
   });
 
   it('should run migration on create', async () => {
@@ -153,5 +166,88 @@ describe('PostgresAdapter', () => {
     expect(caughtError).toBeInstanceOf(Error);
     const error = caughtError as Error;
     expect(error.message).toContain('database not ready');
+  });
+
+  it('should atomically insert receipts with an advisory lock', async () => {
+    const adapter = await PostgresAdapter.create({ autoMigrate: false });
+
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ receipt_hash: 'rhash-prev' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const receipt = createDummyReceipt('r-atomic');
+    const builtReceipt = { ...receipt, prev_hash: 'rhash-prev' };
+
+    const result = await adapter.insertAtomic((prevHash) => ({
+      ...builtReceipt,
+      prev_hash: prevHash,
+    }));
+
+    expect(result.prev_hash).toBe('rhash-prev');
+    expect(mockConnect).toHaveBeenCalledTimes(1);
+    expect(mockClientQuery).toHaveBeenNthCalledWith(1, 'BEGIN');
+    expect(mockClientQuery).toHaveBeenNthCalledWith(
+      2,
+      'SELECT pg_advisory_xact_lock($1)',
+      [0x416374696f6e],
+    );
+    expect(mockClientQuery).toHaveBeenNthCalledWith(
+      3,
+      'SELECT receipt_hash FROM actionfence_receipts ORDER BY created_at DESC, receipt_id DESC LIMIT 1',
+    );
+    expect(mockClientQuery).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('INSERT INTO actionfence_receipts'),
+      [
+        'r-atomic',
+        '2026-05-10T00:00:00.000Z',
+        'agent-1',
+        null,
+        'test_action',
+        'test_tool',
+        '{}',
+        'jsonhash-r-atomic',
+        'hash-r-atomic',
+        'v1',
+        'PASSED',
+        null,
+        'anonymous',
+        null,
+        'rhash-prev',
+        'rhash-r-atomic',
+        'sig',
+      ],
+    );
+    expect(mockClientQuery).toHaveBeenNthCalledWith(5, 'COMMIT');
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it('should roll back atomic inserts on failure', async () => {
+    const adapter = await PostgresAdapter.create({ autoMigrate: false });
+
+    const insertError = Object.assign(new Error('duplicate receipt'), {
+      code: '23505',
+      constraint: 'actionfence_receipts_receipt_hash_key',
+    });
+
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ receipt_hash: 'rhash-prev' }] })
+      .mockRejectedValueOnce(insertError)
+      .mockResolvedValueOnce({ rows: [] });
+
+    await expect(
+      adapter.insertAtomic((prevHash) => ({
+        ...createDummyReceipt('r-fail'),
+        prev_hash: prevHash,
+      })),
+    ).rejects.toThrow(/Duplicate receipt_hash/);
+
+    expect(mockClientQuery).toHaveBeenNthCalledWith(5, 'ROLLBACK');
+    expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 });

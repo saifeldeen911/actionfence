@@ -50,6 +50,31 @@ CREATE INDEX IF NOT EXISTS idx_af_receipts_status  ON actionfence_receipts (stat
 CREATE INDEX IF NOT EXISTS idx_af_receipts_created ON actionfence_receipts (created_at);
 `;
 
+const INSERT_SQL = `
+  INSERT INTO actionfence_receipts (
+    receipt_id, timestamp, agent_id, owner_id, action, tool_name,
+    payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
+    identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
+  ) VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11,
+    $12, $13, $14, $15, $16, $17
+  )
+`;
+
+const ADVISORY_LOCK_KEY = 0x416374696f6e;
+
+interface QueryRunner {
+  query(
+    text: string,
+    values?: readonly unknown[],
+  ): Promise<{ rows: Array<Record<string, unknown>> }>;
+}
+
+interface TransactionClient extends QueryRunner {
+  release(): void;
+}
+
 /**
  * PostgresAdapter provides asynchronous, PostgreSQL-backed receipt storage.
  */
@@ -114,63 +139,30 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async insert(receipt: ActionReceipt): Promise<void> {
-    const text = `
-      INSERT INTO actionfence_receipts (
-        receipt_id, timestamp, agent_id, owner_id, action, tool_name,
-        payload_json, payload_json_hash, payload_hash, policy_ref, status, block_reason,
-        identity_tier, spend_amount, prev_hash, receipt_hash, receipt_sig
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16, $17
-      )
-    `;
+    await this.executeInsert(this.pool, receipt);
+  }
 
-    const values = [
-      receipt.receipt_id,
-      receipt.timestamp,
-      receipt.agent_id,
-      receipt.owner_id,
-      receipt.action,
-      receipt.tool_name,
-      receipt.payload_json,
-      receipt.payload_json_hash,
-      receipt.payload_hash,
-      receipt.policy_ref,
-      receipt.status,
-      receipt.block_reason,
-      receipt.identity_tier,
-      receipt.spend_amount,
-      receipt.prev_hash,
-      receipt.receipt_hash,
-      receipt.receipt_sig,
-    ];
+  async insertAtomic(buildReceipt: (prevHash: string) => ActionReceipt): Promise<ActionReceipt> {
+    const client = (await this.pool.connect()) as TransactionClient;
 
     try {
-      await this.pool.query(text, values);
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock($1)', [ADVISORY_LOCK_KEY]);
+
+      const { rows } = await client.query(
+        'SELECT receipt_hash FROM actionfence_receipts ORDER BY created_at DESC, receipt_id DESC LIMIT 1',
+      );
+      const prevHash = (rows[0]?.receipt_hash as string) ?? '';
+
+      const receipt = buildReceipt(prevHash);
+      await this.executeInsert(client, receipt);
+      await client.query('COMMIT');
+      return receipt;
     } catch (error: unknown) {
-      if (error instanceof Error && 'code' in error && error.code === '23505') {
-        const constraint = 'constraint' in error ? String(error.constraint) : '';
-        if (
-          constraint === 'actionfence_receipts_receipt_hash_key' ||
-          constraint.includes('receipt_hash')
-        ) {
-          throw new Error(
-            `[actionfence] Failed to insert receipt: Duplicate receipt_hash (${receipt.receipt_hash})`,
-            { cause: error },
-          );
-        }
-        if (constraint === 'actionfence_receipts_pkey' || constraint.includes('pkey')) {
-          throw new Error(
-            `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id})`,
-            { cause: error },
-          );
-        }
-        throw new Error(`[actionfence] Failed to insert receipt: Unique constraint violation`, {
-          cause: error,
-        });
-      }
+      await client.query('ROLLBACK').catch(() => undefined);
       throw error;
+    } finally {
+      client.release();
     }
   }
 
@@ -230,6 +222,53 @@ export class PostgresAdapter implements StorageAdapter {
   async close(): Promise<void> {
     if (this.ownsPool) {
       await this.pool.end();
+    }
+  }
+
+  private async executeInsert(queryRunner: QueryRunner, receipt: ActionReceipt): Promise<void> {
+    try {
+      await queryRunner.query(INSERT_SQL, [
+        receipt.receipt_id,
+        receipt.timestamp,
+        receipt.agent_id,
+        receipt.owner_id,
+        receipt.action,
+        receipt.tool_name,
+        receipt.payload_json,
+        receipt.payload_json_hash,
+        receipt.payload_hash,
+        receipt.policy_ref,
+        receipt.status,
+        receipt.block_reason,
+        receipt.identity_tier,
+        receipt.spend_amount,
+        receipt.prev_hash,
+        receipt.receipt_hash,
+        receipt.receipt_sig,
+      ]);
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && error.code === '23505') {
+        const constraint = 'constraint' in error ? String(error.constraint) : '';
+        if (
+          constraint === 'actionfence_receipts_receipt_hash_key' ||
+          constraint.includes('receipt_hash')
+        ) {
+          throw new Error(
+            `[actionfence] Failed to insert receipt: Duplicate receipt_hash (${receipt.receipt_hash})`,
+            { cause: error },
+          );
+        }
+        if (constraint === 'actionfence_receipts_pkey' || constraint.includes('pkey')) {
+          throw new Error(
+            `[actionfence] Failed to insert receipt: Duplicate receipt_id (${receipt.receipt_id})`,
+            { cause: error },
+          );
+        }
+        throw new Error(`[actionfence] Failed to insert receipt: Unique constraint violation`, {
+          cause: error,
+        });
+      }
+      throw error;
     }
   }
 }

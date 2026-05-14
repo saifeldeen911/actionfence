@@ -28,6 +28,13 @@ export interface StorageAdapter {
   /** Insert a fully-signed receipt into storage. */
   insert(receipt: ActionReceipt): void | Promise<void>;
 
+  /**
+   * Optionally insert a receipt atomically with its chain link.
+   * Implementations that support cross-process atomic chain insertion can
+   * build the receipt after reading the current tail hash in a transaction.
+   */
+  insertAtomic?(buildReceipt: (prevHash: string) => ActionReceipt): Promise<ActionReceipt>;
+
   /** Get the hash of the most recent receipt, or `''` for an empty store. */
   getLastHash(): string | Promise<string>;
 
