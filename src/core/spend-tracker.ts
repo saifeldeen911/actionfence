@@ -61,7 +61,7 @@ export class SpendTracker {
    * Hot-reload the spend-limits configuration.
    * Updates the idle timeout immediately without resetting tracked state.
    */
-  updateConfig(config: SpendLimitsConfig): void {
+  updateConfig(config?: SpendLimitsConfig): void {
     this.applyConfig(config);
   }
 
@@ -134,11 +134,7 @@ export class SpendTracker {
    * @param amount - The prospective spend amount to check against the window.
    * @returns WindowCheckResult with allowed status and window totals.
    */
-  checkWindow(
-    agentId: string,
-    windowConfig: SpendWindowConfig,
-    amount = 0,
-  ): WindowCheckResult {
+  checkWindow(agentId: string, windowConfig: SpendWindowConfig, amount = 0): WindowCheckResult {
     const entry = this.spendByAgent.get(agentId);
     if (!entry) {
       return {
@@ -273,8 +269,7 @@ export class SpendTracker {
 
     // Reflect the idle-timeout reset in previews without mutating the real entry
     const sessionTimedOut =
-      this.sessionTimeoutMs !== null &&
-      Date.now() - existing.lastActivity >= this.sessionTimeoutMs;
+      this.sessionTimeoutMs !== null && Date.now() - existing.lastActivity >= this.sessionTimeoutMs;
 
     return {
       sessionTotal: sessionTimedOut ? 0 : existing.sessionTotal,
@@ -292,12 +287,15 @@ export class SpendTracker {
    * - `session_max` configured but no explicit timeout → default 60 min.
    * - Neither → null (no timeout).
    */
-  private applyConfig(config: SpendLimitsConfig): void {
+  private applyConfig(config?: SpendLimitsConfig): void {
+    if (!config) {
+      this.sessionTimeoutMs = null;
+      return;
+    }
+
     if (config.session_timeout_minutes !== undefined) {
       this.sessionTimeoutMs =
-        config.session_timeout_minutes > 0
-          ? config.session_timeout_minutes * 60 * 1000
-          : null; // 0 disables the timeout
+        config.session_timeout_minutes > 0 ? config.session_timeout_minutes * 60 * 1000 : null; // 0 disables the timeout
     } else if (config.session_max !== undefined) {
       this.sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MINUTES * 60 * 1000;
     } else {
