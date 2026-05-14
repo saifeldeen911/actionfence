@@ -101,7 +101,8 @@ export class GuardEngine {
     this.identityReader =
       options.identityReader ?? new IdentityReader(options.identityReaderOptions);
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
-    this.spendTracker = options.spendTracker ?? new SpendTracker();
+    this.spendTracker = options.spendTracker ?? new SpendTracker(this.policy.spend_limits);
+    this.spendTracker.updateConfig(this.policy.spend_limits);
     if (options.receiptStore) {
       this.receiptStore = options.receiptStore;
     }
@@ -211,6 +212,7 @@ export class GuardEngine {
     this.policy = policy;
     this.evaluator.updatePolicy(policy);
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
+    this.spendTracker.updateConfig(policy.spend_limits);
   }
 
   private acquireMutex(agentId: string): AsyncMutex {
@@ -285,7 +287,9 @@ export class GuardEngine {
         : null;
     const receipt =
       input.mode === 'enforce'
-        ? await (await this.getReceiptStore()).insert({
+        ? await (
+            await this.getReceiptStore()
+          ).insert({
             decision: input.decision,
             identity: input.identity,
             params: input.params,
