@@ -68,7 +68,7 @@ interface QueryRunner {
   query(
     text: string,
     values?: readonly unknown[],
-  ): Promise<{ rows: Array<Record<string, unknown>> }>;
+  ): Promise<{ rows: Record<string, unknown>[] }>;
 }
 
 interface TransactionClient extends QueryRunner {

@@ -182,6 +182,7 @@ function sanitizeAgentId(raw: unknown): string {
     return 'unknown';
   }
 
+  // eslint-disable-next-line no-control-regex -- intentional: strip C0 control chars + DEL
   const cleaned = raw.replace(/[\x00-\x1f\x7f]/g, '').trim();
   if (cleaned.length === 0) {
     return 'unknown';
@@ -195,6 +196,7 @@ function sanitizeClaimString(value: string | undefined | null): string | null {
     return null;
   }
 
+  // eslint-disable-next-line no-control-regex -- intentional: strip C0 control chars + DEL
   const cleaned = value.replace(/[\x00-\x1f\x7f]/g, '').trim();
   if (cleaned.length === 0) {
     return null;

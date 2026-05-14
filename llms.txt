@@ -8,6 +8,8 @@
 - `@modelcontextprotocol/sdk` is an optional peer dependency (only needed for MCP usage)
 - `pg` is an optional peer dependency (only needed for PostgreSQL storage)
 - Receipts default to SQLite; set `storage: { adapter: 'postgres', connectionString: '...' }` for horizontally-scaled deployments
+- Security: HMAC signing secrets must be ≥16 bytes; `payloadRedactor` strips sensitive fields before receipt storage; `maxPayloadBytes` (default 64 KB) truncates oversized payloads
+- Tool params must be JSON-serializable (BigInt, Symbols, circular refs will throw)
 
 ## Docs
 

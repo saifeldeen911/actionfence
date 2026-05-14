@@ -131,6 +131,8 @@ When both the per-agent mutex (`GuardEngine.evaluate()`) and the `ReceiptStore` 
 - **`spendExtractor(params)`**: Extract a spend amount from tool parameters. Return `null` for no spend
 - **`transactionResolver(toolName, params, decision)`**: Override whether a passed action counts toward the transaction-per-day limit. Defaults to `true` when `spendAmount !== null || requiresHumanApproval`
 - **`onDecision(decision)`**: Callback fired after every evaluation decision (for telemetry, logging, etc.)
+- **`payloadRedactor(params)`**: Optional. Redact sensitive fields from tool params before persisting in receipts. The receipt hash uses the original params (integrity); only the stored `payload_json` is redacted (privacy). Must return a sanitized copy — do not mutate the input.
+- **`maxPayloadBytes`**: Optional number (default: 65536). Maximum byte length for persisted `payload_json`. Payloads exceeding this are replaced with a truncation marker containing the original hash.
 
 ## Testing
 
@@ -240,3 +242,16 @@ npm run format && npm run lint && npm run typecheck
 - The CLI is a separate entry point (`dist/cli.js`) and can be used standalone
 - JWKS verification fails closed: any error (network, DNS, OOM) returns `ANONYMOUS_IDENTITY` — never falls back to `token` tier
 - Per-agent mutex in `GuardEngine` prevents TOCTOU race conditions on concurrent spend/rate-limit checks
+
+## Security Hardening (v0.2.0)
+
+- **HMAC key minimum**: Signing secrets shorter than 16 bytes are rejected at startup
+- **Payload redaction**: `payloadRedactor` and `maxPayloadBytes` options prevent PII retention in receipts
+- **Atomic Postgres inserts**: `PostgresAdapter.insertAtomic()` prevents hash-chain fork under concurrent writers (advisory lock)
+- **Path traversal guard**: `loadPolicy()` rejects paths that resolve outside `process.cwd()`
+- **Agent ID sanitization**: JWT `sub` and `azp`/`owner` claims are stripped of control characters and length-capped at 256
+- **Spend/receipt atomicity**: In enforce mode, spend is committed only after receipt insertion succeeds
+- **Map eviction**: `SpendTracker` (50k cap, 5 min cleanup), `RateLimiter` (50k cap, 60s cleanup), and `GuardEngine.agentMutexes` (10k cap, on-access eviction) prevent unbounded memory growth
+- **Postgres pool lifecycle**: `engine.dispose()` explicitly closes any Postgres adapter the engine created
+- **Credential masking**: Postgres connection errors mask passwords in `postgres://` connection strings
+- **Key file permissions**: Legacy key migration forces `0o600` permissions (best-effort on non-POSIX)

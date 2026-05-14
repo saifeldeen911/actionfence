@@ -310,6 +310,7 @@ describe('ReceiptSigner', () => {
 
     vi.resetModules();
     vi.doMock('node:fs', async () => {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- dynamic import() type is required by vi.importActual
       const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
       return {
         ...actual,
