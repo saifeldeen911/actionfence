@@ -4,6 +4,7 @@
  */
 
 import type { IdentityClassification } from './identity.js';
+import type { IdentityTier } from './policy.js';
 
 /** Whether the action was allowed or blocked. */
 export type DecisionStatus = 'PASSED' | 'BLOCKED';
@@ -31,4 +32,33 @@ export interface EvaluationDecision {
   readonly timestamp: string;
   /** Evaluation duration in milliseconds. */
   readonly durationMs: number;
+}
+
+/**
+ * Snapshot of an agent's current spend and limits status.
+ */
+export interface AgentStatus {
+  agentId: string;
+  identityTier: IdentityTier | null;
+  spend: {
+    sessionTotal: number;
+    dailyTotal: number;
+    sessionMax: number | null;
+    dailyMax: number | null;
+    windowTotal: number | null;
+    windowMax: number | null;
+  };
+  rateLimit: {
+    requestsRemaining: number;
+    requestsLimit: number;
+    transactionsRemaining: number;
+    transactionsLimit: number;
+  };
+  circuitBreaker: {
+    globalSpent: number;
+    globalMax: number | null;
+    tripped: boolean;
+  };
+  allowedActions: string[];
+  blockedActions: string[];
 }

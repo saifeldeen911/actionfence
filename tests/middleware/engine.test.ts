@@ -906,4 +906,58 @@ describe('GuardEngine', () => {
     // not twice (receiptStore.close() does not close externally-provided adapters).
     expect(closeCount.adapter).toBe(1);
   });
+
+  it('should return introspected agent status via getAgentStatus()', async () => {
+    const { tempDir, store } = createStore();
+    cleanupDirs.push(tempDir);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'status-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight', 'search_flights'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker(POLICY.spend_limits);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    // Seed some spend
+    await engine.evaluate({
+      toolName: 'book_flight',
+      params: { amount: 150 },
+    });
+
+    const status = engine.getAgentStatus('status-agent', 'verified');
+    
+    expect(status.agentId).toBe('status-agent');
+    expect(status.identityTier).toBe('verified');
+    expect(status.allowedActions).toContain('book_flight');
+    expect(status.allowedActions).toContain('search_flights');
+    
+    expect(status.spend.sessionTotal).toBe(150);
+    expect(status.spend.sessionMax).toBe(600);
+    
+    expect(status.rateLimit.requestsRemaining).toBe(9); // We made 1 request (limit 10)
+    expect(status.rateLimit.requestsLimit).toBe(10);
+    
+    expect(status.circuitBreaker.tripped).toBe(false);
+
+    // Check with 'any' tier
+    const anyStatus = engine.getAgentStatus('status-agent', 'any');
+    expect(anyStatus.blockedActions).toContain('book_flight');
+    expect(anyStatus.allowedActions).toContain('search_flights');
+
+    engine.dispose();
+    store.close();
+  });
 });
+

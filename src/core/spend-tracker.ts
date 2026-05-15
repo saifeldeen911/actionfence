@@ -53,6 +53,7 @@ export class SpendTracker {
 
   private readonly spendByAgent = new Map<string, SpendEntry>();
   private sessionTimeoutMs: number | null = null;
+  private config?: SpendLimitsConfig;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: SpendLimitsConfig) {
@@ -216,6 +217,37 @@ export class SpendTracker {
   }
 
   /**
+   * Read-only snapshot of the agent's spend status including limits.
+   */
+  getStatus(agentId: string): {
+    sessionTotal: number;
+    dailyTotal: number;
+    sessionMax: number | null;
+    dailyMax: number | null;
+    windowTotal: number | null;
+    windowMax: number | null;
+  } {
+    const entry = this.getCurrentEntry(agentId);
+    let windowTotal: number | null = null;
+    let windowMax: number | null = null;
+
+    if (this.config?.window) {
+      const wRes = this.previewCheckWindow(agentId, this.config.window);
+      windowTotal = wRes.windowTotal;
+      windowMax = wRes.windowMax;
+    }
+
+    return {
+      sessionTotal: entry.sessionTotal,
+      dailyTotal: entry.dailyTotal,
+      sessionMax: this.config?.session_max ?? null,
+      dailyMax: this.config?.daily_max ?? null,
+      windowTotal,
+      windowMax,
+    };
+  }
+
+  /**
    * Reset one agent or all tracked state.
    */
   reset(agentId?: string): void {
@@ -302,6 +334,8 @@ export class SpendTracker {
    * - Neither → null (no timeout).
    */
   private applyConfig(config?: SpendLimitsConfig): void {
+    this.config = config;
+
     if (!config) {
       this.sessionTimeoutMs = null;
       return;
