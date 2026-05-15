@@ -165,6 +165,36 @@ export class PolicyEvaluator {
       durationMs: performance.now() - startTime,
     };
   }
+
+  /**
+   * Determine which actions are allowed and blocked for a given identity classification.
+   * If classification is null, only actions requiring 'any' are allowed.
+   */
+  getAllowedActions(classification: IdentityClassification | null): { allowedActions: string[]; blockedActions: string[] } {
+    const allowedActions: string[] = [];
+    const blockedActions: string[] = [];
+    
+    // Treat null classification as level 0 (same as 'any'/'anonymous')
+    const tierLevel = classification ? IDENTITY_TIER_LEVEL[classification] : 0;
+    
+    for (const [action, rule] of Object.entries(this.policy.actions)) {
+      if (!rule.allowed) {
+        blockedActions.push(action);
+        continue;
+      }
+      
+      const reqTier = rule.identity ?? 'any';
+      const reqLevel = REQUIRED_TIER_LEVEL[reqTier];
+      
+      if (tierLevel >= reqLevel) {
+        allowedActions.push(action);
+      } else {
+        blockedActions.push(action);
+      }
+    }
+    
+    return { allowedActions, blockedActions };
+  }
 }
 
 function resolveDefaultRule(

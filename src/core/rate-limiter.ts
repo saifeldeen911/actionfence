@@ -138,6 +138,41 @@ export class RateLimiter {
     );
   }
 
+  /** Read-only snapshot of the rate limit status for an agent. */
+  getStatus(key: string): {
+    requestsRemaining: number;
+    requestsLimit: number;
+    transactionsRemaining: number;
+    transactionsLimit: number;
+  } {
+    const now = Date.now();
+    const reqLimit = (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) ? Infinity : this.config.requests_per_minute;
+    const txLimit = (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) ? Infinity : this.config.transactions_per_day;
+
+    let reqRemaining = Infinity;
+    if (reqLimit > 0 && reqLimit !== Infinity) {
+      const timestamps = this.requestWindows.get(key) || [];
+      const cutoff = now - ONE_MINUTE_MS;
+      const validCount = timestamps.filter(t => t > cutoff).length;
+      reqRemaining = Math.max(0, reqLimit - validCount);
+    }
+
+    let txRemaining = Infinity;
+    if (txLimit > 0 && txLimit !== Infinity) {
+      const timestamps = this.transactionWindows.get(key) || [];
+      const cutoff = now - ONE_DAY_MS;
+      const validCount = timestamps.filter(t => t > cutoff).length;
+      txRemaining = Math.max(0, txLimit - validCount);
+    }
+
+    return {
+      requestsRemaining: reqRemaining,
+      requestsLimit: reqLimit,
+      transactionsRemaining: txRemaining,
+      transactionsLimit: txLimit,
+    };
+  }
+
   /**
    * Reset rate limit state.
    * @param key - If provided, reset only this key. Otherwise, reset all.

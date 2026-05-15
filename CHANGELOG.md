@@ -25,7 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpendTracker.checkWindow()` and `previewCheckWindow()` methods for enforcement and simulation
   - Integrated into `GuardEngine.enforceSpendLimits()` pipeline
   - Window totals included in `SpendSnapshot` (`windowTotal`, `windowResetMs`)
-
+- **Global Circuit Breaker**
+  - New `circuit_breaker` policy field with `global_max_spend` and `action` (`block_all` or `alert_only`)
+  - Provides a single master kill-switch across ALL agents when total system spend exceeds a threshold
+  - New `CircuitBreaker` core class evaluated before any per-action checks
+- **Limit Introspection API**
+  - New `getAgentStatus(agentId)` method on `GuardEngine` instances (returned by `withGuard` / `guard`)
+  - Returns a passive, non-mutating `AgentStatus` snapshot containing spend totals, rate limit remaining, circuit breaker state, and allowed/blocked actions
 
 ### Changed
 

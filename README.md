@@ -167,6 +167,11 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
     },
     "currency": "USD"
   },
+  "circuit_breaker": {
+    "global_max_spend": 10000,
+    "action": "block_all",
+    "currency": "USD"
+  },
   "regulations": ["EU_AI_Act_Art50"]
 }
 ```
@@ -181,6 +186,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `actions`      | `object`            | Yes      | Action rules keyed by action name               |
 | `rate_limits`  | `object`            | No       | Request and transaction limits                  |
 | `spend_limits` | `object`            | No       | Session, daily, and rolling-window spend limits |
+| `circuit_breaker`| `object`          | No       | Global maximum spend kill-switch                |
 | `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields
@@ -334,6 +340,9 @@ const guardInstance = withGuard(server, {
   onDecision: (decision) => {},
   watchPolicy: true,
 });
+
+const status = guardInstance.getAgentStatus('agt_7x9f2k');
+console.log(`Allowed actions:`, status.allowedActions);
 
 guardInstance.dispose();
 ```

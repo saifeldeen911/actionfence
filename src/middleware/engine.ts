@@ -15,8 +15,8 @@ import { CircuitBreaker } from '../core/circuit-breaker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
-import type { EvaluationDecision } from '../types/decision.js';
-import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity } from '../types/identity.js';
+import type { EvaluationDecision, AgentStatus } from '../types/decision.js';
+import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity, IdentityClassification } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
 import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
@@ -222,6 +222,46 @@ export class GuardEngine {
     } finally {
       this.releaseMutexIfIdle(identity.agentId, mutex);
     }
+  }
+
+  /**
+   * Introspect an agent's current spend, rate limits, and allowed actions.
+   * Does not record any spend or rate limit usage.
+   *
+   * @param agentId - The agent ID to query.
+   * @param assumedClassification - The identity classification to assume for calculating allowed actions.
+   */
+  getAgentStatus(agentId: string, assumedClassification: IdentityClassification | null = null): AgentStatus {
+    const spendStatus = this.spendTracker.getStatus(agentId);
+    const rateStatus = this.rateLimiter.getStatus(agentId);
+    const cbStatus = this.circuitBreaker.getStatus();
+    const actions = this.evaluator.getAllowedActions(assumedClassification);
+
+    return {
+      agentId,
+      identityTier: assumedClassification,
+      spend: {
+        sessionTotal: spendStatus.sessionTotal,
+        dailyTotal: spendStatus.dailyTotal,
+        sessionMax: spendStatus.sessionMax,
+        dailyMax: spendStatus.dailyMax,
+        windowTotal: spendStatus.windowTotal,
+        windowMax: spendStatus.windowMax,
+      },
+      rateLimit: {
+        requestsRemaining: rateStatus.requestsRemaining,
+        requestsLimit: rateStatus.requestsLimit,
+        transactionsRemaining: rateStatus.transactionsRemaining,
+        transactionsLimit: rateStatus.transactionsLimit,
+      },
+      circuitBreaker: {
+        globalSpent: cbStatus.globalTotal,
+        globalMax: cbStatus.globalMax,
+        tripped: cbStatus.tripped,
+      },
+      allowedActions: actions.allowedActions,
+      blockedActions: actions.blockedActions,
+    };
   }
 
   dispose(): void {

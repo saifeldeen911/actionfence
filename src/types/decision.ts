@@ -32,3 +32,32 @@ export interface EvaluationDecision {
   /** Evaluation duration in milliseconds. */
   readonly durationMs: number;
 }
+
+/**
+ * Snapshot of an agent's current spend and limits status.
+ */
+export interface AgentStatus {
+  agentId: string;
+  identityTier: IdentityClassification | null;
+  spend: {
+    sessionTotal: number;
+    dailyTotal: number;
+    sessionMax: number | null;
+    dailyMax: number | null;
+    windowTotal: number | null;
+    windowMax: number | null;
+  };
+  rateLimit: {
+    requestsRemaining: number;
+    requestsLimit: number;
+    transactionsRemaining: number;
+    transactionsLimit: number;
+  };
+  circuitBreaker: {
+    globalSpent: number;
+    globalMax: number | null;
+    tripped: boolean;
+  };
+  allowedActions: string[];
+  blockedActions: string[];
+}
