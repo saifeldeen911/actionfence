@@ -12,6 +12,7 @@ export type {
   RateLimitsConfig,
   SpendLimitsConfig,
   SpendWindowConfig,
+  CircuitBreakerConfig,
   GuardPolicy,
 } from './types/policy.js';
 
@@ -51,6 +52,8 @@ export type { ReceiptSignerOptions } from './core/receipt-signer.js';
 export { ReceiptStore } from './core/receipt-store.js';
 export type { ReceiptStoreOptions } from './core/receipt-store.js';
 export { SpendTracker } from './core/spend-tracker.js';
+export { CircuitBreaker } from './core/circuit-breaker.js';
+export type { CircuitBreakerStatus } from './core/circuit-breaker.js';
 export { ConsoleReporter } from './reporters/console.js';
 export type { ConsoleReporterOptions, ConsoleReportInput } from './reporters/console.js';
 

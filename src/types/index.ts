@@ -10,6 +10,7 @@ export type {
   RateLimitsConfig,
   SpendLimitsConfig,
   SpendWindowConfig,
+  CircuitBreakerConfig,
   GuardPolicy,
 } from './policy.js';
 
