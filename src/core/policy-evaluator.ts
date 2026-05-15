@@ -42,7 +42,7 @@ const REQUIRED_TIER_LEVEL: Record<IdentityTier, number> = {
 export class PolicyEvaluator {
   private policy: GuardPolicy;
   private exactRules = new Map<string, ActionRule>();
-  private wildcardRules: Array<{ prefix: string; rule: ActionRule }> = [];
+  private wildcardRules: { prefix: string; rule: ActionRule }[] = [];
 
   constructor(policy: GuardPolicy) {
     // Initializer just calls updatePolicy to set up everything

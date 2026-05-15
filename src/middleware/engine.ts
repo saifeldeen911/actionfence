@@ -4,6 +4,7 @@
  */
 
 import { basename } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { loadPolicy, watchPolicy } from '../core/policy-loader.js';
 import { IdentityReader, sanitizeIdentity, type RequestContext } from '../core/identity-reader.js';
 import { PolicyEvaluator } from '../core/policy-evaluator.js';
@@ -209,6 +210,62 @@ export class GuardEngine {
           }
         }
 
+        let predefinedReceiptId: string | undefined;
+
+        if (
+          decision.status === 'PASSED' &&
+          decision.requiresHumanApproval &&
+          this.options.onApprovalRequired &&
+          mode === 'enforce'
+        ) {
+          predefinedReceiptId = randomUUID();
+          try {
+            const timeoutMs = this.options.approvalTimeoutMs ?? 30000;
+            let timeoutId: ReturnType<typeof setTimeout> | undefined;
+            
+            const timeoutPromise = new Promise<boolean>((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error('timeout')), timeoutMs);
+            });
+            
+            const approved = await Promise.race([
+              this.options.onApprovalRequired({
+                ...decision,
+                agentId: identity.agentId,
+                receiptId: predefinedReceiptId,
+              }),
+              timeoutPromise
+            ]);
+            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+            
+            if (!approved) {
+              decision = createBlockedDecision({
+                action,
+                toolName: input.toolName,
+                identity,
+                spendAmount,
+                reason: 'human_approval_denied',
+              });
+              statusCode = 403;
+              errorCode = 'ACTIONFENCE_BLOCKED';
+            }
+          } catch (err) {
+            decision = createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: err instanceof Error && err.message === 'timeout' 
+                ? 'human_approval_timeout' 
+                : 'human_approval_error',
+            });
+            statusCode = 403;
+            errorCode = 'ACTIONFENCE_BLOCKED';
+          }
+        }
+
         return this.finalize({
           mode,
           decision,
@@ -217,6 +274,7 @@ export class GuardEngine {
           statusCode,
           errorCode,
           rateLimit: effectiveRateLimit,
+          receiptId: predefinedReceiptId,
         });
       });
     } finally {
@@ -368,6 +426,7 @@ export class GuardEngine {
     readonly statusCode: number;
     readonly errorCode: GuardErrorCode;
     readonly rateLimit: RateLimitResult | null;
+    readonly receiptId?: string;
   }): Promise<GuardEvaluationResult> {
     let spendSnapshot: SpendSnapshot | null = null;
 
@@ -394,6 +453,7 @@ export class GuardEngine {
             params: this.redactPayload(input.params),
             originalParams: input.params,
             policyRef: this.policyRef,
+            receiptId: input.receiptId,
           })
         : null;
 

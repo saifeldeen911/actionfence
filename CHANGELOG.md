@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Wildcard Scope Matching**
   - Added support for prefix wildcard matching in policy action names (e.g., `book_*`)
   - Evaluates in deterministic order: exact matches first, then longest wildcard prefix, then default rule
+- **Human Approval Webhook**
+  - Added `onApprovalRequired` callback to `GuardOptions` to pause evaluation and await human-in-the-loop decisions dynamically
+  - Added `approvalTimeoutMs` (default 30s) to securely time out and block requests if approval isn't received
+  - Receipt logic updated to securely bind the early-generated `receiptId` to the final persisted receipt
 
 ### Changed
 

@@ -959,5 +959,117 @@ describe('GuardEngine', () => {
     engine.dispose();
     store.close();
   });
+
+  describe('Human Approval Webhook', () => {
+    const approvalPolicy: GuardPolicy = {
+      ...POLICY,
+      actions: {
+        ...POLICY.actions,
+        high_risk_action: { allowed: true, identity: 'any', requires_human_approval: true },
+        normal_action: { allowed: true, identity: 'any' },
+      },
+    };
+
+    it('should pass if callback returns true', async () => {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      
+      const onApprovalRequired = vi.fn().mockResolvedValue(true);
+      const engine = new GuardEngine({
+        policy: approvalPolicy,
+        receiptStore: store,
+        silent: true,
+        onApprovalRequired,
+      });
+
+      const result = await engine.evaluate({
+        toolName: 'high_risk_action',
+        params: {},
+      });
+
+      expect(onApprovalRequired).toHaveBeenCalledTimes(1);
+      expect(onApprovalRequired).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'high_risk_action',
+        agentId: expect.any(String),
+        receiptId: expect.any(String),
+      }));
+      expect(result.allowed).toBe(true);
+
+      engine.dispose();
+      store.close();
+    });
+
+    it('should block if callback returns false', async () => {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      
+      const onApprovalRequired = vi.fn().mockResolvedValue(false);
+      const engine = new GuardEngine({
+        policy: approvalPolicy,
+        receiptStore: store,
+        silent: true,
+        onApprovalRequired,
+      });
+
+      const result = await engine.evaluate({
+        toolName: 'high_risk_action',
+        params: {},
+      });
+
+      expect(onApprovalRequired).toHaveBeenCalledTimes(1);
+      expect(result.allowed).toBe(false);
+      expect(result.decision.reason).toBe('human_approval_denied');
+
+      engine.dispose();
+      store.close();
+    });
+
+    it('should block on callback timeout', async () => {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      
+      const onApprovalRequired = vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(true), 100)));
+      const engine = new GuardEngine({
+        policy: approvalPolicy,
+        receiptStore: store,
+        silent: true,
+        onApprovalRequired,
+        approvalTimeoutMs: 10,
+      });
+
+      const result = await engine.evaluate({
+        toolName: 'high_risk_action',
+        params: {},
+      });
+
+      expect(onApprovalRequired).toHaveBeenCalledTimes(1);
+      expect(result.allowed).toBe(false);
+      expect(result.decision.reason).toBe('human_approval_timeout');
+
+      engine.dispose();
+      store.close();
+    });
+
+    it('should pass if no callback is configured', async () => {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      
+      const engine = new GuardEngine({
+        policy: approvalPolicy,
+        receiptStore: store,
+        silent: true,
+      });
+
+      const result = await engine.evaluate({
+        toolName: 'high_risk_action',
+        params: {},
+      });
+
+      expect(result.allowed).toBe(true);
+
+      engine.dispose();
+      store.close();
+    });
+  });
 });
 

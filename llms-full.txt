@@ -1,6 +1,6 @@
 # ActionFence — Complete Integration Reference
 
-> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), wildcard scope matching, and simulation mode. Node.js >= 20 required.
+> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), wildcard scope matching, human approval webhook, and simulation mode. Node.js >= 20 required.
 
 ## Install
 
@@ -184,7 +184,7 @@ Behavior:
 - `identity` ("any" | "token" | "verified", optional): Minimum identity tier. Default "any".
 - `max_spend` (number, optional): Per-invocation spend cap in major currency units.
 - `currency` (string, optional): ISO 4217 currency code.
-- `requires_human_approval` (boolean, optional): Flags the decision and fires `onDecision` callback.
+- `requires_human_approval` | `boolean` | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement.
 
 ### Identity tiers
 
@@ -198,28 +198,23 @@ The tier hierarchy is: anonymous < token < verified. An action requiring "token"
 
 All options for both `withGuard()` and `guard()`:
 
-```typescript
-interface GuardOptions {
-  policy: string | GuardPolicy;        // Required. Path to guard-policy.json or inline policy object.
-  simulate?: boolean;                  // Default false. Dry-run mode — evaluates but doesn't execute.
-  silent?: boolean;                    // Default false. Suppress console output.
-  secret?: string;                     // HMAC secret for receipt signing. Falls back to ACTIONFENCE_SECRET env var, then .actionfence/key auto-generated file.
-  storage?: StorageConfig;             // Storage backend config. Defaults to SQLite if omitted. See "Storage Backends" section.
-  identityReaderOptions?: {            // Built-in JWKS identity verification.
-    jwksUri: string;                   //   Remote JWKS endpoint URL.
-    issuer?: string | string[];        //   Optional JWT issuer check.
-    audience?: string | string[];      //   Optional JWT audience check.
-  };
-  identityReader?: IdentityReaderLike; // Full custom identity resolution (overrides identityReaderOptions).
-  actionResolver?: (toolName: string, params: unknown) => string;  // Map tool/route names to policy action keys.
-  spendExtractor?: (params: unknown) => number | null;             // Extract spend amount from request params.
-  transactionResolver?: (toolName: string, params: unknown, decision: EvaluationDecision) => boolean; // Override transaction classification for rate limiting.
-  onDecision?: (decision: GuardEvaluationResult) => void;          // Hook for logging, metrics, approval workflows.
-  watchPolicy?: boolean;               // Default false. Hot-reload policy file on changes.
-  payloadRedactor?: (params: unknown) => unknown;                  // Redact sensitive fields before receipt storage.
-  maxPayloadBytes?: number;                                        // Maximum stored payload_json size before truncation (default 65536).
-}
-```
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `policy` | `string` | - | Path to guard-policy.json |
+| `simulate` | `boolean` | `false` | Dry-run mode |
+| `silent` | `boolean` | `false` | Suppress console output |
+| `secret` | `string` | - | HMAC signing secret |
+| `storage` | `StorageConfig` | `sqlite` | Backend selection |
+| `identityReaderOptions` | `object` | - | JWKS settings |
+| `actionResolver` | `(toolName, params) => string` | - | Map tools/routes to policy keys |
+| `spendExtractor` | `(params) => number` | - | Extract spend from params |
+| `transactionResolver` | `(toolName, params, decision) => boolean` | - | Override transaction classification |
+| `onDecision` | `(decision) => void` | - | Metrics, logging, hooks |
+| `onApprovalRequired` | `(decision) => Promise<boolean>` | - | Webhook callback to pause and await human approval |
+| `approvalTimeoutMs` | `number` | `30000` | Timeout for approval in milliseconds |
+| `watchPolicy` | `boolean` | `false` | Hot-reload file-backed policies |
+| `payloadRedactor` | `(params) => unknown` | - | Redact sensitive fields |
+| `maxPayloadBytes` | `number` | `65536` | Max stored payload size |
 
 ## Storage Backends
 
@@ -423,6 +418,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - **Global circuit breaker** via `circuit_breaker` policy field to halt all agent activity if total spend exceeds a threshold
 - **Limit introspection API** via `guardInstance.getAgentStatus(agentId)` to query agent limits passively
 - **Wildcard scope matching** for policy action names using prefix wildcards (e.g., `book_*`)
+- **Human approval webhook** via `onApprovalRequired` callback in `GuardOptions` to pause requests and await async approval
 
 ### Security hardening in v0.2.0
 
@@ -439,9 +435,11 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 
 ## Current Limitations
 
-- Capability checks are exact string matches only (no wildcards)
-- `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval UI
-- Money is major-unit only; mixed-currency in one policy is not supported
+- Capability checks are exact string matches only
+- No APoP / LAS-WG adapters yet
+- No path-policy DSL
+- `requires_human_approval` can now pause requests if `onApprovalRequired` is configured, though there is no built-in UI
+- Money is major-unit only; mixed-currency accounting is out of scope for one policy is not supported
 - SQLite receipt store is single-instance only (use PostgreSQL for multi-instance)
 
 ## Common Integration Patterns

@@ -115,4 +115,13 @@ export interface GuardOptions {
 
   /** Enable hot-reload of policy file on changes. Defaults to false. */
   readonly watchPolicy?: boolean;
+
+  /**
+   * Callback fired when human approval is required.
+   * If it returns true, request proceeds. If false, request is blocked.
+   */
+  readonly onApprovalRequired?: (decision: EvaluationDecision & { agentId: string; receiptId: string }) => Promise<boolean>;
+
+  /** Timeout in milliseconds for onApprovalRequired. Defaults to 30000 (30s). */
+  readonly approvalTimeoutMs?: number;
 }

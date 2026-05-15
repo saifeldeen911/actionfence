@@ -213,7 +213,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier                                                                                                                                                                  |
 | `max_spend`               | `number`                         | -       | Per-invocation cap in major units                                                                                                                                                      |
 | `currency`                | `string`                         | -       | ISO 4217 currency code                                                                                                                                                                 |
-| `requires_human_approval` | `boolean`                        | `false` | In `0.1.0`: flags the decision in the receipt and fires the `onDecision` callback so you can build your own approval flow. Built-in approval workflow is planned for a future release. |
+| `requires_human_approval` | `boolean`                        | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement. |
 
 ### Identity Tiers
 
@@ -388,6 +388,8 @@ const middleware = guard({
 | `spendExtractor`        | `(params) => number \| null`              | -       | Extract spend in major units             |
 | `transactionResolver`   | `(toolName, params, decision) => boolean` | -       | Override transaction classification      |
 | `onDecision`            | `(decision) => void`                      | -       | Metrics, logging, hooks                  |
+| `onApprovalRequired`    | `(decision) => Promise<boolean>`          | -       | Webhook callback to pause and await human approval |
+| `approvalTimeoutMs`     | `number`                                  | `30000` | Timeout for approval in milliseconds     |
 | `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
 | `storage`               | `StorageConfig`                           | -       | Storage backend (SQLite/PostgreSQL)      |
 | `payloadRedactor`       | `(params: unknown) => unknown`            | -       | Strip sensitive fields before receipt storage |
