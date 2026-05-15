@@ -406,6 +406,8 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - **Rolling-window spend caps** via `spend_limits.window` with `max_amount` and `duration_minutes`
 - New `SpendTracker.checkWindow()` for rolling-window enforcement with lazy eviction
 - `SpendSnapshot` now includes optional `windowTotal` and `windowResetMs` fields
+- **Global circuit breaker** via `circuit_breaker` policy field to halt all agent activity if total spend exceeds a threshold
+- **Limit introspection API** via `guardInstance.getAgentStatus(agentId)` to query agent limits passively
 
 ### Security hardening in v0.2.0
 
