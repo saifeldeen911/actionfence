@@ -31,6 +31,8 @@ export interface EvaluationDecision {
   readonly timestamp: string;
   /** Evaluation duration in milliseconds. */
   readonly durationMs: number;
+  /** Optional metadata about the decision (e.g. schema drift flags). */
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 /**

@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `approvalTimeoutMs` (default 30s) to securely time out and block requests if approval isn't received
   - Receipt logic updated to securely bind the early-generated `receiptId` to the final persisted receipt
 
+- **Tool Schema Drift Detection**
+  - Added support to hash and pin tool input schemas in the policy (`schema_hash`) to detect silent tool changes.
+  - Added `schema_enforcement` policy field to configure mismatch behavior (`warn` or `block`).
+  - New `actionfence pin-schemas` CLI command to automatically connect to an MCP server, hash schemas, and pin them in the policy.
+  - Enhanced `actionfence validate` CLI command to verify current tool schemas against pinned hashes.
+  - `GuardEngine` checks for schema drift at runtime (post-identity, pre-spend), preventing malicious payload injection from schema updates.
+
 ### Changed
 
 - `ReceiptStore` refactored from a monolithic SQLite class into a thin facade over `StorageAdapter`

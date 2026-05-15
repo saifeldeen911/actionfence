@@ -58,6 +58,10 @@
           "requires_human_approval": {
             "type": "boolean",
             "description": "Whether human approval is required before execution."
+          },
+          "schema_hash": {
+            "type": "string",
+            "description": "SHA-256 hash of the tool input schema, set via npx actionfence pin-schemas"
           }
         }
       }
@@ -149,6 +153,17 @@
         }
       },
       "required": ["global_max_spend", "action"]
+    },
+    "schema_enforcement": {
+      "type": "object",
+      "properties": {
+        "on_mismatch": {
+          "type": "string",
+          "enum": ["warn", "block"],
+          "default": "warn"
+        }
+      },
+      "required": ["on_mismatch"]
     },
     "regulations": {
       "type": "array",

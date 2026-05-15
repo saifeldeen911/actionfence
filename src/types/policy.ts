@@ -24,6 +24,8 @@ export interface ActionRule {
   readonly currency?: string;
   /** Whether human approval is required before execution. */
   readonly requires_human_approval?: boolean;
+  /** SHA-256 hash of the tool's expected input schema. Used for drift detection. */
+  readonly schema_hash?: string;
 }
 
 /** Rolling-window spend cap configuration. */
@@ -75,6 +77,12 @@ export interface CircuitBreakerConfig {
   readonly currency?: string;
 }
 
+/** Schema enforcement configuration. */
+export interface SchemaEnforcementConfig {
+  /** Behavior when tool schema mismatch is detected. */
+  readonly on_mismatch: 'warn' | 'block';
+}
+
 /**
  * The top-level guard policy object.
  * This is the normalized internal representation — parsed from guard-policy.json.
@@ -96,6 +104,8 @@ export interface GuardPolicy {
   readonly spend_limits?: SpendLimitsConfig;
   /** Optional global circuit breaker — a master kill-switch across all agents. */
   readonly circuit_breaker?: CircuitBreakerConfig;
+  /** Optional tool schema enforcement config for drift detection. */
+  readonly schema_enforcement?: SchemaEnforcementConfig;
   /** Regulatory frameworks (stored only, not enforced in v1). */
   readonly regulations?: readonly string[];
 }

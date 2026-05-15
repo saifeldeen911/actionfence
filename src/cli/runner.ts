@@ -11,6 +11,7 @@ import chalk from 'chalk';
 import { runInit } from './init.js';
 import { runValidate } from './validate.js';
 import { runSimulate } from './simulate.js';
+import { runPinSchemas } from './pin-schemas.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -69,6 +70,8 @@ export async function run(argv: readonly string[], context?: Partial<CliContext>
       return runInit(args, ctx);
     case 'validate':
       return runValidate(args, ctx);
+    case 'pin-schemas':
+      return runPinSchemas(args, ctx);
     case 'simulate':
       return runSimulate(args, ctx);
     default:
@@ -175,6 +178,7 @@ ${chalk.yellow('Commands:')}
   ${chalk.cyan('init')}                  Generate a starter guard-policy.json
   ${chalk.cyan('validate')} <path>       Validate a policy file against the schema
   ${chalk.cyan('simulate')} <path>       Dry-run a policy evaluation
+  ${chalk.cyan('pin-schemas')} <path>    Update policy with tool schema hashes
 
 ${chalk.yellow('Options:')}
   --help, -h            Show this help message
@@ -182,7 +186,8 @@ ${chalk.yellow('Options:')}
 
 ${chalk.yellow('Examples:')}
   actionfence init --service MyAPI
-  actionfence validate guard-policy.json
+  actionfence validate guard-policy.json "node server.js"
+  actionfence pin-schemas guard-policy.json "node server.js"
   actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250 --tool do_search_v2
 
 ${chalk.dim('Documentation: README.md')}

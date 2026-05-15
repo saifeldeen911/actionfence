@@ -13,6 +13,7 @@ import { ReceiptStore } from '../core/receipt-store.js';
 import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
 import { CircuitBreaker } from '../core/circuit-breaker.js';
+import { SchemaValidator } from '../core/schema-validator.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
@@ -88,6 +89,7 @@ export class GuardEngine {
   private readonly rateLimiter: RateLimiter;
   private readonly spendTracker: SpendTracker;
   private readonly circuitBreaker: CircuitBreaker;
+  private readonly schemaValidator: SchemaValidator;
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
@@ -112,6 +114,7 @@ export class GuardEngine {
     this.spendTracker = options.spendTracker ?? new SpendTracker(this.policy.spend_limits);
     this.spendTracker.updateConfig(this.policy.spend_limits);
     this.circuitBreaker = new CircuitBreaker(this.policy.circuit_breaker);
+    this.schemaValidator = new SchemaValidator();
     if (options.receiptStore) {
       this.receiptStore = options.receiptStore;
     }
@@ -178,6 +181,10 @@ export class GuardEngine {
 
         let decision = this.evaluator.evaluate(action, input.toolName, identity, spendAmount);
         decision = this.enforceCapabilities(action, decision, identity);
+
+        if (decision.status === 'PASSED') {
+          decision = this.enforceSchema(action, input.toolName, decision, identity);
+        }
 
         let statusCode = decision.status === 'PASSED' ? 200 : 403;
         let errorCode: GuardErrorCode = 'ACTIONFENCE_BLOCKED';
@@ -320,6 +327,13 @@ export class GuardEngine {
       allowedActions: actions.allowedActions,
       blockedActions: actions.blockedActions,
     };
+  }
+
+  /**
+   * Register a tool's schema for drift detection.
+   */
+  registerToolSchema(toolName: string, inputSchema: Record<string, unknown>): void {
+    this.schemaValidator.snapshotSchema(toolName, inputSchema);
   }
 
   dispose(): void {
@@ -640,6 +654,44 @@ export class GuardEngine {
       spendAmount: decision.spendAmount,
       reason: `Action "${action}" is outside the agent's declared capabilities`,
     });
+  }
+
+  private enforceSchema(
+    action: string,
+    toolName: string,
+    decision: EvaluationDecision,
+    identity: AgentIdentity,
+  ): EvaluationDecision {
+    const actionConfig = this.policy.actions[action];
+    if (!actionConfig) {
+      return decision;
+    }
+
+    const pinnedHash = actionConfig.schema_hash;
+    const checkResult = this.schemaValidator.check(toolName, pinnedHash);
+
+    if (checkResult.match) {
+      return decision;
+    }
+
+    const enforcement = this.policy.schema_enforcement?.on_mismatch ?? 'warn';
+
+    if (enforcement === 'block') {
+      return createBlockedDecision({
+        action,
+        toolName,
+        identity,
+        spendAmount: decision.spendAmount,
+        reason: 'schema_drift_detected',
+      });
+    }
+
+    // Warn case: update metadata
+    console.warn(`[actionfence] Schema drift detected for tool "${toolName}" (action: "${action}"). Pinned: ${pinnedHash}, Current: ${checkResult.currentHash}`);
+    return {
+      ...decision,
+      metadata: { ...decision.metadata, schema_drift: true },
+    };
   }
 
   private enforceSpendLimits(

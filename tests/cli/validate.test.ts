@@ -33,9 +33,9 @@ const FIXTURES = resolve('tests', 'fixtures');
 // ---------------------------------------------------------------------------
 
 describe('cli/validate', () => {
-  it('validates a correct policy file (exit code 0)', () => {
+  it('validates a correct policy file (exit code 0)', async () => {
     const ctx = createTestContext();
-    const exitCode = runValidate(makeArgs([resolve(FIXTURES, 'valid-policy.json')]), ctx);
+    const exitCode = await runValidate(makeArgs([resolve(FIXTURES, 'valid-policy.json')]), ctx);
 
     expect(exitCode).toBe(0);
     const output = ctx.stdoutLines.join('');
@@ -43,33 +43,33 @@ describe('cli/validate', () => {
     expect(output).toContain('TestService');
   });
 
-  it('reports validation errors for invalid policy (exit code 1)', () => {
+  it('reports validation errors for invalid policy (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runValidate(makeArgs([resolve(FIXTURES, 'missing-service.json')]), ctx);
+    const exitCode = await runValidate(makeArgs([resolve(FIXTURES, 'missing-service.json')]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Invalid policy');
   });
 
-  it('reports load error for missing file (exit code 1)', () => {
+  it('reports load error for missing file (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runValidate(makeArgs([resolve(FIXTURES, 'nonexistent.json')]), ctx);
+    const exitCode = await runValidate(makeArgs([resolve(FIXTURES, 'nonexistent.json')]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Cannot load policy');
   });
 
-  it('reports parse error for malformed JSON (exit code 1)', () => {
+  it('reports parse error for malformed JSON (exit code 1)', async () => {
     const ctx = createTestContext();
-    const exitCode = runValidate(makeArgs([resolve(FIXTURES, 'malformed.json')]), ctx);
+    const exitCode = await runValidate(makeArgs([resolve(FIXTURES, 'malformed.json')]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Cannot load policy');
   });
 
-  it('prints policy summary on success', () => {
+  it('prints policy summary on success', async () => {
     const ctx = createTestContext();
-    runValidate(makeArgs([resolve(FIXTURES, 'valid-policy.json')]), ctx);
+    await runValidate(makeArgs([resolve(FIXTURES, 'valid-policy.json')]), ctx);
 
     const output = ctx.stdoutLines.join('');
     expect(output).toContain('4 defined');
@@ -80,9 +80,9 @@ describe('cli/validate', () => {
     expect(output).toContain('EU_AI_Act_Art50');
   });
 
-  it('returns exit code 1 when no path is provided', () => {
+  it('returns exit code 1 when no path is provided', async () => {
     const ctx = createTestContext();
-    const exitCode = runValidate(makeArgs([]), ctx);
+    const exitCode = await runValidate(makeArgs([]), ctx);
 
     expect(exitCode).toBe(1);
     expect(ctx.stderrLines.join('')).toContain('Missing policy file path');

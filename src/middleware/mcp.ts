@@ -61,6 +61,10 @@ export function withGuard<TServer extends GuardableMcpServer>(
     config: unknown,
     handler: McpToolHandler,
   ): unknown {
+    if (config && typeof config === 'object' && 'inputSchema' in config) {
+      engine.registerToolSchema(name, config.inputSchema as Record<string, unknown>);
+    }
+
     const guardedHandler: McpToolHandler = async function guardedToolHandler(
       this: unknown,
       params: unknown,

@@ -8,6 +8,8 @@ import { loadPolicy } from '../core/policy-loader.js';
 import { PolicyLoadError, PolicyValidationError } from '../types/errors.js';
 import type { GuardPolicy } from '../types/policy.js';
 import type { ParsedArgs, CliContext } from './runner.js';
+import { fetchMcpTools } from './mcp-client.js';
+import { SchemaValidator } from '../core/schema-validator.js';
 
 /**
  * Validate a guard-policy.json file and print a summary.
@@ -16,18 +18,19 @@ import type { ParsedArgs, CliContext } from './runner.js';
  *   0 - policy is valid
  *   1 - policy is invalid or file cannot be loaded
  */
-export function runValidate(args: ParsedArgs, ctx: CliContext): number {
+export async function runValidate(args: ParsedArgs, ctx: CliContext): Promise<number> {
   const filePath = args.positionals[0];
+  const serverCommand = args.positionals[1];
 
   if (!filePath) {
     ctx.stderr(
       `${chalk.red('x')} Missing policy file path\n` +
         `\n` +
         `${chalk.yellow('Usage:')}\n` +
-        `  actionfence validate <path>\n` +
+        `  actionfence validate <path> [server-command]\n` +
         `\n` +
         `${chalk.yellow('Example:')}\n` +
-        `  actionfence validate guard-policy.json\n`,
+        `  actionfence validate guard-policy.json "node server.js"\n`,
     );
     return 1;
   }
@@ -60,6 +63,37 @@ export function runValidate(args: ParsedArgs, ctx: CliContext): number {
       `\n` +
       formatPolicySummary(policy),
   );
+
+  if (serverCommand) {
+    try {
+      ctx.stdout(`${chalk.blue('i')} Fetching tools from server...\n`);
+      const tools = await fetchMcpTools(serverCommand);
+      let driftCount = 0;
+
+      for (const tool of tools) {
+        const actionConfig = policy.actions[tool.name];
+        if (actionConfig && actionConfig.schema_hash) {
+          const currentHash = SchemaValidator.hashSchema(tool.inputSchema);
+          if (currentHash !== actionConfig.schema_hash) {
+            ctx.stderr(
+              `${chalk.yellow('!')} Schema drift detected for tool "${tool.name}"\n` +
+                `    Pinned:  ${actionConfig.schema_hash}\n` +
+                `    Current: ${currentHash}\n`,
+            );
+            driftCount++;
+          }
+        }
+      }
+
+      if (driftCount === 0) {
+        ctx.stdout(`${chalk.green('ok')} No schema drift detected.\n`);
+      } else {
+        ctx.stdout(`${chalk.yellow('!')} Total drifted schemas: ${driftCount}\n`);
+      }
+    } catch (error: unknown) {
+      ctx.stderr(`${chalk.red('x')} Failed to fetch tools from server: ${error instanceof Error ? error.message : String(error)}\n`);
+    }
+  }
 
   return 0;
 }
