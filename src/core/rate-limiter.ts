@@ -146,11 +146,11 @@ export class RateLimiter {
     transactionsLimit: number;
   } {
     const now = Date.now();
-    const reqLimit = this.config.requests_per_minute ?? Infinity;
-    const txLimit = this.config.transactions_per_day ?? Infinity;
+    const reqLimit = (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) ? Infinity : this.config.requests_per_minute;
+    const txLimit = (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) ? Infinity : this.config.transactions_per_day;
 
     let reqRemaining = Infinity;
-    if (reqLimit !== Infinity) {
+    if (reqLimit > 0 && reqLimit !== Infinity) {
       const timestamps = this.requestWindows.get(key) || [];
       const cutoff = now - ONE_MINUTE_MS;
       const validCount = timestamps.filter(t => t > cutoff).length;
@@ -158,7 +158,7 @@ export class RateLimiter {
     }
 
     let txRemaining = Infinity;
-    if (txLimit !== Infinity) {
+    if (txLimit > 0 && txLimit !== Infinity) {
       const timestamps = this.transactionWindows.get(key) || [];
       const cutoff = now - ONE_DAY_MS;
       const validCount = timestamps.filter(t => t > cutoff).length;

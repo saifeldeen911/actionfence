@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { ReceiptStore } from '../../src/core/receipt-store.js';
 import { ReceiptSigner } from '../../src/core/receipt-signer.js';
 import type { StorageAdapter } from '../../src/storage/adapter.js';
-import type { IdentityReaderLike } from '../../src/types/identity.js';
+import type { IdentityReaderLike, IdentityClassification } from '../../src/types/identity.js';
 import { RateLimiter } from '../../src/core/rate-limiter.js';
 import { GuardEngine } from '../../src/middleware/engine.js';
 import { SpendTracker } from '../../src/core/spend-tracker.js';
@@ -951,8 +951,8 @@ describe('GuardEngine', () => {
     
     expect(status.circuitBreaker.tripped).toBe(false);
 
-    // Check with 'any' tier
-    const anyStatus = engine.getAgentStatus('status-agent', 'any');
+    // Check with 'anonymous' classification
+    const anyStatus = engine.getAgentStatus('status-agent', 'anonymous' as IdentityClassification);
     expect(anyStatus.blockedActions).toContain('book_flight');
     expect(anyStatus.allowedActions).toContain('search_flights');
 

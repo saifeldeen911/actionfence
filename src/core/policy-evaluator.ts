@@ -167,16 +167,15 @@ export class PolicyEvaluator {
   }
 
   /**
-   * Determine which actions are allowed and blocked for a given identity tier.
-   * If tier is null, only actions requiring 'any' are allowed.
+   * Determine which actions are allowed and blocked for a given identity classification.
+   * If classification is null, only actions requiring 'any' are allowed.
    */
-  getAllowedActions(tier: IdentityTier | null): { allowedActions: string[]; blockedActions: string[] } {
+  getAllowedActions(classification: IdentityClassification | null): { allowedActions: string[]; blockedActions: string[] } {
     const allowedActions: string[] = [];
     const blockedActions: string[] = [];
     
-    // Treat null tier as least privileged (i.e. lower than anonymous)
-    // Actually, 'any' maps to level 0.
-    const tierLevel = tier ? REQUIRED_TIER_LEVEL[tier] : 0;
+    // Treat null classification as level 0 (same as 'any'/'anonymous')
+    const tierLevel = classification ? IDENTITY_TIER_LEVEL[classification] : 0;
     
     for (const [action, rule] of Object.entries(this.policy.actions)) {
       if (!rule.allowed) {

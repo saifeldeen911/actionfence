@@ -4,7 +4,6 @@
  */
 
 import type { IdentityClassification } from './identity.js';
-import type { IdentityTier } from './policy.js';
 
 /** Whether the action was allowed or blocked. */
 export type DecisionStatus = 'PASSED' | 'BLOCKED';
@@ -39,7 +38,7 @@ export interface EvaluationDecision {
  */
 export interface AgentStatus {
   agentId: string;
-  identityTier: IdentityTier | null;
+  identityTier: IdentityClassification | null;
   spend: {
     sessionTotal: number;
     dailyTotal: number;

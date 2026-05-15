@@ -16,10 +16,10 @@ import { ConsoleReporter } from '../reporters/console.js';
 import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
 import type { EvaluationDecision, AgentStatus } from '../types/decision.js';
-import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity } from '../types/identity.js';
+import type { AgentIdentity, IdentityReaderLike, SafeAgentIdentity, IdentityClassification } from '../types/identity.js';
 import type { ActionReceipt } from '../types/receipt.js';
 import type { SpendSnapshot } from '../types/spend.js';
-import type { GuardPolicy, SpendLimitsConfig, IdentityTier } from '../types/policy.js';
+import type { GuardPolicy, SpendLimitsConfig } from '../types/policy.js';
 import type { WindowCheckResult } from '../core/spend-tracker.js';
 import { createSimulationPreview, type SimulationPreview } from './simulation.js';
 
@@ -229,17 +229,17 @@ export class GuardEngine {
    * Does not record any spend or rate limit usage.
    *
    * @param agentId - The agent ID to query.
-   * @param assumedTier - The identity tier to assume for calculating allowed actions.
+   * @param assumedClassification - The identity classification to assume for calculating allowed actions.
    */
-  getAgentStatus(agentId: string, assumedTier: IdentityTier | null = null): AgentStatus {
+  getAgentStatus(agentId: string, assumedClassification: IdentityClassification | null = null): AgentStatus {
     const spendStatus = this.spendTracker.getStatus(agentId);
     const rateStatus = this.rateLimiter.getStatus(agentId);
     const cbStatus = this.circuitBreaker.getStatus();
-    const actions = this.evaluator.getAllowedActions(assumedTier);
+    const actions = this.evaluator.getAllowedActions(assumedClassification);
 
     return {
       agentId,
-      identityTier: assumedTier,
+      identityTier: assumedClassification,
       spend: {
         sessionTotal: spendStatus.sessionTotal,
         dailyTotal: spendStatus.dailyTotal,
