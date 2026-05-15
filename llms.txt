@@ -9,6 +9,7 @@
 - `pg` is an optional peer dependency (only needed for PostgreSQL storage)
 - Receipts default to SQLite; set `storage: { adapter: 'postgres', connectionString: '...' }` for horizontally-scaled deployments
 - Security: HMAC signing secrets must be ≥16 bytes; `payloadRedactor` strips sensitive fields before receipt storage; `maxPayloadBytes` (default 64 KB) truncates oversized payloads
+- Trust Model: ActionFence is server-side middleware. Agents cannot read the policy, bypass the middleware, or tamper with receipts. Keep guard-policy.json outside tool-accessible directories.
 - Tool params must be JSON-serializable (BigInt, Symbols, circular refs will throw)
 
 ## Docs
