@@ -102,6 +102,22 @@ Copy this prompt into Claude, Cursor, Copilot, or any LLM and let it handle the 
 Install and integrate the "actionfence" npm package into my current project. Read the full integration guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt then: install the package, create a guard-policy.json for my use case, and wire up the middleware.
 ```
 
+## Trust Model
+
+ActionFence runs on **your server** as middleware. The agent communicates
+with your server via MCP protocol or HTTP — it never has direct access
+to the policy file or the enforcement engine.
+
+This is server-side enforcement, not a client-side honor system.
+
+- The agent **cannot** read `guard-policy.json` — it's a file on your server
+- The agent **cannot** bypass the middleware — all tool calls pass through it
+- The agent **cannot** tamper with receipts — they're signed with your secret key
+
+> **Tip:** Keep `guard-policy.json` outside any tool-accessible directories.
+> If your MCP server has a `read_file` tool, make sure it can't access
+> the directory where your policy file lives.
+
 ## Storage
 
 ActionFence stores signed receipts in SQLite by default (zero-config).
@@ -213,7 +229,7 @@ Verified identity is built in when you configure `identityReaderOptions.jwksUri`
 
 If a decoded or verified token includes a `capabilities` claim, ActionFence treats it as an exact allowlist of policy action names. A request that passes policy checks but is not listed in `capabilities` is blocked.
 
-## Trust Model
+## Payload Processing
 
 ActionFence canonicalizes tool params before hashing receipts. That keeps the receipt chain deterministic, but it also means tool payloads must stay JSON-friendly.
 
