@@ -381,6 +381,20 @@ Signing key resolution order:
 
 ## Trust Model
 
+ActionFence runs on **your server** as middleware. The agent communicates
+with your server via MCP protocol or HTTP — it never has direct access
+to the policy file or the enforcement engine.
+
+This is server-side enforcement, not a client-side honor system.
+
+- The agent **cannot** read `guard-policy.json` — it's a file on your server
+- The agent **cannot** bypass the middleware — all tool calls pass through it
+- The agent **cannot** tamper with receipts — they're signed with your secret key
+
+> **Tip:** Keep `guard-policy.json` outside any tool-accessible directories.
+> If your MCP server has a `read_file` tool, make sure it can't access
+> the directory where your policy file lives.
+
 ### Payload Requirements
 
 - `params` must be JSON-serializable.
