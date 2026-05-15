@@ -109,7 +109,9 @@ export function runInit(args: ParsedArgs, ctx: CliContext): number {
       `  2. Add to your MCP server:\n` +
       `     ${chalk.cyan("import { withGuard } from 'actionfence';")}\n` +
       `     ${chalk.cyan(`withGuard(server, { policy: '${examplePath}' });`)}\n` +
-      `  3. Validate: ${chalk.cyan(`npx actionfence validate ${examplePath}`)}\n`,
+      `  3. Validate: ${chalk.cyan(`npx actionfence validate ${examplePath}`)}\n` +
+      `\n` +
+      `${chalk.yellow('⚠')} Keep guard-policy.json outside any tool-accessible directories.\n`,
   );
 
   return 0;
