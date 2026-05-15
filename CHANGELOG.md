@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Limit Introspection API**
   - New `getAgentStatus(agentId)` method on `GuardEngine` instances (returned by `withGuard` / `guard`)
   - Returns a passive, non-mutating `AgentStatus` snapshot containing spend totals, rate limit remaining, circuit breaker state, and allowed/blocked actions
+- **Trust Model Documentation**
+  - Added dedicated Trust Model section to README and LLM guides clarifying server-side enforcement
+  - Added security warning to `actionfence init` CLI output regarding policy file placement
 
 ### Changed
 
