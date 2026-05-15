@@ -11,7 +11,7 @@
  * 6. Set requires_human_approval flag
  */
 
-import type { GuardPolicy, IdentityTier } from '../types/policy.js';
+import type { GuardPolicy, IdentityTier, ActionRule } from '../types/policy.js';
 import type { AgentIdentity, IdentityClassification } from '../types/identity.js';
 import type { EvaluationDecision } from '../types/decision.js';
 
@@ -41,14 +41,44 @@ const REQUIRED_TIER_LEVEL: Record<IdentityTier, number> = {
  */
 export class PolicyEvaluator {
   private policy: GuardPolicy;
+  private exactRules = new Map<string, ActionRule>();
+  private wildcardRules: Array<{ prefix: string; rule: ActionRule }> = [];
 
   constructor(policy: GuardPolicy) {
-    this.policy = policy;
+    // Initializer just calls updatePolicy to set up everything
+    this.policy = policy; // set temporarily to satisfy TypeScript before updatePolicy assigns it
+    this.updatePolicy(policy);
   }
 
   /** Hot-swap the active policy (used by watchPolicy). */
   updatePolicy(policy: GuardPolicy): void {
     this.policy = policy;
+    this.exactRules.clear();
+    this.wildcardRules = [];
+
+    for (const [key, rule] of Object.entries(policy.actions)) {
+      if (key.endsWith('*')) {
+        this.wildcardRules.push({ prefix: key.slice(0, -1), rule });
+      } else {
+        this.exactRules.set(key, rule);
+      }
+    }
+
+    // Sort wildcard rules by prefix length descending (longest wins)
+    this.wildcardRules.sort((a, b) => b.prefix.length - a.prefix.length);
+  }
+
+  /** Look up the rule for an action string. */
+  private findRule(action: string): ActionRule | undefined {
+    if (this.exactRules.has(action)) {
+      return this.exactRules.get(action);
+    }
+    for (const wc of this.wildcardRules) {
+      if (action.startsWith(wc.prefix)) {
+        return wc.rule;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -77,7 +107,7 @@ export class PolicyEvaluator {
     };
 
     // Step 1: Look up action in policy
-    const rule = this.policy.actions[action];
+    const rule = this.findRule(action);
     const defaultRule = resolveDefaultRule(this.policy.default_rule);
 
     // Step 2: Action not found → apply default_rule

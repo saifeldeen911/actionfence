@@ -30,6 +30,19 @@ const ALLOW_DEFAULT_POLICY: GuardPolicy = {
   },
 };
 
+const WILDCARD_POLICY: GuardPolicy = {
+  service: 'TestService',
+  version: '1.0',
+  default_rule: 'deny',
+  actions: {
+    'search_*': { allowed: true, identity: 'any' },
+    'book_*': { allowed: true, identity: 'verified', max_spend: 500 },
+    'book_flight_*': { allowed: true, identity: 'token' },
+    'book_flight_specific': { allowed: false },
+    'delete_*': { allowed: false },
+  },
+};
+
 function makeIdentity(classification: 'anonymous' | 'token' | 'verified'): AgentIdentity {
   return {
     classification,
@@ -228,6 +241,45 @@ describe('PolicyEvaluator', () => {
         makeIdentity('anonymous'),
       );
       expect(decision.durationMs).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('wildcard scope matching', () => {
+    const wildcardEvaluator = new PolicyEvaluator(WILDCARD_POLICY);
+
+    it('exact match takes priority over wildcard', () => {
+      const decision = wildcardEvaluator.evaluate('book_flight_specific', 'book_flight_specific', makeIdentity('verified'));
+      expect(decision.status).toBe('BLOCKED');
+      expect(decision.reason).toContain('explicitly denied');
+    });
+
+    it('book_* matches book_flight and book_hotel', () => {
+      let decision = wildcardEvaluator.evaluate('book_hotel', 'book_hotel', makeIdentity('verified'), 100);
+      expect(decision.status).toBe('PASSED');
+
+      // Uses book_* rule (identity: 'verified', not 'token' which is for book_flight_*)
+      decision = wildcardEvaluator.evaluate('book_hotel', 'book_hotel', makeIdentity('token'), 100);
+      expect(decision.status).toBe('BLOCKED');
+      expect(decision.reason).toContain('requires identity tier "verified"');
+    });
+
+    it('book_* does NOT match booking (must match up to the _)', () => {
+      const decision = wildcardEvaluator.evaluate('booking', 'booking', makeIdentity('verified'));
+      // Default rule is deny
+      expect(decision.status).toBe('BLOCKED');
+      expect(decision.reason).toContain('not listed in the policy');
+    });
+
+    it('longest wildcard wins: book_flight_* beats book_*', () => {
+      // book_flight_* requires 'token', book_* requires 'verified'. If token works, book_flight_* won.
+      const decision = wildcardEvaluator.evaluate('book_flight_international', 'book_flight_international', makeIdentity('token'));
+      expect(decision.status).toBe('PASSED');
+    });
+
+    it('default rule applies if no exact or wildcard match', () => {
+      const decision = wildcardEvaluator.evaluate('create_user', 'create_user', makeIdentity('verified'));
+      expect(decision.status).toBe('BLOCKED');
+      expect(decision.reason).toContain('not listed in the policy');
     });
   });
 
