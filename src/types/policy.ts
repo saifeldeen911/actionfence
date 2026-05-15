@@ -62,6 +62,20 @@ export interface RateLimitsConfig {
 }
 
 /**
+ * Global circuit breaker configuration.
+ * When total global spend across ALL agents exceeds the ceiling, the breaker trips
+ * and (depending on `action`) either blocks all subsequent calls or fires an alert.
+ */
+export interface CircuitBreakerConfig {
+  /** Hard ceiling for cumulative global spend in major units (e.g., 10000 = $10,000). */
+  readonly global_max_spend: number;
+  /** Behavior when the breaker trips. 'block_all' denies every call; 'alert_only' logs a warning. */
+  readonly action: 'block_all' | 'alert_only';
+  /** ISO 4217 currency code for display purposes. */
+  readonly currency?: string;
+}
+
+/**
  * The top-level guard policy object.
  * This is the normalized internal representation — parsed from guard-policy.json.
  */
@@ -80,6 +94,8 @@ export interface GuardPolicy {
   readonly rate_limits?: RateLimitsConfig;
   /** Optional global spend limits in major units. */
   readonly spend_limits?: SpendLimitsConfig;
+  /** Optional global circuit breaker — a master kill-switch across all agents. */
+  readonly circuit_breaker?: CircuitBreakerConfig;
   /** Regulatory frameworks (stored only, not enforced in v1). */
   readonly regulations?: readonly string[];
 }

@@ -11,6 +11,7 @@ import { RateLimiter, type RateLimitResult } from '../core/rate-limiter.js';
 import { ReceiptStore } from '../core/receipt-store.js';
 import type { StorageAdapter } from '../storage/adapter.js';
 import { SpendTracker } from '../core/spend-tracker.js';
+import { CircuitBreaker } from '../core/circuit-breaker.js';
 import { ConsoleReporter } from '../reporters/console.js';
 import { AsyncMutex } from '../utils/async-mutex.js';
 import type { GuardOptions } from '../types/config.js';
@@ -85,6 +86,7 @@ export class GuardEngine {
   private readonly identityReader: IdentityReaderLike;
   private readonly rateLimiter: RateLimiter;
   private readonly spendTracker: SpendTracker;
+  private readonly circuitBreaker: CircuitBreaker;
   private readonly reporter: ConsoleReporter;
   private readonly cleanupPolicyWatcher: (() => void) | null;
   private readonly ownsRateLimiter: boolean;
@@ -108,6 +110,7 @@ export class GuardEngine {
     this.rateLimiter = options.rateLimiter ?? new RateLimiter(this.policy.rate_limits ?? {});
     this.spendTracker = options.spendTracker ?? new SpendTracker(this.policy.spend_limits);
     this.spendTracker.updateConfig(this.policy.spend_limits);
+    this.circuitBreaker = new CircuitBreaker(this.policy.circuit_breaker);
     if (options.receiptStore) {
       this.receiptStore = options.receiptStore;
     }
@@ -131,6 +134,27 @@ export class GuardEngine {
     const mutex = this.acquireMutex(identity.agentId);
     try {
       return await mutex.runExclusive(async () => {
+        // Circuit breaker check — must be the FIRST check in the pipeline.
+        // If tripped with action=block_all, deny immediately.
+        const breakerCheck = this.circuitBreaker.check();
+        if (!breakerCheck.allowed) {
+          return this.finalize({
+            mode,
+            decision: createBlockedDecision({
+              action,
+              toolName: input.toolName,
+              identity,
+              spendAmount,
+              reason: breakerCheck.reason ?? 'Circuit breaker tripped',
+            }),
+            identity,
+            params: input.params,
+            statusCode: 403,
+            errorCode: 'ACTIONFENCE_BLOCKED',
+            rateLimit: null,
+          });
+        }
+
         const requestRate = this.checkRequestRate(identity.agentId, mode);
 
         if (!requestRate.allowed) {
@@ -229,6 +253,7 @@ export class GuardEngine {
     this.evaluator.updatePolicy(policy);
     this.rateLimiter.updateConfig(policy.rate_limits ?? {});
     this.spendTracker.updateConfig(policy.spend_limits);
+    this.circuitBreaker.updateConfig(policy.circuit_breaker);
   }
 
   private acquireMutex(agentId: string): AsyncMutex {
@@ -446,6 +471,12 @@ export class GuardEngine {
       mode === 'simulate'
         ? this.spendTracker.previewRecord(agentId, amount)
         : this.spendTracker.record(agentId, amount, maxWindowMillis);
+
+    // Feed actual (non-simulated) spend into the global circuit breaker.
+    if (mode === 'enforce' && result.recorded && result.amount !== null) {
+      this.circuitBreaker.record(result.amount);
+    }
+
     return result.recorded ? result.snapshot : null;
   }
 
