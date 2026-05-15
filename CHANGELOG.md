@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Trust Model Documentation**
   - Added dedicated Trust Model section to README and LLM guides clarifying server-side enforcement
   - Added security warning to `actionfence init` CLI output regarding policy file placement
+- **Wildcard Scope Matching**
+  - Added support for prefix wildcard matching in policy action names (e.g., `book_*`)
+  - Evaluates in deterministic order: exact matches first, then longest wildcard prefix, then default rule
 
 ### Changed
 

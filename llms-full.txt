@@ -1,6 +1,6 @@
 # ActionFence — Complete Integration Reference
 
-> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), and simulation mode. Node.js >= 20 required.
+> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), wildcard scope matching, and simulation mode. Node.js >= 20 required.
 
 ## Install
 
@@ -422,6 +422,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - `SpendSnapshot` now includes optional `windowTotal` and `windowResetMs` fields
 - **Global circuit breaker** via `circuit_breaker` policy field to halt all agent activity if total spend exceeds a threshold
 - **Limit introspection API** via `guardInstance.getAgentStatus(agentId)` to query agent limits passively
+- **Wildcard scope matching** for policy action names using prefix wildcards (e.g., `book_*`)
 
 ### Security hardening in v0.2.0
 
