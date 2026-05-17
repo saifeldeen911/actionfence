@@ -100,6 +100,7 @@ export class GuardEngine {
   private readonly options: GuardOptions;
   private readonly policyRefBase: string;
   private readonly agentMutexes = new Map<string, AsyncMutex>();
+  private readonly mutexLastAccessed = new Map<string, number>();
   /** Adapter created internally by getReceiptStore() — closed on dispose. */
   private ownedAdapter?: StorageAdapter;
 
@@ -369,32 +370,45 @@ export class GuardEngine {
   }
 
   private acquireMutex(agentId: string): AsyncMutex {
-    if (this.agentMutexes.size > GuardEngine.MAX_MUTEX_ENTRIES) {
-      for (const [key, mutex] of this.agentMutexes) {
-        if (!mutex.hasWaiters) {
-          this.agentMutexes.delete(key);
-        }
-
-        if (this.agentMutexes.size <= GuardEngine.MAX_MUTEX_ENTRIES / 2) {
-          break;
-        }
-      }
+    // Evict idle mutexes if we're approaching the limit
+    if (this.agentMutexes.size > GuardEngine.MAX_MUTEX_ENTRIES / 2) {
+      this.evictIdleMutexes();
     }
 
     const existing = this.agentMutexes.get(agentId);
     if (existing) {
+      this.mutexLastAccessed.set(agentId, Date.now());
       return existing;
     }
     const mutex = new AsyncMutex();
     this.agentMutexes.set(agentId, mutex);
+    this.mutexLastAccessed.set(agentId, Date.now());
     return mutex;
   }
 
-  private releaseMutexIfIdle(agentId: string, mutex: AsyncMutex): void {
-    // Intentionally retain one mutex instance per agent to avoid TOCTOU races
-    // between a release and a concurrent acquire.
-    void agentId;
-    void mutex;
+  private evictIdleMutexes(): void {
+    const now = Date.now();
+    const idleThreshold = 5 * 60 * 1000; // 5 minutes
+
+    for (const [key, lastAccess] of this.mutexLastAccessed) {
+      if (now - lastAccess > idleThreshold) {
+        const mutex = this.agentMutexes.get(key);
+        if (mutex && !mutex.hasWaiters) {
+          this.agentMutexes.delete(key);
+          this.mutexLastAccessed.delete(key);
+        }
+      }
+
+      if (this.agentMutexes.size <= GuardEngine.MAX_MUTEX_ENTRIES / 2) {
+        break;
+      }
+    }
+  }
+
+  private releaseMutexIfIdle(agentId: string, _mutex: AsyncMutex): void {
+    if (this.agentMutexes.has(agentId)) {
+      this.mutexLastAccessed.set(agentId, Date.now());
+    }
   }
 
   private async getReceiptStore(): Promise<ReceiptStore> {

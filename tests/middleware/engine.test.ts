@@ -168,71 +168,87 @@ describe('GuardEngine', () => {
   });
 
   it('should evict idle mutexes when the mutex map exceeds the cap', async () => {
-    const { tempDir, store } = createStore();
-    cleanupDirs.push(tempDir);
-    const engine = new GuardEngine({
-      policy: POLICY,
-      receiptStore: store,
-      silent: true,
-    });
-    const internals = engine as unknown as {
-      readonly agentMutexes: Map<string, AsyncMutex>;
-      acquireMutex(agentId: string): AsyncMutex;
-    };
+    vi.useFakeTimers();
+    try {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      const engine = new GuardEngine({
+        policy: POLICY,
+        receiptStore: store,
+        silent: true,
+      });
+      const internals = engine as unknown as {
+        readonly agentMutexes: Map<string, AsyncMutex>;
+        acquireMutex(agentId: string): AsyncMutex;
+      };
 
-    for (let index = 0; index < 10_001; index += 1) {
-      internals.acquireMutex(`idle-${index}`);
+      for (let index = 0; index < 10_001; index += 1) {
+        internals.acquireMutex(`idle-${index}`);
+      }
+
+      expect(internals.agentMutexes.size).toBe(10_001);
+
+      // Advance time past the 5-minute idle threshold
+      vi.advanceTimersByTime(6 * 60 * 1000);
+
+      internals.acquireMutex('trigger-agent');
+
+      expect(internals.agentMutexes.size).toBeLessThanOrEqual(5_001);
+      expect(internals.agentMutexes.has('trigger-agent')).toBe(true);
+
+      engine.dispose();
+      store.close();
+    } finally {
+      vi.useRealTimers();
     }
-
-    expect(internals.agentMutexes.size).toBe(10_001);
-
-    internals.acquireMutex('trigger-agent');
-
-    expect(internals.agentMutexes.size).toBeLessThanOrEqual(5_001);
-    expect(internals.agentMutexes.has('trigger-agent')).toBe(true);
-
-    engine.dispose();
-    store.close();
   });
 
   it('should keep mutexes with waiters during cleanup', async () => {
-    const { tempDir, store } = createStore();
-    cleanupDirs.push(tempDir);
-    const engine = new GuardEngine({
-      policy: POLICY,
-      receiptStore: store,
-      silent: true,
-    });
-    const internals = engine as unknown as {
-      readonly agentMutexes: Map<string, AsyncMutex>;
-      acquireMutex(agentId: string): AsyncMutex;
-    };
+    vi.useFakeTimers();
+    try {
+      const { tempDir, store } = createStore();
+      cleanupDirs.push(tempDir);
+      const engine = new GuardEngine({
+        policy: POLICY,
+        receiptStore: store,
+        silent: true,
+      });
+      const internals = engine as unknown as {
+        readonly agentMutexes: Map<string, AsyncMutex>;
+        acquireMutex(agentId: string): AsyncMutex;
+      };
 
-    const heldMutex = new AsyncMutex();
-    let releaseGate!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      releaseGate = resolve;
-    });
+      const heldMutex = new AsyncMutex();
+      let releaseGate!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseGate = resolve;
+      });
 
-    const activeRun = heldMutex.runExclusive(async () => {
-      await gate;
-    });
-    const waitingRun = heldMutex.runExclusive(async () => undefined);
-    internals.agentMutexes.set('held-agent', heldMutex);
+      const activeRun = heldMutex.runExclusive(async () => {
+        await gate;
+      });
+      const waitingRun = heldMutex.runExclusive(async () => undefined);
+      internals.agentMutexes.set('held-agent', heldMutex);
 
-    for (let index = 0; index < 10_001; index += 1) {
-      internals.acquireMutex(`idle-${index}`);
+      for (let index = 0; index < 10_001; index += 1) {
+        internals.acquireMutex(`idle-${index}`);
+      }
+
+      // Advance time past the 5-minute idle threshold
+      vi.advanceTimersByTime(6 * 60 * 1000);
+
+      internals.acquireMutex('trigger-agent');
+
+      expect(internals.agentMutexes.has('held-agent')).toBe(true);
+
+      releaseGate();
+      await Promise.all([activeRun, waitingRun]);
+
+      engine.dispose();
+      store.close();
+    } finally {
+      vi.useRealTimers();
     }
-
-    internals.acquireMutex('trigger-agent');
-
-    expect(internals.agentMutexes.has('held-agent')).toBe(true);
-
-    releaseGate();
-    await Promise.all([activeRun, waitingRun]);
-
-    engine.dispose();
-    store.close();
   });
 
   it('should redact stored payloads while preserving original payload integrity', async () => {
