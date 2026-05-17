@@ -953,7 +953,7 @@ describe('GuardEngine', () => {
       params: { amount: 150 },
     });
 
-    const status = engine.getAgentStatus('status-agent', 'verified');
+    const status = await engine.getAgentStatus('status-agent', 'verified');
     
     expect(status.agentId).toBe('status-agent');
     expect(status.identityTier).toBe('verified');
@@ -969,7 +969,7 @@ describe('GuardEngine', () => {
     expect(status.circuitBreaker.tripped).toBe(false);
 
     // Check with 'anonymous' classification
-    const anyStatus = engine.getAgentStatus('status-agent', 'anonymous' as IdentityClassification);
+    const anyStatus = await engine.getAgentStatus('status-agent', 'anonymous' as IdentityClassification);
     expect(anyStatus.blockedActions).toContain('book_flight');
     expect(anyStatus.allowedActions).toContain('search_flights');
 

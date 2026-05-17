@@ -160,7 +160,7 @@ export class GuardEngine {
           });
         }
 
-        const requestRate = this.checkRequestRate(identity.agentId, mode);
+        const requestRate = await this.checkRequestRate(identity.agentId, mode);
 
         if (!requestRate.allowed) {
           return this.finalize({
@@ -192,7 +192,7 @@ export class GuardEngine {
         let effectiveRateLimit: RateLimitResult | null = requestRate;
 
         if (decision.status === 'PASSED') {
-          decision = this.enforceSpendLimits(action, decision, identity);
+          decision = await this.enforceSpendLimits(action, decision, identity);
           if (decision.status === 'BLOCKED') {
             statusCode = 403;
           }
@@ -202,7 +202,7 @@ export class GuardEngine {
           decision.status === 'PASSED' &&
           this.isTransaction(input.toolName, input.params, decision)
         ) {
-          const transactionRate = this.checkTransactionRate(identity.agentId, mode);
+          const transactionRate = await this.checkTransactionRate(identity.agentId, mode);
           effectiveRateLimit = transactionRate;
 
           if (!transactionRate.allowed) {
@@ -297,8 +297,8 @@ export class GuardEngine {
    * @param agentId - The agent ID to query.
    * @param assumedClassification - The identity classification to assume for calculating allowed actions.
    */
-  getAgentStatus(agentId: string, assumedClassification: IdentityClassification | null = null): AgentStatus {
-    const spendStatus = this.spendTracker.getStatus(agentId);
+  async getAgentStatus(agentId: string, assumedClassification: IdentityClassification | null = null): Promise<AgentStatus> {
+    const spendStatus = await this.spendTracker.getStatus(agentId);
     const rateStatus = this.rateLimiter.getStatus(agentId);
     const cbStatus = this.circuitBreaker.getStatus();
     const actions = this.evaluator.getAllowedActions(assumedClassification);
@@ -459,7 +459,7 @@ export class GuardEngine {
     let spendSnapshot: SpendSnapshot | null = null;
 
     if (input.mode === 'simulate') {
-      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+      spendSnapshot = await this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
     }
 
     const preview =
@@ -475,7 +475,7 @@ export class GuardEngine {
     // Record spend FIRST (for enforce mode) to ensure spend tracking is the source of truth.
     // If receipt insertion fails afterward, spend has already been committed.
     if (input.mode === 'enforce') {
-      spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+      spendSnapshot = await this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
     }
 
     // Insert receipt after spend is recorded. If insertion fails, log the error
@@ -584,30 +584,30 @@ export class GuardEngine {
     }
   }
 
-  private checkRequestRate(agentId: string, mode: GuardMode): RateLimitResult {
+  private async checkRequestRate(agentId: string, mode: GuardMode): Promise<RateLimitResult> {
     return mode === 'simulate'
-      ? this.rateLimiter.previewRequestRate(agentId)
-      : this.rateLimiter.checkRequestRate(agentId);
+      ? await this.rateLimiter.previewRequestRate(agentId)
+      : await this.rateLimiter.checkRequestRate(agentId);
   }
 
-  private checkTransactionRate(agentId: string, mode: GuardMode): RateLimitResult {
+  private async checkTransactionRate(agentId: string, mode: GuardMode): Promise<RateLimitResult> {
     return mode === 'simulate'
-      ? this.rateLimiter.previewTransactionRate(agentId)
-      : this.rateLimiter.checkTransactionRate(agentId);
+      ? await this.rateLimiter.previewTransactionRate(agentId)
+      : await this.rateLimiter.checkTransactionRate(agentId);
   }
 
-  private recordSpend(
+  private async recordSpend(
     agentId: string,
     amount: number | null,
     mode: GuardMode,
-  ): SpendSnapshot | null {
+  ): Promise<SpendSnapshot | null> {
     const windowConfig = this.policy.spend_limits?.window;
     const maxWindowMillis = windowConfig ? windowConfig.duration_minutes * 60 * 1000 : undefined;
 
     const result =
       mode === 'simulate'
-        ? this.spendTracker.previewRecord(agentId, amount)
-        : this.spendTracker.record(agentId, amount, maxWindowMillis);
+        ? await this.spendTracker.previewRecord(agentId, amount)
+        : await this.spendTracker.record(agentId, amount, maxWindowMillis);
 
     // Feed actual (non-simulated) spend into the global circuit breaker.
     if (mode === 'enforce' && result.recorded && result.amount !== null) {
@@ -617,39 +617,39 @@ export class GuardEngine {
     return result.recorded ? result.snapshot : null;
   }
 
-  private resolveSpendSnapshot(
+  private async resolveSpendSnapshot(
     agentId: string,
     decision: EvaluationDecision,
     mode: GuardMode,
-  ): SpendSnapshot | null {
+  ): Promise<SpendSnapshot | null> {
     if (decision.status !== 'PASSED') {
       return decision.spendAmount !== null
-        ? this.previewSpend(agentId, decision.spendAmount)
+        ? await this.previewSpend(agentId, decision.spendAmount)
         : null;
     }
 
-    const snapshot = this.recordSpend(agentId, decision.spendAmount, mode);
-    return this.enrichWithWindowData(agentId, snapshot);
+    const snapshot = await this.recordSpend(agentId, decision.spendAmount, mode);
+    return await this.enrichWithWindowData(agentId, snapshot);
   }
 
-  private previewSpend(agentId: string, amount: number): SpendSnapshot | null {
-    const result = this.spendTracker.previewRecord(agentId, amount);
+  private async previewSpend(agentId: string, amount: number): Promise<SpendSnapshot | null> {
+    const result = await this.spendTracker.previewRecord(agentId, amount);
     return result.recorded ? result.snapshot : null;
   }
 
   /**
-   * Enrich a spend snapshot with rolling-window data if configured.
-   */
-  private enrichWithWindowData(
+    * Enrich a spend snapshot with rolling-window data if configured.
+    */
+  private async enrichWithWindowData(
     agentId: string,
     snapshot: SpendSnapshot | null,
-  ): SpendSnapshot | null {
+  ): Promise<SpendSnapshot | null> {
     if (!snapshot) return null;
 
     const windowConfig = this.policy.spend_limits?.window;
     if (!windowConfig) return snapshot;
 
-    const windowResult = this.spendTracker.checkWindow(agentId, windowConfig);
+    const windowResult = await this.spendTracker.checkWindow(agentId, windowConfig);
     return Object.freeze({
       ...snapshot,
       windowTotal: windowResult.windowTotal,
@@ -716,22 +716,22 @@ export class GuardEngine {
     };
   }
 
-  private enforceSpendLimits(
+  private async enforceSpendLimits(
     action: string,
     decision: EvaluationDecision,
     identity: AgentIdentity,
-  ): EvaluationDecision {
+  ): Promise<EvaluationDecision> {
     const amount = decision.spendAmount;
     if (decision.status !== 'PASSED' || amount === null) {
       return decision;
     }
 
-    const projected = this.spendTracker.previewRecord(identity.agentId, amount);
+    const projected = await this.spendTracker.previewRecord(identity.agentId, amount);
 
     // Check rolling-window spend cap
     const windowConfig = this.policy.spend_limits?.window;
     const windowResult = windowConfig
-      ? this.spendTracker.checkWindow(identity.agentId, windowConfig, amount)
+      ? await this.spendTracker.checkWindow(identity.agentId, windowConfig, amount)
       : null;
 
     const blockedReason = resolveSpendLimitReason(

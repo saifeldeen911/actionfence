@@ -8,6 +8,7 @@
  * - Periodic cleanup removes fully expired keys to prevent memory leaks
  */
 
+import { AsyncMutex } from '../utils/async-mutex.js';
 import type { RateLimitsConfig } from '../types/policy.js';
 
 /** Result of a rate limit check. */
@@ -54,6 +55,9 @@ export class RateLimiter {
   /** Periodic cleanup interval handle. */
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
+  /** Internal mutex to protect check-then-act operations on shared state. */
+  private readonly mutex = new AsyncMutex();
+
   constructor(config: RateLimitsConfig) {
     this.config = config;
     this.startCleanup();
@@ -70,7 +74,7 @@ export class RateLimiter {
    * @param key - Identifier for the rate limit bucket (e.g., agentId).
    * @returns The rate limit check result.
    */
-  checkRequestRate(key: string): RateLimitResult {
+  async checkRequestRate(key: string): Promise<RateLimitResult> {
     if (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) {
       return UNLIMITED_RESULT;
     }
@@ -87,7 +91,7 @@ export class RateLimiter {
   /**
    * Preview a request-rate check without recording it.
    */
-  previewRequestRate(key: string): RateLimitResult {
+  async previewRequestRate(key: string): Promise<RateLimitResult> {
     if (this.config.requests_per_minute === undefined || this.config.requests_per_minute <= 0) {
       return UNLIMITED_RESULT;
     }
@@ -107,7 +111,7 @@ export class RateLimiter {
    * @param key - Identifier for the rate limit bucket (e.g., agentId).
    * @returns The rate limit check result.
    */
-  checkTransactionRate(key: string): RateLimitResult {
+  async checkTransactionRate(key: string): Promise<RateLimitResult> {
     if (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) {
       return UNLIMITED_RESULT;
     }
@@ -124,7 +128,7 @@ export class RateLimiter {
   /**
    * Preview a transaction-rate check without recording it.
    */
-  previewTransactionRate(key: string): RateLimitResult {
+  async previewTransactionRate(key: string): Promise<RateLimitResult> {
     if (this.config.transactions_per_day === undefined || this.config.transactions_per_day <= 0) {
       return UNLIMITED_RESULT;
     }
@@ -203,54 +207,56 @@ export class RateLimiter {
    * 3. Check if the count is under the limit.
    * 4. If allowed, record the new timestamp.
    */
-  private checkWindow(
+  private async checkWindow(
     store: Map<string, number[]>,
     key: string,
     limit: number,
     windowMs: number,
     record: boolean,
-  ): RateLimitResult {
-    const now = Date.now();
-    const cutoff = now - windowMs;
+  ): Promise<RateLimitResult> {
+    return this.mutex.runExclusive(async () => {
+      const now = Date.now();
+      const cutoff = now - windowMs;
 
-    // Get or initialize the window
-    let timestamps = store.get(key);
-    if (!timestamps) {
-      timestamps = [];
-      store.set(key, timestamps);
-    }
+      // Get or initialize the window
+      let timestamps = store.get(key);
+      if (!timestamps) {
+        timestamps = [];
+        store.set(key, timestamps);
+      }
 
-    // Lazy eviction: remove expired timestamps
-    const firstValidIndex = timestamps.findIndex((t) => t > cutoff);
-    if (firstValidIndex > 0) {
-      timestamps.splice(0, firstValidIndex);
-    } else if (firstValidIndex === -1 && timestamps.length > 0) {
-      timestamps.length = 0;
-    }
+      // Lazy eviction: remove expired timestamps
+      const firstValidIndex = timestamps.findIndex((t) => t > cutoff);
+      if (firstValidIndex > 0) {
+        timestamps.splice(0, firstValidIndex);
+      } else if (firstValidIndex === -1 && timestamps.length > 0) {
+        timestamps.length = 0;
+      }
 
-    // Check limit
-    if (timestamps.length >= limit) {
-      const oldestTimestamp = timestamps[0] ?? now;
+      // Check limit
+      if (timestamps.length >= limit) {
+        const oldestTimestamp = timestamps[0] ?? now;
+        return {
+          allowed: false,
+          limit,
+          remaining: 0,
+          resetMs: oldestTimestamp + windowMs - now,
+        };
+      }
+
+      const projectedCount = timestamps.length + 1;
+
+      if (record) {
+        timestamps.push(now);
+      }
+
       return {
-        allowed: false,
+        allowed: true,
         limit,
-        remaining: 0,
-        resetMs: oldestTimestamp + windowMs - now,
+        remaining: limit - projectedCount,
+        resetMs: (timestamps[0] ?? now) + windowMs - now,
       };
-    }
-
-    const projectedCount = timestamps.length + 1;
-
-    if (record) {
-      timestamps.push(now);
-    }
-
-    return {
-      allowed: true,
-      limit,
-      remaining: limit - projectedCount,
-      resetMs: (timestamps[0] ?? now) + windowMs - now,
-    };
+    });
   }
 
   /** Start periodic cleanup of fully expired keys. */
