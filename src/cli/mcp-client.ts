@@ -48,6 +48,8 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
     let settled = false;
 
     let stdinWritePending = false;
+    let childExited = false;
+    let childExitCode: number | null = null;
 
     function cleanupKill(): void {
       child.removeAllListeners();
@@ -100,6 +102,12 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
           rejectOnce(err);
         } else if (settled) {
           cleanupKill();
+        } else if (childExited) {
+          if (childExitCode !== 0 && childExitCode !== null) {
+            rejectOnce(new Error(`Server exited with code ${childExitCode}`));
+          } else {
+            resolveOnce(tools);
+          }
         }
       });
     }
@@ -125,6 +133,8 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
     });
 
     child.on('exit', (code) => {
+      childExited = true;
+      childExitCode = code;
       if (stdinWritePending) {
         return;
       }
