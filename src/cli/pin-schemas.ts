@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import chalk from 'chalk';
 import type { ParsedArgs, CliContext } from './runner.js';
 import { fetchMcpTools } from './mcp-client.js';
+import type { McpTool } from './mcp-client.js';
 import { SchemaValidator } from '../core/schema-validator.js';
 
 export async function runPinSchemas(args: ParsedArgs, ctx: CliContext): Promise<number> {
@@ -36,7 +37,7 @@ export async function runPinSchemas(args: ParsedArgs, ctx: CliContext): Promise<
     return 1;
   }
 
-  let tools;
+  let tools: McpTool[];
   try {
     ctx.stdout(`${chalk.blue('i')} Fetching tools from server...\n`);
     tools = await fetchMcpTools(serverCommand);

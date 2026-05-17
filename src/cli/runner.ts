@@ -69,9 +69,9 @@ export async function run(argv: readonly string[], context?: Partial<CliContext>
     case 'init':
       return runInit(args, ctx);
     case 'validate':
-      return runValidate(args, ctx);
+      return await runValidate(args, ctx);
     case 'pin-schemas':
-      return runPinSchemas(args, ctx);
+      return await runPinSchemas(args, ctx);
     case 'simulate':
       return runSimulate(args, ctx);
     default:

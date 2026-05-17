@@ -686,11 +686,10 @@ export class GuardEngine {
       });
     }
 
-    // Warn case: update metadata
-    console.warn(`[actionfence] Schema drift detected for tool "${toolName}" (action: "${action}"). Pinned: ${pinnedHash}, Current: ${checkResult.currentHash}`);
+    // Warn case: update metadata (copy to preserve immutability)
     return {
       ...decision,
-      metadata: { ...decision.metadata, schema_drift: true },
+      metadata: Object.freeze({ ...decision.metadata, schema_drift: true }),
     };
   }
 

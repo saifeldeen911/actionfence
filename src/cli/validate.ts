@@ -75,7 +75,7 @@ export async function runValidate(args: ParsedArgs, ctx: CliContext): Promise<nu
         if (actionConfig && actionConfig.schema_hash) {
           const currentHash = SchemaValidator.hashSchema(tool.inputSchema);
           if (currentHash !== actionConfig.schema_hash) {
-            ctx.stderr(
+            ctx.stdout(
               `${chalk.yellow('!')} Schema drift detected for tool "${tool.name}"\n` +
                 `    Pinned:  ${actionConfig.schema_hash}\n` +
                 `    Current: ${currentHash}\n`,
