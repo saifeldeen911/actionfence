@@ -457,22 +457,31 @@ export class GuardEngine {
             spendSnapshot,
           })
         : null;
-    const receipt =
-      input.mode === 'enforce'
-        ? await (
-            await this.getReceiptStore()
-          ).insert({
-            decision: input.decision,
-            identity: input.identity,
-            params: this.redactPayload(input.params),
-            originalParams: input.params,
-            policyRef: this.policyRef,
-            receiptId: input.receiptId,
-          })
-        : null;
 
+    // Record spend FIRST (for enforce mode) to ensure spend tracking is the source of truth.
+    // If receipt insertion fails afterward, spend has already been committed.
     if (input.mode === 'enforce') {
       spendSnapshot = this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
+    }
+
+    // Insert receipt after spend is recorded. If insertion fails, log the error
+    // but don't re-throw since spend was already committed.
+    let receipt: ActionReceipt | null = null;
+    if (input.mode === 'enforce') {
+      try {
+        receipt = await (
+          await this.getReceiptStore()
+        ).insert({
+          decision: input.decision,
+          identity: input.identity,
+          params: this.redactPayload(input.params),
+          originalParams: input.params,
+          policyRef: this.policyRef,
+          receiptId: input.receiptId,
+        });
+      } catch (err: unknown) {
+        console.error('[actionfence] Receipt insertion failed after spend was recorded:', err);
+      }
     }
 
     this.reporter.report({

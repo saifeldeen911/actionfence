@@ -276,7 +276,7 @@ describe('GuardEngine', () => {
     store.close();
   });
 
-  it('should not commit spend when receipt insertion fails', async () => {
+  it('should commit spend even when receipt insertion fails', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-fail-'));
     cleanupDirs.push(tempDir);
     const store = new ReceiptStore({
@@ -317,14 +317,15 @@ describe('GuardEngine', () => {
       transactionResolver: () => false,
     });
 
-    await expect(
-      engine.evaluate({
-        toolName: 'book_flight',
-        params: { amount: 150 },
-      }),
-    ).rejects.toThrow('receipt insert failed');
+    // Spend is recorded FIRST, then receipt insertion fails.
+    // The evaluation should succeed (not throw) since spend was already committed.
+    const result = await engine.evaluate({
+      toolName: 'book_flight',
+      params: { amount: 150 },
+    });
 
-    expect(spendTracker.getTotals('spender').sessionTotal).toBe(0);
+    expect(result.receipt).toBeNull();
+    expect(spendTracker.getTotals('spender').sessionTotal).toBe(150);
 
     engine.dispose();
     await store.close();
