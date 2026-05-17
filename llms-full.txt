@@ -153,6 +153,7 @@ Create with `npx actionfence init` or write manually:
 - `actions` (object, required): Map of action name to rule object.
 - `rate_limits` (object, optional): `requests_per_minute` and `transactions_per_day`.
 - `spend_limits` (object, optional): `session_max`, `daily_max`, `window` (rolling-window cap), and `currency`.
+- `schema_enforcement` (object, optional): `mode` — `"warn"` (default) or `"block"`.
 - `regulations` (string[], optional): Stored in receipts but not enforced in v0.1.
 
 ### Rolling-window spend caps
@@ -185,6 +186,7 @@ Behavior:
 - `max_spend` (number, optional): Per-invocation spend cap in major currency units.
 - `currency` (string, optional): ISO 4217 currency code.
 - `requires_human_approval` | `boolean` | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement.
+- `schema_hash` (string, optional): Pinned SHA-256 hash of the tool's input schema. Set via `actionfence pin-schemas`.
 
 ### Identity tiers
 
@@ -350,6 +352,8 @@ npx actionfence init                                    # Create starter guard-p
 npx actionfence init --service MyAPI                    # With custom service name
 npx actionfence init --output ./policies/policy.json    # Custom output path
 npx actionfence validate guard-policy.json              # Validate policy against JSON Schema
+npx actionfence validate guard-policy.json "node server.js"  # Also check schema drift
+npx actionfence pin-schemas guard-policy.json "node server.js"  # Pin tool schema hashes
 npx actionfence simulate guard-policy.json --action search         # Dry-run as anonymous
 npx actionfence simulate guard-policy.json --action create_order --identity verified --spend 250
 ```
@@ -399,6 +403,45 @@ This is server-side enforcement, not a client-side honor system.
 - Payloads larger than `maxPayloadBytes` are replaced with a truncation marker in the stored receipt.
 - Receipts bind both the original request hash and the stored payload-view hash.
 
+## Tool Schema Drift Detection
+
+ActionFence can detect when an MCP server's tool schemas change after you've pinned them. This catches silent breaking changes that could cause agent failures or enable payload injection.
+
+### Pinning Schemas
+
+```bash
+actionfence pin-schemas guard-policy.json "node server.js"
+```
+
+Connects to the MCP server, fetches all tools, computes SHA-256 hashes of each tool's `inputSchema`, and writes the hashes into the policy file under each action's `schema_hash` field.
+
+### Validating for Drift
+
+```bash
+actionfence validate guard-policy.json "node server.js"
+```
+
+Compares live tool schemas against pinned hashes and reports any mismatches.
+
+### Runtime Enforcement
+
+Configure `schema_enforcement` in your policy:
+
+```json
+{
+  "schema_enforcement": {
+    "mode": "warn"
+  }
+}
+```
+
+| Mode     | Behavior                                                                 |
+| -------- | ------------------------------------------------------------------------ |
+| `"warn"` | Logs a warning on drift but allows the action (default if not configured) |
+| `"block"`| Blocks the action if the schema has drifted from the pinned hash          |
+
+When `schema_enforcement` is omitted, drift is not checked at runtime.
+
 ## Scope Enforcement
 
 If a verified JWT includes a `capabilities` claim (string array), ActionFence treats it as an allowlist. A request passing policy checks but not listed in `capabilities` is blocked.
@@ -419,6 +462,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - **Limit introspection API** via `guardInstance.getAgentStatus(agentId)` to query agent limits passively
 - **Wildcard scope matching** for policy action names using prefix wildcards (e.g., `book_*`)
 - **Human approval webhook** via `onApprovalRequired` callback in `GuardOptions` to pause requests and await async approval
+- **Tool schema drift detection** via `schema_hash` action field and `schema_enforcement` policy field. CLI commands `pin-schemas` and `validate` support live server schema verification.
 
 ### Security hardening in v0.2.0
 

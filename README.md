@@ -203,6 +203,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `rate_limits`  | `object`            | No       | Request and transaction limits                  |
 | `spend_limits` | `object`            | No       | Session, daily, and rolling-window spend limits |
 | `circuit_breaker`| `object`          | No       | Global maximum spend kill-switch                |
+| `schema_enforcement` | `object`      | No       | Tool schema drift detection and enforcement     |
 | `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
 
 ### Action Rule Fields
@@ -214,6 +215,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `max_spend`               | `number`                         | -       | Per-invocation cap in major units                                                                                                                                                      |
 | `currency`                | `string`                         | -       | ISO 4217 currency code                                                                                                                                                                 |
 | `requires_human_approval` | `boolean`                        | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement. |
+| `schema_hash`             | `string`                         | -       | Pinned SHA-256 hash of the tool's input schema. Set via `actionfence pin-schemas`.                                                                                                     |
 
 ### Identity Tiers
 
@@ -228,6 +230,45 @@ Verified identity is built in when you configure `identityReaderOptions.jwksUri`
 ### Scope Enforcement
 
 If a decoded or verified token includes a `capabilities` claim, ActionFence treats it as an exact allowlist of policy action names. A request that passes policy checks but is not listed in `capabilities` is blocked.
+
+## Tool Schema Drift Detection
+
+ActionFence can detect when an MCP server's tool schemas change after you've pinned them. This catches silent breaking changes that could cause agent failures or enable payload injection.
+
+### Pinning Schemas
+
+```bash
+actionfence pin-schemas guard-policy.json "node server.js"
+```
+
+This command connects to the MCP server, fetches all tools, computes SHA-256 hashes of each tool's `inputSchema`, and writes the hashes into the policy file under each action's `schema_hash` field.
+
+### Validating for Drift
+
+```bash
+actionfence validate guard-policy.json "node server.js"
+```
+
+Compares live tool schemas against pinned hashes and reports any mismatches.
+
+### Runtime Enforcement
+
+Configure `schema_enforcement` in your policy to control drift behavior at runtime:
+
+```json
+{
+  "schema_enforcement": {
+    "mode": "warn"
+  }
+}
+```
+
+| Mode     | Behavior                                                                 |
+| -------- | ------------------------------------------------------------------------ |
+| `"warn"` | Logs a warning on drift but allows the action (default if not configured) |
+| `"block"`| Blocks the action if the schema has drifted from the pinned hash          |
+
+When `schema_enforcement` is omitted, drift is not checked at runtime (pinned hashes are still validated by CLI).
 
 ## Payload Processing
 
@@ -426,7 +467,16 @@ actionfence init --output ./policies/guard-policy.json
 
 ```bash
 actionfence validate guard-policy.json
+actionfence validate guard-policy.json "node server.js"  # check schema drift
 ```
+
+### `actionfence pin-schemas <path> <server-command>`
+
+```bash
+actionfence pin-schemas guard-policy.json "node server.js"
+```
+
+Connects to the MCP server, hashes each tool's input schema, and pins the hashes in the policy file.
 
 ### `actionfence simulate <path>`
 

@@ -1,6 +1,6 @@
 # ActionFence
 
-> ActionFence is a Node.js npm package that acts as an embeddable AI action firewall for MCP servers and Express/Fastify APIs. It enforces JSON-based policies with identity verification, spend caps (per-action, session, daily, and rolling-window), rate limiting, signed receipts, pluggable storage (SQLite or PostgreSQL), limit introspection API, wildcard scope matching, human approval webhook, and simulation mode. Install with `npm install actionfence`. Requires Node.js >= 20.
+> ActionFence is a Node.js npm package that acts as an embeddable AI action firewall for MCP servers and Express/Fastify APIs. It enforces JSON-based policies with identity verification, spend caps (per-action, session, daily, and rolling-window), rate limiting, signed receipts, pluggable storage (SQLite or PostgreSQL), limit introspection API, wildcard scope matching, human approval webhook, tool schema drift detection, and simulation mode. Install with `npm install actionfence`. Requires Node.js >= 20.
 
 - ActionFence uses `withGuard(server, options)` for MCP servers and `guard(options)` for Express middleware
 - Policy rules are defined in a `guard-policy.json` file with JSON Schema validation and support for wildcard prefix matching (e.g., `action_*`)
