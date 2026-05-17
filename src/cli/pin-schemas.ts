@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import chalk from 'chalk';
 import type { ParsedArgs, CliContext } from './runner.js';
 import { fetchMcpTools } from './mcp-client.js';
@@ -61,7 +62,19 @@ export async function runPinSchemas(args: ParsedArgs, ctx: CliContext): Promise<
   }
 
   if (pinnedCount > 0) {
-    writeFileSync(filePath, JSON.stringify(policy, null, 2) + '\n');
+    const updatedContent = JSON.stringify(policy, null, 2) + '\n';
+    const tempPath = join(dirname(filePath), `.actionfence-${Date.now()}.tmp`);
+    try {
+      writeFileSync(tempPath, updatedContent);
+      renameSync(tempPath, filePath);
+    } catch (error: unknown) {
+      try {
+        unlinkSync(tempPath);
+      } catch {
+        // Ignore cleanup failure
+      }
+      throw error;
+    }
     ctx.stdout(`${chalk.green('ok')} Pinned schemas for ${pinnedCount} tools.\n`);
   } else {
     ctx.stdout(`${chalk.green('ok')} All schemas are already up to date.\n`);

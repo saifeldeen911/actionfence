@@ -23,31 +23,6 @@ function splitCommand(command: string): { exe: string; args: string[] } {
   };
 }
 
-function writeMessage(
-  stdin: NodeJS.WritableStream,
-  id: number,
-  method: string,
-  params: Record<string, unknown> | undefined,
-  onError?: (err: Error) => void,
-): void {
-  const msg: Record<string, unknown> = {
-    jsonrpc: '2.0',
-    id,
-    method,
-  };
-  if (params) {
-    msg.params = params;
-  }
-  const data = JSON.stringify(msg) + '\n';
-  if (!stdin.writable) {
-    onError?.(new Error('stdin not writable'));
-    return;
-  }
-  stdin.write(data, (err) => {
-    if (err) onError?.(err);
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Tool fetcher
 // ---------------------------------------------------------------------------
@@ -72,22 +47,9 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
     const tools: McpTool[] = [];
     let settled = false;
 
-    function resolveOnce(result: McpTool[]): void {
-      if (settled) return;
-      settled = true;
-      cleanupKill(result);
-      resolve(result);
-    }
+    let stdinWritePending = false;
 
-    function rejectOnce(err: Error): void {
-      if (settled) return;
-      settled = true;
-      cleanupKill([]);
-      reject(err);
-    }
-
-    function cleanupKill(_finalTools: McpTool[]): void {
-      // Prevent 'exit' handler from firing after we already settled.
+    function cleanupKill(): void {
       child.removeAllListeners();
       rl.removeAllListeners();
       if (!child.killed) {
@@ -95,15 +57,60 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
       }
     }
 
+    function resolveOnce(result: McpTool[]): void {
+      if (settled) return;
+      settled = true;
+      if (!stdinWritePending) {
+        cleanupKill();
+      }
+      resolve(result);
+    }
+
+    function rejectOnce(err: Error): void {
+      if (settled) return;
+      settled = true;
+      if (!stdinWritePending) {
+        cleanupKill();
+      }
+      reject(err);
+    }
+
+    function writeWithCallback(
+      id: number,
+      method: string,
+      params: Record<string, unknown> | undefined,
+    ): void {
+      const msg: Record<string, unknown> = {
+        jsonrpc: '2.0',
+        id,
+        method,
+      };
+      if (params) {
+        msg.params = params;
+      }
+      const data = JSON.stringify(msg) + '\n';
+      if (!child.stdin.writable) {
+        rejectOnce(new Error('stdin not writable'));
+        return;
+      }
+      stdinWritePending = true;
+      child.stdin.write(data, (err) => {
+        stdinWritePending = false;
+        if (err) {
+          rejectOnce(err);
+        } else if (settled) {
+          cleanupKill();
+        }
+      });
+    }
+
     rl.on('line', (line) => {
       try {
         const msg = JSON.parse(line);
 
         if (msg.id === 1 && msg.result) {
-          // Init response — request tools list
-          writeMessage(child.stdin, 2, 'tools/list', undefined, rejectOnce);
+          writeWithCallback(2, 'tools/list', undefined);
         } else if (msg.id === 2 && msg.result?.tools) {
-          // Tools list response
           resolveOnce(msg.result.tools as McpTool[]);
         } else if (msg.id === 2 && msg.error) {
           rejectOnce(new Error(`MCP error: ${JSON.stringify(msg.error)}`));
@@ -118,22 +125,24 @@ export async function fetchMcpTools(command: string): Promise<McpTool[]> {
     });
 
     child.on('exit', (code) => {
+      if (stdinWritePending) {
+        return;
+      }
       if (code !== 0 && code !== null) {
         rejectOnce(new Error(`Server exited with code ${code}`));
       } else {
-        // If the process exit naturally before json tools list was produced.
         resolveOnce(tools);
       }
     });
 
     // Send initialization message.
-    writeMessage(child.stdin, 1, 'initialize', {
+    writeWithCallback(1, 'initialize', {
       protocolVersion: '2024-11-05',
       capabilities: {},
       clientInfo: {
         name: 'actionfence-cli',
         version: '0.2.0',
       },
-    }, rejectOnce);
+    });
   });
 }

@@ -8,8 +8,15 @@ export class SchemaValidator {
    * Keys are sorted recursively, JSON is minified.
    */
   static hashSchema(schema: Record<string, unknown>): string {
-    const canonical = JSON.stringify(schema, sortKeysReplacer());
-    return 'sha256:' + createHash('sha256').update(canonical).digest('hex');
+    try {
+      const canonical = JSON.stringify(schema, sortKeysReplacer());
+      return 'sha256:' + createHash('sha256').update(canonical).digest('hex');
+    } catch (err) {
+      if (err instanceof TypeError && err.message.includes('circular')) {
+        throw new TypeError('Cannot hash schema with circular reference');
+      }
+      throw err;
+    }
   }
 
   /**
