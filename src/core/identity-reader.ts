@@ -62,6 +62,7 @@ export class IdentityReader {
     this.verifyOptions = {
       issuer: normalizeVerifyOption(options.issuer),
       audience: normalizeVerifyOption(options.audience),
+      algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512', 'EdDSA'],
     };
     this.jwks = options.jwksUri ? createRemoteJWKSet(new URL(options.jwksUri)) : null;
   }
