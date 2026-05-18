@@ -18,165 +18,160 @@ describe('RateLimiter', () => {
   });
 
   describe('request rate limiting', () => {
-    it('should allow the first request', () => {
-      const result = limiter.checkRequestRate('agent-1');
+    it('should allow the first request', async () => {
+      const result = await limiter.checkRequestRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(4);
       expect(result.limit).toBe(5);
     });
 
-    it('should allow requests within the limit', () => {
+    it('should allow requests within the limit', async () => {
       for (let i = 0; i < 5; i++) {
-        const result = limiter.checkRequestRate('agent-1');
+        const result = await limiter.checkRequestRate('agent-1');
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBe(4 - i);
       }
     });
 
-    it('should block requests exceeding the limit', () => {
+    it('should block requests exceeding the limit', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-1');
       }
 
-      const result = limiter.checkRequestRate('agent-1');
+      const result = await limiter.checkRequestRate('agent-1');
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
       expect(result.resetMs).toBeGreaterThan(0);
     });
 
-    it('should reset after the window expires', () => {
-      // Fill up the limit
+    it('should reset after the window expires', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-1');
       }
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(false);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(false);
 
-      // Advance past the 1-minute window
       vi.advanceTimersByTime(61_000);
 
-      const result = limiter.checkRequestRate('agent-1');
+      const result = await limiter.checkRequestRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(4);
     });
 
-    it('should track different keys independently', () => {
+    it('should track different keys independently', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-1');
       }
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(false);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(false);
 
-      // Different agent should still be allowed
-      const result = limiter.checkRequestRate('agent-2');
+      const result = await limiter.checkRequestRate('agent-2');
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(4);
     });
 
-    it('should preview request limits without consuming capacity', () => {
-      const preview = limiter.previewRequestRate('agent-1');
+    it('should preview request limits without consuming capacity', async () => {
+      const preview = await limiter.previewRequestRate('agent-1');
       expect(preview.allowed).toBe(true);
       expect(preview.remaining).toBe(4);
 
       for (let i = 0; i < 5; i++) {
-        expect(limiter.checkRequestRate('agent-1').allowed).toBe(true);
+        expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(true);
       }
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(false);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(false);
     });
   });
 
   describe('transaction rate limiting', () => {
-    it('should allow transactions within the daily limit', () => {
+    it('should allow transactions within the daily limit', async () => {
       for (let i = 0; i < 3; i++) {
-        const result = limiter.checkTransactionRate('agent-1');
+        const result = await limiter.checkTransactionRate('agent-1');
         expect(result.allowed).toBe(true);
       }
     });
 
-    it('should block transactions exceeding the daily limit', () => {
+    it('should block transactions exceeding the daily limit', async () => {
       for (let i = 0; i < 3; i++) {
-        limiter.checkTransactionRate('agent-1');
+        await limiter.checkTransactionRate('agent-1');
       }
 
-      const result = limiter.checkTransactionRate('agent-1');
+      const result = await limiter.checkTransactionRate('agent-1');
       expect(result.allowed).toBe(false);
       expect(result.limit).toBe(3);
     });
 
-    it('should be independent from request rate limiting', () => {
-      // Fill up request limit
+    it('should be independent from request rate limiting', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-1');
       }
 
-      // Transaction limit should still be available
-      const result = limiter.checkTransactionRate('agent-1');
+      const result = await limiter.checkTransactionRate('agent-1');
       expect(result.allowed).toBe(true);
     });
 
-    it('should preview transaction limits without consuming capacity', () => {
-      const preview = limiter.previewTransactionRate('agent-1');
+    it('should preview transaction limits without consuming capacity', async () => {
+      const preview = await limiter.previewTransactionRate('agent-1');
       expect(preview.allowed).toBe(true);
       expect(preview.remaining).toBe(2);
 
       for (let i = 0; i < 3; i++) {
-        expect(limiter.checkTransactionRate('agent-1').allowed).toBe(true);
+        expect((await limiter.checkTransactionRate('agent-1')).allowed).toBe(true);
       }
-      expect(limiter.checkTransactionRate('agent-1').allowed).toBe(false);
+      expect((await limiter.checkTransactionRate('agent-1')).allowed).toBe(false);
     });
   });
 
   describe('reset', () => {
-    it('should reset a specific key', () => {
+    it('should reset a specific key', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-1');
       }
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(false);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(false);
 
       limiter.reset('agent-1');
 
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(true);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(true);
     });
 
-    it('should reset all keys when called without argument', () => {
+    it('should reset all keys when called without argument', async () => {
       for (let i = 0; i < 5; i++) {
-        limiter.checkRequestRate('agent-1');
-        limiter.checkRequestRate('agent-2');
+        await limiter.checkRequestRate('agent-1');
+        await limiter.checkRequestRate('agent-2');
       }
 
       limiter.reset();
 
-      expect(limiter.checkRequestRate('agent-1').allowed).toBe(true);
-      expect(limiter.checkRequestRate('agent-2').allowed).toBe(true);
+      expect((await limiter.checkRequestRate('agent-1')).allowed).toBe(true);
+      expect((await limiter.checkRequestRate('agent-2')).allowed).toBe(true);
     });
   });
 
   describe('unconfigured limits', () => {
-    it('should return unlimited when requests_per_minute is not set', () => {
+    it('should return unlimited when requests_per_minute is not set', async () => {
       const unlimitedLimiter = new RateLimiter({});
-      const result = unlimitedLimiter.checkRequestRate('agent-1');
+      const result = await unlimitedLimiter.checkRequestRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(Infinity);
       unlimitedLimiter.dispose();
     });
 
-    it('should return unlimited when transactions_per_day is not set', () => {
+    it('should return unlimited when transactions_per_day is not set', async () => {
       const unlimitedLimiter = new RateLimiter({});
-      const result = unlimitedLimiter.checkTransactionRate('agent-1');
+      const result = await unlimitedLimiter.checkTransactionRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(Infinity);
       unlimitedLimiter.dispose();
     });
 
-    it('should treat requests_per_minute: 0 as unlimited', () => {
+    it('should treat requests_per_minute: 0 as unlimited', async () => {
       const unlimitedLimiter = new RateLimiter({ requests_per_minute: 0 });
-      const result = unlimitedLimiter.checkRequestRate('agent-1');
+      const result = await unlimitedLimiter.checkRequestRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(Infinity);
       unlimitedLimiter.dispose();
     });
 
-    it('should treat transactions_per_day: 0 as unlimited', () => {
+    it('should treat transactions_per_day: 0 as unlimited', async () => {
       const unlimitedLimiter = new RateLimiter({ transactions_per_day: 0 });
-      const result = unlimitedLimiter.checkTransactionRate('agent-1');
+      const result = await unlimitedLimiter.checkTransactionRate('agent-1');
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(Infinity);
       unlimitedLimiter.dispose();

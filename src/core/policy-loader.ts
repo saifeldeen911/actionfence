@@ -3,7 +3,7 @@
  * Loads, validates, and optionally watches guard-policy.json files.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { watch, type FSWatcher } from 'node:fs';
 import { basename, resolve, sep } from 'node:path';
 import { Ajv, type ErrorObject } from 'ajv';
@@ -84,9 +84,18 @@ function readPolicyFile(filePath: string): unknown {
   const resolvedPath = resolve(filePath);
   const cwd = resolve(process.cwd());
 
-  if (!resolvedPath.startsWith(cwd + sep) && resolvedPath !== cwd) {
+  // Resolve symlinks to prevent path traversal via symlink attack.
+  // Fall back to resolvedPath if the file doesn't exist (readFileSync will throw).
+  let safePath: string;
+  try {
+    safePath = realpathSync(resolvedPath);
+  } catch {
+    safePath = resolvedPath;
+  }
+
+  if (!safePath.startsWith(cwd + sep) && safePath !== cwd) {
     throw new PolicyLoadError(
-      `Policy path resolves outside the working directory: ${basename(resolvedPath)}`,
+      `Policy path resolves outside the working directory: ${basename(filePath)}`,
       resolvedPath,
     );
   }

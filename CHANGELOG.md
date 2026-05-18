@@ -57,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GuardEngine.finalize()` is now async to support the async `ReceiptStore.insert()`
 - Custom adapters can be injected via `ReceiptStoreOptions.adapter`
 - `GuardEngine` uses lazy asynchronous initialization for its storage adapter, keeping top-level middleware calls (`withGuard`, `guard`) synchronous.
+- **Breaking:** `RateLimiter.checkWindow()` is now async — callers must `await`
+- **Breaking:** `SpendTracker` methods (`record()`, `previewRecord()`, `checkWindow()`, `previewCheckWindow()`, `getStatus()`) are now async — callers must `await`
 
 ### Fixed
 
@@ -65,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **CRITICAL — JWT Algorithm Confusion:** Added explicit algorithm allowlist to `jwtVerify()` restricting to asymmetric algorithms only (RS256, RS384, RS512, ES256, ES384, ES512, EdDSA). Prevents algorithm confusion attacks (alg: none, HS256 with public key).
+- **HIGH — TOCTOU Race Condition:** Added internal `AsyncMutex` to `RateLimiter` and `SpendTracker` for defense-in-depth protection. All public methods (`checkWindow()`, `record()`, `previewRecord()`, `previewCheckWindow()`, `getStatus()`) are now async. Prevents race conditions when shared instances are used across multiple engines.
+- **HIGH — Symlink Path Traversal:** Used `realpathSync()` to resolve symlinks before path traversal check in `loadPolicy()`. Prevents attackers from bypassing cwd restriction via symbolic links.
+- **HIGH — Spend/Receipt Non-Atomicity:** Reordered operations to record spend FIRST, then insert receipt with try-catch. Establishes spend as source of truth; receipt failures no longer cause inconsistent state.
+- **HIGH — Mutex Map DoS:** Implemented LRU eviction with timestamp tracking for `GuardEngine.agentMutexes`. Triggers eviction at 50% capacity (5,000 entries), evicts mutexes idle for 5+ minutes without waiters. Prevents memory exhaustion from many distinct agent IDs.
 - **H2 — Receipt payload PII retention:** Added `payloadRedactor` option to strip sensitive fields from tool params before receipt storage. Added `maxPayloadBytes` option (default 64 KB) to truncate oversized payloads. Receipt hash integrity uses the original params; only the stored view is redacted/truncated.
 - **H3 — Weak HMAC key accepted:** `ReceiptSigner` now rejects signing secrets shorter than 16 bytes (128 bits) with a clear error at startup.
 - **H5 — Postgres receipt chain fork:** `PostgresAdapter.insertAtomic()` uses `BEGIN` → `pg_advisory_xact_lock` → read last hash → insert → `COMMIT` to prevent concurrent writers from forking the hash chain. `ReceiptStore.insert()` auto-detects and prefers the atomic path.
