@@ -1,6 +1,6 @@
 # ActionFence — Complete Integration Reference
 
-> ActionFence is an npm package (v0.2.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), wildcard scope matching, human approval webhook, and simulation mode. Node.js >= 20 required.
+> ActionFence is an npm package (v0.3.0) that enforces AI agent policies on MCP servers and Express/Fastify APIs. It uses JSON policy files to control which actions agents can perform, with identity verification (JWT/JWKS), spend caps (per-action, session, daily, and rolling-window), rate limiting, HMAC-signed receipts, pluggable storage backends (SQLite or PostgreSQL), wildcard scope matching, human approval webhook, tool schema drift detection, and simulation mode. Node.js >= 20 required.
 
 ## Install
 
@@ -446,7 +446,7 @@ When `schema_enforcement` is omitted, drift is not checked at runtime.
 
 If a verified JWT includes a `capabilities` claim (string array), ActionFence treats it as an allowlist. A request passing policy checks but not listed in `capabilities` is blocked.
 
-## v0.2.0 Changes from v0.1
+## v0.2.0 → v0.3.0 Changes
 
 - Receipt storage is now pluggable via `StorageAdapter` interface (SQLite, PostgreSQL, Memory, or custom)
 - New `storage` option in `GuardOptions` for declarative backend selection
@@ -463,6 +463,8 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - **Wildcard scope matching** for policy action names using prefix wildcards (e.g., `book_*`)
 - **Human approval webhook** via `onApprovalRequired` callback in `GuardOptions` to pause requests and await async approval
 - **Tool schema drift detection** via `schema_hash` action field and `schema_enforcement` policy field. CLI commands `pin-schemas` and `validate` support live server schema verification.
+- **CRITICAL SECURITY FIXES:** JWT algorithm allowlist, TOCTOU race prevention with internal mutexes, symlink path traversal guard, atomic spend/receipt recording, mutex map LRU eviction (see Security fixes section above)
+- **BREAKING:** RateLimiter and SpendTracker methods now async — must `await` all calls
 
 ### Security hardening in v0.2.0
 
@@ -476,6 +478,20 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - `engine.dispose()` closes any Postgres adapter the engine created
 - Postgres connection errors mask passwords in connection strings
 - Legacy key migration forces 0o600 file permissions
+
+### Security fixes in v0.3.0 (Unreleased)
+
+- **CRITICAL — JWT Algorithm Confusion:** JWT verification now restricted to asymmetric algorithms only (RS256, RS384, RS512, ES256, ES384, ES512, EdDSA). Prevents algorithm confusion attacks (alg: none, HS256 with public key).
+- **HIGH — TOCTOU Race Condition:** RateLimiter and SpendTracker now use internal AsyncMutex for defense-in-depth. All public methods are async (`checkWindow()`, `record()`, `previewRecord()`, `previewCheckWindow()`, `getStatus()`). Prevents race conditions when shared instances are used across multiple engines.
+- **HIGH — Symlink Path Traversal:** Policy loader uses `realpathSync()` to resolve symlinks before path traversal check. Prevents bypass of cwd restriction via symbolic links.
+- **HIGH — Spend/Receipt Atomicity:** Spend is now recorded BEFORE receipt insertion with try-catch. Establishes spend as source of truth; receipt failures don't cause inconsistent state.
+- **HIGH — Mutex Map DoS:** GuardEngine.agentMutexes implements LRU eviction with timestamp tracking. Triggers at 50% capacity (5,000 entries), evicts idle mutexes (5+ min) without waiters. Prevents memory exhaustion.
+
+### Breaking Changes in v0.3.0
+
+- **RateLimiter API:** `checkWindow()` now returns `Promise<...>` — must be awaited
+- **SpendTracker API:** `record()`, `previewRecord()`, `checkWindow()`, `previewCheckWindow()`, `getStatus()` now return `Promise<...>` — must be awaited
+- **Migration:** Add `await` to all calls to these methods. See README.md Migration Guide for examples.
 
 ## Current Limitations
 

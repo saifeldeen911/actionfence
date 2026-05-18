@@ -444,6 +444,44 @@ const middleware = guard({
 | `issuer`   | `string \| string[]` | Optional issuer check   |
 | `audience` | `string \| string[]` | Optional audience check |
 
+## Migration Guide
+
+### From v0.2.x to v0.3.0 (Breaking Changes)
+
+This release includes critical security fixes that change the public API for `RateLimiter` and `SpendTracker`.
+
+#### Async API Changes
+
+**RateLimiter:**
+- `checkWindow()` now returns `Promise<...>` — all callers must `await`
+
+**SpendTracker:**
+- `record()` now returns `Promise<...>` — all callers must `await`
+- `previewRecord()` now returns `Promise<...>` — all callers must `await`
+- `checkWindow()` now returns `Promise<...>` — all callers must `await`
+- `previewCheckWindow()` now returns `Promise<...>` — all callers must `await`
+- `getStatus()` now returns `Promise<...>` — all callers must `await`
+
+**Migration Example:**
+```typescript
+// Before (v0.2.x):
+const result = rateLimiter.checkWindow(agentId, action);
+const status = spendTracker.getStatus(agentId);
+
+// After (v0.3.0):
+const result = await rateLimiter.checkWindow(agentId, action);
+const status = await spendTracker.getStatus(agentId);
+```
+
+**Why:** Internal `AsyncMutex` added to prevent TOCTOU race conditions when shared instances are used across multiple engines. This is a defense-in-depth security hardening measure.
+
+#### Security Enhancements
+
+- JWT verification now restricted to asymmetric algorithms only (RS256, ES256, EdDSA, etc.)
+- Symlink attacks blocked with `realpath()` resolution in policy loading
+- Spend tracking is now source of truth; receipt failures don't cause inconsistent state
+- Mutex map now has proper LRU eviction preventing memory exhaustion
+
 ## Current Limitations
 
 - Capability checks are exact string matches only
