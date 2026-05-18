@@ -5,22 +5,6 @@ All notable changes to ActionFence will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Security
-
-- **CRITICAL — JWT Algorithm Confusion:** Added explicit algorithm allowlist to `jwtVerify()` restricting to asymmetric algorithms only (RS256, RS384, RS512, ES256, ES384, ES512, EdDSA). Prevents algorithm confusion attacks (alg: none, HS256 with public key).
-- **HIGH — TOCTOU Race Condition:** Added internal `AsyncMutex` to `RateLimiter` and `SpendTracker` for defense-in-depth protection. All public methods (`checkWindow()`, `record()`, `previewRecord()`, `previewCheckWindow()`, `getStatus()`) are now async. Prevents race conditions when shared instances are used across multiple engines.
-- **HIGH — Symlink Path Traversal:** Used `realpathSync()` to resolve symlinks before path traversal check in `loadPolicy()`. Prevents attackers from bypassing cwd restriction via symbolic links.
-- **HIGH — Spend/Receipt Non-Atomicity:** Reordered operations to record spend FIRST, then insert receipt with try-catch. Establishes spend as source of truth; receipt failures no longer cause inconsistent state.
-- **HIGH — Mutex Map DoS:** Implemented LRU eviction with timestamp tracking for `GuardEngine.agentMutexes`. Triggers eviction at 50% capacity (5,000 entries), evicts mutexes idle for 5+ minutes without waiters. Prevents memory exhaustion from many distinct agent IDs.
-
-### Breaking Changes
-
-- **RateLimiter API:** `checkWindow()` now returns `Promise<...>` instead of synchronous result. All callers must `await`.
-- **SpendTracker API:** `record()`, `previewRecord()`, `checkWindow()`, `previewCheckWindow()`, and `getStatus()` now return `Promise<...>` instead of synchronous results. All callers must `await`.
-- **Semver Impact:** These breaking changes warrant a bump to `0.3.0` or `1.0.0`.
-
 ## [0.2.0] — 2026-05-10
 
 ### Added

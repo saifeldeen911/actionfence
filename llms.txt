@@ -9,11 +9,8 @@
 - `pg` is an optional peer dependency (only needed for PostgreSQL storage)
 - Receipts default to SQLite; set `storage: { adapter: 'postgres', connectionString: '...' }` for horizontally-scaled deployments
 - Security: HMAC signing secrets must be ≥16 bytes; `payloadRedactor` strips sensitive fields before receipt storage; `maxPayloadBytes` (default 64 KB) truncates oversized payloads
-- Security: JWT verification restricted to asymmetric algorithms only (RS256, ES256, EdDSA, etc.) to prevent algorithm confusion attacks
-- Security: RateLimiter and SpendTracker use internal AsyncMutex to prevent TOCTOU races (async API)
 - Trust Model: ActionFence is server-side middleware. Agents cannot read the policy, bypass the middleware, or tamper with receipts. Keep guard-policy.json outside tool-accessible directories.
 - Tool params must be JSON-serializable (BigInt, Symbols, circular refs will throw)
-- **Breaking Change (v0.3.0):** `RateLimiter.checkWindow()` and `SpendTracker` methods (`record()`, `checkWindow()`, `getStatus()`, etc.) are now async and return Promises
 
 ## Docs
 
