@@ -10,6 +10,7 @@ dist/
 # Guard runtime data
 .actionfence/
 .agentguard/
+.agents
 
 # Coverage
 coverage/
