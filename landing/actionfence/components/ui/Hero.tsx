@@ -1,14 +1,33 @@
 "use client";
 
 import { motion } from "framer-motion";
+import LineWaves from "@/components/ui/LineWaves";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[100dvh] w-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-32">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-end">
+    <section className="relative min-h-[100dvh] w-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-32 overflow-hidden">
+      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-40">
+        <LineWaves 
+          speed={0.15}
+          innerLineCount={36}
+          outerLineCount={40}
+          warpIntensity={0.8}
+          rotation={-30}
+          edgeFadeWidth={0.12}
+          colorCycleSpeed={0.3}
+          brightness={0.4}
+          color1="#52525b" // zinc-600 vector lines
+          color2="#3f3f46" // zinc-700 accents
+          color3="#27272a" // zinc-800 dark bounds
+          enableMouseInteraction={true}
+          mouseInfluence={2.0}
+        />
+      </div>
+      
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-end pointer-events-none">
         
         {/* Left massive typography */}
-        <div className="col-span-1 lg:col-span-8 flex flex-col gap-8">
+        <div className="col-span-1 lg:col-span-8 flex flex-col gap-8 pointer-events-auto">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -34,7 +53,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="col-span-1 lg:col-span-4 flex flex-col gap-8"
+          className="col-span-1 lg:col-span-4 flex flex-col gap-8 pointer-events-auto"
         >
           <p className="text-lg text-zinc-400 leading-relaxed max-w-md">
             ActionFence is an AI action firewall that sits in front of your MCP servers and APIs. One JSON policy. Spend caps. Signed receipts. Zero trust by default.
