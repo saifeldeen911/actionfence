@@ -71,8 +71,15 @@ export default function Footer() {
         </div>
       </section>
 
+      {/* Massive Branding */}
+      <div className="w-full overflow-hidden flex items-center justify-center bg-[#09090b] pt-24 pb-4 border-t border-zinc-800 select-none">
+        <span className="text-[15vw] font-bold tracking-tighter leading-none text-transparent [-webkit-text-stroke:1px_#3f3f46] md:[-webkit-text-stroke:2px_#3f3f46] opacity-80">
+          ACTIONFENCE
+        </span>
+      </div>
+
       {/* Actual Footer */}
-      <section className="w-full border-t border-zinc-800 px-6 md:px-12 py-16">
+      <section className="w-full border-t border-zinc-800 px-6 md:px-12 py-16 bg-[#09090b]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 font-mono text-sm">
           <div className="flex flex-col gap-4">
             <span className="text-white">ActionFence</span>
