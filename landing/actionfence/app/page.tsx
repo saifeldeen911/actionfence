@@ -1,6 +1,8 @@
 import NavBar from "@/components/ui/NavBar";
 import Hero from "@/components/ui/Hero";
 import ProblemStatement from "@/components/ui/ProblemStatement";
+import HowItWorks from "@/components/ui/HowItWorks";
+import FeaturesGrid from "@/components/ui/FeaturesGrid";
 
 export default function Home() {
   return (
@@ -8,6 +10,8 @@ export default function Home() {
       <NavBar />
       <Hero />
       <ProblemStatement />
+      <HowItWorks />
+      <FeaturesGrid />
     </main>
   );
 }
