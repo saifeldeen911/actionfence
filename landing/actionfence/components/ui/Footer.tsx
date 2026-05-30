@@ -87,7 +87,7 @@ export default function Footer() {
 
       {/* Massive Branding */}
       <div className="w-full overflow-hidden flex items-center justify-center bg-[#09090b] pt-24 pb-4 border-t border-zinc-800 select-none">
-        <span className="text-[15vw] font-bold tracking-tighter leading-none text-transparent [-webkit-text-stroke:1px_#3f3f46] md:[-webkit-text-stroke:2px_#3f3f46] opacity-80">
+        <span aria-hidden="true" className="text-[15vw] font-bold tracking-tighter leading-none text-transparent [-webkit-text-stroke:1px_#3f3f46] md:[-webkit-text-stroke:2px_#3f3f46] opacity-80">
           ACTIONFENCE
         </span>
       </div>

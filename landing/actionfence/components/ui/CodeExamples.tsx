@@ -15,7 +15,7 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
         
         <span className="text-zinc-500">const</span> server = <span className="text-zinc-500">new</span> <span className="text-zinc-100">McpServer</span>({"{"} name: <span className="text-amber-200/80">'my-server'</span>, version: <span className="text-amber-200/80">'1.0.0'</span> {"}"});{"\n\n"}
         
-        <span className="text-zinc-600">// One line. That's the entire integration.</span>{"\n"}
+        <span className="text-zinc-600">{"// One line. That's the entire integration."}</span>{"\n"}
         <span className="text-zinc-100">withGuard</span>(server, {"{"}{"\n"}
         {"  "}policy: <span className="text-amber-200/80">'./guard-policy.json'</span>,{"\n"}
         {"  "}identityReaderOptions: {"{"}{"\n"}
@@ -25,7 +25,7 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
         {"  "}{"}"},{"\n"}
         {"}"});{"\n\n"}
         
-        <span className="text-zinc-600">// Register tools as normal — ActionFence wraps them automatically</span>{"\n"}
+        <span className="text-zinc-600">{"// Register tools as normal — ActionFence wraps them automatically"}</span>{"\n"}
         server.<span className="text-zinc-100">registerTool</span>(<span className="text-amber-200/80">'book_flight'</span>, {"{}"}, <span className="text-zinc-500">async</span> () {"=>"} {"{"}{"\n"}
         {"  "}<span className="text-zinc-500">return</span> {"{"} content: [{"{"} type: <span className="text-amber-200/80">'text'</span>, text: <span className="text-amber-200/80">'Booked!'</span> {"}"}] {"}"};{"\n"}
         {"}"});
@@ -41,7 +41,7 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
         <span className="text-zinc-500">const</span> app = <span className="text-zinc-100">express</span>();{"\n"}
         app.<span className="text-zinc-100">use</span>(express.<span className="text-zinc-100">json</span>());{"\n\n"}
 
-        <span className="text-zinc-600">// Drop-in middleware — works with Express, Fastify, or any connect-compatible framework</span>{"\n"}
+        <span className="text-zinc-600">{"// Drop-in middleware — works with Express, Fastify, or any connect-compatible framework"}</span>{"\n"}
         app.<span className="text-zinc-100">use</span>({"\n"}
         {"  "}<span className="text-zinc-100">guard</span>({"{"}{"\n"}
         {"    "}policy: <span className="text-amber-200/80">'./guard-policy.json'</span>,{"\n"}
@@ -50,7 +50,7 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
         );{"\n\n"}
 
         app.<span className="text-zinc-100">post</span>(<span className="text-amber-200/80">'/bookings'</span>, <span className="text-zinc-500">(</span>req, res<span className="text-zinc-500">) =&gt;</span> {"{"}{"\n"}
-        {"  "}res.<span className="text-zinc-100">json</span>({"{"} status: <span className="text-amber-200/80">'booked'</span> {"}"}); <span className="text-zinc-600">// Only runs if ActionFence allows it</span>{"\n"}
+        {"  "}res.<span className="text-zinc-100">json</span>({"{"} status: <span className="text-amber-200/80">'booked'</span> {"}"}); <span className="text-zinc-600">{"// Only runs if ActionFence allows it"}</span>{"\n"}
         {"}"});
       </code>
     </pre>
@@ -58,20 +58,20 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
   "CLI": (
     <pre className="text-zinc-300 text-sm md:text-base leading-loose overflow-x-auto">
       <code>
-        <span className="text-zinc-600"># Scaffold a policy</span>{"\n"}
+        <span className="text-zinc-600">{"# Scaffold a policy"}</span>{"\n"}
         <span className="text-zinc-100">npx actionfence init</span>{"\n\n"}
 
-        <span className="text-zinc-600"># Validate your policy</span>{"\n"}
+        <span className="text-zinc-600">{"# Validate your policy"}</span>{"\n"}
         <span className="text-zinc-100">npx actionfence validate guard-policy.json</span>{"\n\n"}
 
-        <span className="text-zinc-600"># Dry-run a decision</span>{"\n"}
+        <span className="text-zinc-600">{"# Dry-run a decision"}</span>{"\n"}
         <span className="text-zinc-100">npx actionfence simulate guard-policy.json \</span>{"\n"}
         {"  "}<span className="text-zinc-400">--action book_flight \</span>{"\n"}
         {"  "}<span className="text-zinc-400">--identity verified \</span>{"\n"}
         {"  "}<span className="text-zinc-400">--spend 250</span>{"\n\n"}
 
-        <span className="text-zinc-600"># Pin tool schemas to detect drift</span>{"\n"}
-        <span className="text-zinc-100">npx actionfence pin-schemas guard-policy.json <span className="text-amber-200/80">"node server.js"</span></span>
+        <span className="text-zinc-600">{"# Pin tool schemas to detect drift"}</span>{"\n"}
+        <span className="text-zinc-100">npx actionfence pin-schemas guard-policy.json <span className="text-amber-200/80">&quot;node server.js&quot;</span></span>
       </code>
     </pre>
   )
@@ -105,7 +105,7 @@ export default function CodeExamples() {
                     layoutId="active-tab"
                     className="absolute inset-0 bg-zinc-900/50"
                     initial={false}
-                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   />
                 )}
                 <span className="relative z-10">{tab}</span>
