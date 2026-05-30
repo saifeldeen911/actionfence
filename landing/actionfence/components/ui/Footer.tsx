@@ -36,7 +36,7 @@ export default function Footer() {
             <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest pl-2">AI-Assistant Prompt</span>
             <button 
               onClick={handleCopyPrompt}
-              className="font-mono text-xs text-white hover:opacity-50 transition-opacity"
+              className="font-mono text-xs text-white hover:opacity-50 transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
             >
               {copiedPrompt ? "[ COPIED ]" : "[ COPY ]"}
             </button>
@@ -79,9 +79,9 @@ export default function Footer() {
         </div>
         
         <div className="flex gap-8 font-mono text-sm text-zinc-500">
-          <a href="#" className="hover:text-white transition-colors">Read Docs →</a>
-          <a href="#" className="hover:text-white transition-colors">Examples →</a>
-          <a href="#" className="hover:text-white transition-colors">GitHub →</a>
+          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Read Docs →</a>
+          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Examples →</a>
+          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub →</a>
         </div>
       </section>
 
@@ -101,16 +101,16 @@ export default function Footer() {
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
             <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Resources</span>
-            <a href="#" className="hover:text-white">Documentation</a>
-            <a href="#" className="hover:text-white">API Reference</a>
-            <a href="#" className="hover:text-white">Changelog</a>
-            <a href="#" className="hover:text-white">Security Policy</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Documentation</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">API Reference</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Changelog</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Security Policy</a>
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
             <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Community</span>
-            <a href="#" className="hover:text-white">GitHub</a>
-            <a href="#" className="hover:text-white">Issues</a>
-            <a href="#" className="hover:text-white">Contributing</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Issues</a>
+            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Contributing</a>
           </div>
         </div>
       </section>

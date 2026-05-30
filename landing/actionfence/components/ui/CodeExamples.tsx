@@ -94,7 +94,7 @@ export default function CodeExamples() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none"
+                className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
                 style={{
                   color: activeTab === tab ? "#fafafa" : "#52525b"
                 }}
