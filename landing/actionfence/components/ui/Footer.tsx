@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 const stats = [
@@ -77,10 +78,10 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="flex gap-8 font-mono text-sm text-zinc-500">
-          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Read Docs →</a>
-          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Examples →</a>
-          <a href="#" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub →</a>
+        <div className="flex flex-wrap justify-center gap-8 font-mono text-sm text-zinc-500">
+          <Link href="/docs/readme" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Read Docs →</Link>
+          <Link href="/#examples" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Examples →</Link>
+          <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub →</a>
         </div>
       </section>
 
@@ -100,16 +101,16 @@ export default function Footer() {
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
             <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Resources</span>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Documentation</a>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">API Reference</a>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Changelog</a>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Security Policy</a>
+            <Link href="/docs/readme" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Documentation</Link>
+            <Link href="/docs/readme#api-reference" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">API Reference</Link>
+            <Link href="/docs/changelog" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Changelog</Link>
+            <Link href="/docs/security" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Security Policy</Link>
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
             <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Community</span>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub</a>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Issues</a>
-            <a href="#" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Contributing</a>
+            <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub</a>
+            <a href="https://github.com/saifeldeen911/actionfence/issues" target="_blank" rel="noopener noreferrer" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Issues</a>
+            <Link href="/docs/contributing" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Contributing</Link>
           </div>
         </div>
       </section>
