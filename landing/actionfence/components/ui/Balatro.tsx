@@ -18,7 +18,7 @@ interface BalatroProps {
 }
 
 function hexToVec4(hex: string): [number, number, number, number] {
-  let hexStr = hex.replace('#', '');
+  const hexStr = hex.replace('#', '');
   let r = 0, g = 0, b = 0, a = 1;
   if (hexStr.length === 6) {
     r = parseInt(hexStr.slice(0, 2), 16) / 255;

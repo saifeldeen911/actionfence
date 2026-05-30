@@ -256,7 +256,7 @@ export default function LineWaves({
     const uMouseInfluenceLoc = gl.getUniformLocation(program, 'uMouseInfluence');
     const uEnableMouseLoc = gl.getUniformLocation(program, 'uEnableMouse');
 
-    let currentMouse = [0.5, 0.5];
+    const currentMouse = [0.5, 0.5];
     let targetMouse = [0.5, 0.5];
 
     const resize = () => {
