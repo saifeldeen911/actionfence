@@ -1,12 +1,13 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const TABS = ["MCP Server", "Express / Fastify", "CLI"];
+const TABS = ["MCP Server", "Express / Fastify", "CLI"] as const;
+type TabKey = (typeof TABS)[number];
 
-const CODE_BLOCKS: Record<string, React.ReactNode> = {
+const CODE_BLOCKS: Record<TabKey, React.ReactNode> = {
   "MCP Server": (
     <pre className="text-zinc-300 text-sm md:text-base leading-loose overflow-x-auto">
       <code>
@@ -78,7 +79,44 @@ const CODE_BLOCKS: Record<string, React.ReactNode> = {
 };
 
 export default function CodeExamples() {
-  const [activeTab, setActiveTab] = useState(TABS[0]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeTab = TABS[activeIndex];
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const tabsIdBase = useId().replace(/:/g, "");
+
+  const getTabId = (index: number) => `${tabsIdBase}-tab-${index}`;
+  const getPanelId = (index: number) => `${tabsIdBase}-panel-${index}`;
+
+  const activateTab = (index: number, shouldFocus = false) => {
+    const normalized = (index + TABS.length) % TABS.length;
+    setActiveIndex(normalized);
+    if (shouldFocus) {
+      tabRefs.current[normalized]?.focus();
+    }
+  };
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (event.key) {
+      case "ArrowRight":
+        event.preventDefault();
+        activateTab(index + 1, true);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        activateTab(index - 1, true);
+        break;
+      case "Home":
+        event.preventDefault();
+        activateTab(0, true);
+        break;
+      case "End":
+        event.preventDefault();
+        activateTab(TABS.length - 1, true);
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <section id="examples" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
@@ -90,11 +128,20 @@ export default function CodeExamples() {
         {/* Brutalist Code Terminal */}
         <div className="w-full border border-zinc-800 bg-[#09090b] flex flex-col">
           {/* Header Tabs */}
-          <div className="flex overflow-x-auto border-b border-zinc-800 scrollbar-hide">
-            {TABS.map((tab) => (
+          <div role="tablist" aria-label="Integration examples" className="flex overflow-x-auto border-b border-zinc-800 scrollbar-hide">
+            {TABS.map((tab, index) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                id={getTabId(index)}
+                role="tab"
+                aria-selected={activeIndex === index}
+                aria-controls={getPanelId(index)}
+                tabIndex={activeIndex === index ? 0 : -1}
+                ref={(node) => {
+                  tabRefs.current[index] = node;
+                }}
+                onClick={() => activateTab(index)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
                 className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
                 style={{
                   color: activeTab === tab ? "#fafafa" : "#52525b"
@@ -116,7 +163,13 @@ export default function CodeExamples() {
           </div>
 
           {/* Body */}
-          <div className="p-6 md:p-12 min-h-[400px]">
+          <div
+            id={getPanelId(activeIndex)}
+            role="tabpanel"
+            aria-labelledby={getTabId(activeIndex)}
+            tabIndex={0}
+            className="p-6 md:p-12 min-h-[400px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}

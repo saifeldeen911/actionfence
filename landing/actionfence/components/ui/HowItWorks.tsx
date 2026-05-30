@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { HowItWorksClip, type ClipKind } from "./HowItWorksClip";
 
 const steps = [
   {
@@ -9,21 +8,18 @@ const steps = [
     action: "DEFINE",
     title: "Define your policy",
     description: "Write a guard-policy.json that declares which actions are allowed, spend limits, identity requirements, and rate limits.",
-    clip: "define" as ClipKind,
   },
   {
     num: "02",
     action: "ENFORCE",
     title: "Wrap your server",
     description: "One call to withGuard() or guard() intercepts every tool invocation and runs it through the full policy pipeline — before your handler executes.",
-    clip: "enforce" as ClipKind,
   },
   {
     num: "03",
     action: "PROVE",
     title: "Every decision is receipted",
     description: "Hash-chained, HMAC-signed, append-only receipts stored in SQLite or PostgreSQL. Tamper-evident proof of every allow and every block.",
-    clip: "prove" as ClipKind,
   },
 ];
 
@@ -55,9 +51,7 @@ export default function HowItWorks() {
                 </span>
               </div>
 
-              <div className="mt-12 mb-8 h-32 w-full border border-zinc-900 bg-zinc-950/40 p-3">
-                <HowItWorksClip kind={step.clip} />
-              </div>
+              <div className="mt-12 mb-8 h-32 w-full border border-zinc-800 bg-zinc-950/60" aria-hidden="true" />
 
               <div className="flex flex-col gap-6">
                 <h3 className="text-2xl font-medium tracking-tight text-white group-hover:text-zinc-300 transition-colors">

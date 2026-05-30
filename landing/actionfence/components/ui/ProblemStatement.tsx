@@ -22,7 +22,7 @@ const problems = [
 
 export default function ProblemStatement() {
   return (
-    <section id="features" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
+    <section id="problem-statement" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
         
         <div className="col-span-1 lg:col-span-4">
