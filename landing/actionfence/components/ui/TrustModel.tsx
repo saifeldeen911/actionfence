@@ -72,9 +72,9 @@ export default function TrustModel() {
           </div>
 
           {/* Wireframe Diagram */}
-          <div className="relative w-full aspect-square md:aspect-[4/3] lg:aspect-auto lg:h-[600px] border border-zinc-800 flex items-center justify-center p-8 bg-[#09090b]">
+          <div className="relative w-full aspect-square md:aspect-4/3 lg:aspect-auto lg:h-150 border border-zinc-800 flex items-center justify-center p-8 bg-[#09090b]">
             {/* Background grid pattern */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
 
             {/* Diagram Elements */}
             <div className="relative z-10 w-full h-full flex flex-col md:flex-row items-center justify-between gap-8">
@@ -90,7 +90,7 @@ export default function TrustModel() {
               </motion.div>
 
               {/* Connecting path */}
-              <div className="hidden md:flex flex-1 h-[1px] bg-zinc-800 relative">
+              <div className="hidden md:flex flex-1 h-px bg-zinc-800 relative">
                 <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-mono text-zinc-500 bg-[#09090b] px-2">
                   REQUEST
                 </div>
@@ -101,7 +101,7 @@ export default function TrustModel() {
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-xs text-zinc-500">
                   GUARD-POLICY.JSON
                 </div>
-                <div className="font-mono text-zinc-500 text-xs uppercase tracking-widest text-zinc-800">ENFORCEMENT</div>
+                <div className="font-mono text-zinc-500 text-xs uppercase tracking-widest">ENFORCEMENT</div>
                 <div className="font-bold text-zinc-950 text-xl tracking-tighter">ActionFence</div>
                 <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-zinc-500">
                   deny by default
@@ -109,7 +109,7 @@ export default function TrustModel() {
               </div>
 
               {/* Connecting path */}
-              <div className="hidden md:flex flex-1 h-[1px] bg-zinc-800 relative">
+              <div className="hidden md:flex flex-1 h-px bg-zinc-800 relative">
                 <div className="absolute top-1/2 -translate-y-1/2 right-4 text-xs font-mono text-zinc-500 bg-[#09090b] px-2">
                   AUTHORIZED
                 </div>
@@ -127,13 +127,13 @@ export default function TrustModel() {
 
             {/* Callout lines */}
             <div className="absolute bottom-12 left-12 right-12 hidden md:flex justify-between font-mono text-xs text-zinc-600">
-              <div className="flex flex-col gap-1 max-w-[150px]">
+              <div className="flex flex-col gap-1 max-w-37.5">
                 <span>← Can't read policy</span>
               </div>
               <div className="flex flex-col gap-1 items-center">
                 <span>Must pass through ↑</span>
               </div>
-              <div className="flex flex-col gap-1 items-end max-w-[150px] text-right">
+              <div className="flex flex-col gap-1 items-end max-w-37.5 text-right">
                 <span>Receipt generated →</span>
               </div>
             </div>

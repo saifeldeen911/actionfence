@@ -42,7 +42,7 @@ export default function HowItWorks() {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
               key={i}
-              className="group flex flex-col p-6 md:p-12 min-h-[400px] hover:bg-zinc-900/30 transition-colors duration-500"
+              className="group flex flex-col p-6 md:p-12 min-h-100 hover:bg-zinc-900/30 transition-colors duration-500"
             >
               <div className="flex justify-between items-start mb-auto">
                 <span className="font-mono text-zinc-600 text-sm">{step.num}</span>
