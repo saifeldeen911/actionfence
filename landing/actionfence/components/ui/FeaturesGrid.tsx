@@ -50,7 +50,7 @@ export default function FeaturesGrid() {
     <section id="features" className="w-full px-6 md:px-12 py-16 flex flex-col gap-16">
       <div className="max-w-4xl">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
-          Everything you need to govern AI actions. <span className="text-zinc-600">Nothing you don't.</span>
+          Everything you need to govern AI actions. <span className="text-zinc-600">Nothing you don&apos;t.</span>
         </h2>
       </div>
 

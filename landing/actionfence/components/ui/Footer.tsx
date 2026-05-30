@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useState } from "react";
 
 const stats = [
@@ -42,7 +41,7 @@ export default function Footer() {
             </button>
           </div>
           <div className="p-8 font-mono text-sm leading-relaxed text-zinc-300">
-            Install and integrate "actionfence" into my current project.{"\n"}
+            Install and integrate &quot;actionfence&quot; into my current project.{"\n"}
             Read the guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt{"\n"}
             then: install the package, create a guard-policy.json, and wire up the middleware.
           </div>
