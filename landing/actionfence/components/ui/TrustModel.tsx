@@ -97,12 +97,15 @@ export default function TrustModel() {
               </div>
 
               {/* ActionFence Wall Node */}
-              <div className="w-full md:w-48 py-12 border-x-4 border-y border-zinc-300 bg-zinc-100 flex flex-col items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.1)] relative">
+              <div className="w-full md:w-48 py-12 border border-zinc-300 bg-zinc-100 flex flex-col items-center justify-center gap-2 relative">
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-xs text-zinc-500">
                   GUARD-POLICY.JSON
                 </div>
                 <div className="font-mono text-zinc-500 text-xs uppercase tracking-widest text-zinc-800">ENFORCEMENT</div>
                 <div className="font-bold text-zinc-950 text-xl tracking-tighter">ActionFence</div>
+                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  deny by default
+                </div>
               </div>
 
               {/* Connecting path */}

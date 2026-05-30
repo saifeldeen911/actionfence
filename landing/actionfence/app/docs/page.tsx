@@ -1,5 +1,6 @@
 import { permanentRedirect } from "next/navigation";
 
-export default function ReadmeRedirect() {
+export default function DocsRedirect() {
   permanentRedirect("/docs/readme");
 }
+

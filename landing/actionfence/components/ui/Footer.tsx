@@ -31,9 +31,8 @@ export default function Footer() {
         
         {/* LLM Prompt Box */}
         <div className="w-full max-w-3xl border border-zinc-800 bg-[#09090b] flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 left-0 bottom-0 w-1 bg-zinc-700" />
           <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/30">
-            <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest pl-2">AI-Assistant Prompt</span>
+            <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest">AI-Assistant Prompt</span>
             <button 
               onClick={handleCopyPrompt}
               className="font-mono text-xs text-white hover:opacity-50 transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
@@ -67,7 +66,7 @@ export default function Footer() {
           Start protecting your AI agents in 60 seconds.
         </h2>
         
-        <div className="p-8 border border-zinc-800 bg-black font-mono text-sm md:text-base text-zinc-300 flex flex-col gap-2 min-w-[300px] md:min-w-[500px]">
+        <div className="p-8 border border-zinc-800 bg-black font-mono text-sm md:text-base text-zinc-300 flex flex-col gap-2 min-w-75 md:min-w-125">
           <div className="flex gap-4">
             <span className="text-zinc-600">$</span>
             <span className="text-white">npm install actionfence</span>
