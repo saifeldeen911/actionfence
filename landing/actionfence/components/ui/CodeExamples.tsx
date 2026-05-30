@@ -80,7 +80,7 @@ export default function CodeExamples() {
   const [activeTab, setActiveTab] = useState(TABS[0]);
 
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
+    <section id="examples" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
       <div className="flex flex-col gap-12">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-3xl">
           60 seconds to integrate. <span className="text-zinc-600">We mean it.</span>
