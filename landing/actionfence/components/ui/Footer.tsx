@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 const stats = [
   { label: "License", value: "MIT" },
@@ -11,6 +12,14 @@ const stats = [
 ];
 
 export default function Footer() {
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const promptText = `Install and integrate "actionfence" into my current project.\nRead the guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt\nthen: install the package, create a guard-policy.json, and wire up the middleware.`;
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(promptText);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 1500);
+  };
   return (
     <footer className="w-full flex flex-col">
       
@@ -25,7 +34,12 @@ export default function Footer() {
           <div className="absolute top-0 left-0 bottom-0 w-1 bg-zinc-700" />
           <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/30">
             <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest pl-2">AI-Assistant Prompt</span>
-            <button className="font-mono text-xs text-white hover:opacity-50 transition-opacity">[ COPY ]</button>
+            <button 
+              onClick={handleCopyPrompt}
+              className="font-mono text-xs text-white hover:opacity-50 transition-opacity"
+            >
+              {copiedPrompt ? "[ COPIED ]" : "[ COPY ]"}
+            </button>
           </div>
           <div className="p-8 font-mono text-sm leading-relaxed text-zinc-300">
             Install and integrate "actionfence" into my current project.{"\n"}
