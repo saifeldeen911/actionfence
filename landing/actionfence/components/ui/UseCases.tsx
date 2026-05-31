@@ -1,7 +1,5 @@
 "use client";
 
-import SiteContainer from "@/components/ui/SiteContainer";
-
 const useCases = [
   {
     title: "MCP Server Developers",
@@ -23,32 +21,31 @@ const useCases = [
 
 export default function UseCases() {
   return (
-    <section className="w-full border-t border-zinc-800 py-32">
-      <SiteContainer>
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-12">
-          <div className="col-span-1 lg:col-span-4">
-            <h2 className="text-4xl font-medium tracking-tighter leading-tight md:text-5xl lg:sticky lg:top-32">
-              Built for anyone giving AI agents <span className="text-accent/75">real-world permissions.</span>
-            </h2>
-          </div>
-
-          <div className="col-span-1 grid grid-cols-1 border-t border-l border-zinc-800 md:grid-cols-2 lg:col-span-8">
-            {useCases.map((uc, i) => (
-              <div key={i} className="group flex min-h-72 flex-col border-r border-b border-zinc-800 p-8 transition-colors duration-500 hover:bg-zinc-900/30 md:p-10">
-                <div className="mb-12 font-mono text-sm text-accent/70">
-                  [ UC_{String(i + 1).padStart(2, "0")} ]
-                </div>
-                <h3 className="mt-auto mb-4 text-2xl font-medium tracking-tight text-zinc-50 transition-colors duration-300 group-hover:text-accent">
-                  {uc.title}
-                </h3>
-                <p className="leading-relaxed text-zinc-400">
-                  {uc.desc}
-                </p>
-              </div>
-            ))}
-          </div>
+    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
+        <div className="col-span-1 lg:col-span-4">
+          <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight lg:sticky lg:top-32">
+            Built for anyone giving AI agents <span className="text-accent/75">real-world permissions.</span>
+          </h2>
         </div>
-      </SiteContainer>
+
+        {/* 2x2 Brutalist Grid */}
+        <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 border-l border-t border-zinc-800">
+          {useCases.map((uc, i) => (
+            <div key={i} className="group flex min-h-72 flex-col p-8 md:p-10 border-r border-b border-zinc-800 hover:bg-zinc-900/30 transition-colors duration-500">
+              <div className="font-mono text-accent/70 text-sm mb-12">
+                [ UC_{String(i + 1).padStart(2, "0")} ]
+              </div>
+              <h3 className="mt-auto text-2xl font-medium tracking-tight text-zinc-50 mb-4 transition-colors duration-300 group-hover:text-accent">
+                {uc.title}
+              </h3>
+              <p className="text-zinc-400 leading-relaxed">
+                {uc.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

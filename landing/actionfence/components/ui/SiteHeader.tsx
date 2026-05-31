@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import SiteContainer from "@/components/ui/SiteContainer";
 
 type SiteHeaderProps = {
   variant?: "landing" | "docs";
@@ -31,63 +30,61 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
   return (
     <header
       className={[
-        "left-0 right-0 z-50 py-6 text-white",
+        "left-0 right-0 z-50 flex flex-wrap items-center justify-between gap-y-4 px-6 py-6 text-white md:flex-nowrap md:px-12",
         isLanding
           ? "fixed top-0 mix-blend-difference"
           : "sticky top-0 border-b border-zinc-800 bg-[#09090b] text-zinc-50",
       ].join(" ")}
     >
-      <SiteContainer className="flex flex-wrap items-center justify-between gap-y-4 md:flex-nowrap">
-        <div className="flex w-full items-center justify-between md:w-auto">
-          <Link href="/" className="text-xl font-medium tracking-tight transition-opacity hover:opacity-60">
-            ActionFence
-          </Link>
-          <button
-            onClick={handleCopy}
-            className="text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:hidden"
-          >
-            {copied ? "[ COPIED ]" : "[ npm install ]"}
-          </button>
-        </div>
-
-        <nav className="scrollbar-none flex w-full items-center gap-6 overflow-x-auto pb-1 text-sm font-medium md:w-auto md:gap-12 md:pb-0">
-          {navLinks.map((link) => {
-            const active = link.internal && link.activePrefix ? pathname.startsWith(link.activePrefix) : false;
-            const className = [
-              "whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60",
-              active ? "font-mono text-zinc-50" : "",
-            ].join(" ");
-
-            return link.internal ? (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={active ? "page" : undefined}
-                className={className}
-              >
-                {active ? `[ ${link.label} ]` : link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
-              >
-                {link.label}
-              </a>
-            );
-          })}
-        </nav>
-
+      <div className="flex w-full items-center justify-between md:w-auto">
+        <Link href="/" className="text-xl font-medium tracking-tight transition-opacity hover:opacity-60">
+          ActionFence
+        </Link>
         <button
           onClick={handleCopy}
-          className="hidden text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:block"
+          className="text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:hidden"
         >
           {copied ? "[ COPIED ]" : "[ npm install ]"}
         </button>
-      </SiteContainer>
+      </div>
+
+      <nav className="scrollbar-none flex w-full items-center gap-6 overflow-x-auto pb-1 text-sm font-medium md:w-auto md:gap-12 md:pb-0">
+        {navLinks.map((link) => {
+          const active = link.internal && link.activePrefix ? pathname.startsWith(link.activePrefix) : false;
+          const className = [
+            "whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60",
+            active ? "font-mono text-zinc-50" : "",
+          ].join(" ");
+
+          return link.internal ? (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={active ? "page" : undefined}
+              className={className}
+            >
+              {active ? `[ ${link.label} ]` : link.label}
+            </Link>
+          ) : (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+            >
+              {link.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      <button
+        onClick={handleCopy}
+        className="hidden text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:block"
+      >
+        {copied ? "[ COPIED ]" : "[ npm install ]"}
+      </button>
     </header>
   );
 }

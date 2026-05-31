@@ -5,7 +5,6 @@ import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import FaultyTerminal from "@/components/ui/FaultyTerminal";
 import SiteHeader from "@/components/ui/SiteHeader";
-import SiteContainer from "@/components/ui/SiteContainer";
 import { repoDocs, type RepoDoc } from "@/lib/repo-docs";
 
 type MarkdownDocumentProps = {
@@ -145,21 +144,19 @@ export default function MarkdownDocument({ doc, source }: MarkdownDocumentProps)
     <main className="min-h-screen bg-[#09090b] text-zinc-50">
       <SiteHeader variant="docs" />
 
-      <nav className="border-b border-zinc-800 py-4">
-        <SiteContainer className="flex flex-wrap gap-5 font-mono text-xs uppercase tracking-widest text-zinc-500">
-          {Object.entries(repoDocs).map(([key, item]) => (
-            <Link
-              key={key}
-              href={item.route}
-              className={`transition-colors hover:text-zinc-100 ${item.route === doc.route ? "text-zinc-100" : ""}`}
-            >
-              {item.title}
-            </Link>
-          ))}
-        </SiteContainer>
+      <nav className="flex flex-wrap gap-5 border-b border-zinc-800 px-6 py-4 font-mono text-xs uppercase tracking-widest text-zinc-500 md:px-12">
+        {Object.entries(repoDocs).map(([key, item]) => (
+          <Link
+            key={key}
+            href={item.route}
+            className={`transition-colors hover:text-zinc-100 ${item.route === doc.route ? "text-zinc-100" : ""}`}
+          >
+            {item.title}
+          </Link>
+        ))}
       </nav>
 
-      <section className="relative overflow-hidden border-b border-zinc-800 py-16 md:py-24">
+      <section className="relative overflow-hidden border-b border-zinc-800 px-6 py-16 md:px-12 md:py-24">
         <div className="pointer-events-auto absolute inset-0 opacity-[0.85]">
           <FaultyTerminal
             className="h-full w-full"
@@ -183,29 +180,25 @@ export default function MarkdownDocument({ doc, source }: MarkdownDocumentProps)
         </div>
         <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-[#09090b]/35 via-[#09090b]/58 to-[#09090b]/88" />
 
-        <SiteContainer className="relative z-10">
-          <div className="grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-8">
-              <div className="mb-8 font-mono text-xs uppercase tracking-widest text-zinc-400">{doc.fileName}</div>
-              <h1 className="text-5xl font-medium leading-[0.95] tracking-tighter md:text-7xl">{doc.title}</h1>
-            </div>
-            <p className="max-w-md text-lg leading-relaxed text-zinc-300 lg:col-span-4 lg:self-end">{doc.description}</p>
+        <div className="relative z-10 grid gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-8">
+            <div className="mb-8 font-mono text-xs uppercase tracking-widest text-zinc-400">{doc.fileName}</div>
+            <h1 className="text-5xl font-medium leading-[0.95] tracking-tighter md:text-7xl">{doc.title}</h1>
           </div>
-        </SiteContainer>
+          <p className="max-w-md text-lg leading-relaxed text-zinc-300 lg:col-span-4 lg:self-end">{doc.description}</p>
+        </div>
       </section>
 
-      <article className="py-16 md:py-24">
-        <SiteContainer>
-          <div className="mx-auto max-w-6xl">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              components={markdownComponents}
-            >
-              {source}
-            </ReactMarkdown>
-          </div>
-        </SiteContainer>
+      <article className="px-6 py-16 md:px-12 md:py-24">
+        <div className="mx-auto max-w-6xl">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={markdownComponents}
+          >
+            {source}
+          </ReactMarkdown>
+        </div>
       </article>
     </main>
   );
