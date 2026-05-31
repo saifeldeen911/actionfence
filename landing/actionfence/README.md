@@ -34,3 +34,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## SEO, GEO, and Clarity Ops
+
+Set these environment variables for production deploys:
+
+- `NEXT_PUBLIC_SITE_URL` (default: `https://www.actionfence.dev`)
+- `NEXT_PUBLIC_CLARITY_PROJECT_ID` (default: `wz8b6apxjk`)
+
+Public discoverability endpoints:
+
+- `https://www.actionfence.dev/robots.txt`
+- `https://www.actionfence.dev/sitemap.xml`
+- `https://www.actionfence.dev/llms.txt`
+- `https://www.actionfence.dev/llms-full.txt`
+
+Clarity verification checklist:
+
+1. Open production site and inspect network requests.
+2. Confirm script load from `https://www.clarity.ms/tag/wz8b6apxjk`.
+3. Confirm event posts to `https://www.clarity.ms/collect`.
+4. Verify sessions/heatmaps appear in the Clarity dashboard.
