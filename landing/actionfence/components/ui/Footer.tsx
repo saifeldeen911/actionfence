@@ -16,7 +16,9 @@ export default function Footer() {
   const promptText = `Install and integrate "actionfence" into my current project.\nRead the guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt\nthen: install the package, create a guard-policy.json, and wire up the middleware.`;
 
   const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(promptText);
+    navigator.clipboard.writeText(promptText).catch(() => {
+      // Ignore clipboard failures in restricted contexts.
+    });
     setCopiedPrompt(true);
     setTimeout(() => setCopiedPrompt(false), 1500);
   };
@@ -37,7 +39,7 @@ export default function Footer() {
               onClick={handleCopyPrompt}
               className="font-mono text-xs text-white hover:opacity-50 transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
             >
-              {copiedPrompt ? "[ COPIED ]" : "[ COPY ]"}
+              {copiedPrompt ? "[copied]" : "[copy]"}
             </button>
           </div>
           <div className="p-8 font-mono text-sm leading-relaxed text-zinc-300">
