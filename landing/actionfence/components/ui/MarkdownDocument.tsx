@@ -33,28 +33,28 @@ function normalizeHref(href: string): string {
 }
 
 const markdownComponents: Components = {
-  h1: ({ node: _node, className, ...props }) => (
+  h1: ({ className, ...props }) => (
     <h1
       className={`mt-0 text-5xl font-medium leading-[0.95] tracking-tighter text-zinc-50 md:text-7xl ${className ?? ""}`}
       {...props}
     />
   ),
-  h2: ({ node: _node, className, ...props }) => (
+  h2: ({ className, ...props }) => (
     <h2
       className={`mt-20 border-t border-zinc-800 pt-10 text-3xl font-medium leading-tight tracking-tighter text-zinc-50 md:text-5xl ${className ?? ""}`}
       {...props}
     />
   ),
-  h3: ({ node: _node, className, ...props }) => (
+  h3: ({ className, ...props }) => (
     <h3 className={`mt-12 text-2xl font-medium tracking-tight text-zinc-100 ${className ?? ""}`} {...props} />
   ),
-  h4: ({ node: _node, className, ...props }) => (
+  h4: ({ className, ...props }) => (
     <h4 className={`mt-8 font-mono text-sm uppercase tracking-widest text-zinc-400 ${className ?? ""}`} {...props} />
   ),
-  p: ({ node: _node, className, ...props }) => (
+  p: ({ className, ...props }) => (
     <p className={`my-5 max-w-3xl text-base leading-8 text-zinc-400 md:text-lg ${className ?? ""}`} {...props} />
   ),
-  a: ({ node: _node, href, className, ...props }) => {
+  a: ({ href, className, ...props }) => {
     const normalizedHref = normalizeHref(href ?? "");
     const isExternal = /^(https?:|mailto:)/.test(normalizedHref);
 
@@ -68,7 +68,7 @@ const markdownComponents: Components = {
       />
     );
   },
-  img: ({ node: _node, src, alt, className, ...props }) => (
+  img: ({ src, alt, className, ...props }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src ?? ""}
@@ -78,44 +78,44 @@ const markdownComponents: Components = {
       {...props}
     />
   ),
-  ul: ({ node: _node, className, ...props }) => (
+  ul: ({ className, ...props }) => (
     <ul className={`my-5 list-disc space-y-3 pl-6 text-zinc-400 ${className ?? ""}`} {...props} />
   ),
-  ol: ({ node: _node, className, ...props }) => (
+  ol: ({ className, ...props }) => (
     <ol className={`my-5 list-decimal space-y-3 pl-6 text-zinc-400 ${className ?? ""}`} {...props} />
   ),
-  li: ({ node: _node, className, ...props }) => <li className={`marker:text-zinc-600 ${className ?? ""}`} {...props} />,
-  blockquote: ({ node: _node, className, ...props }) => (
+  li: ({ className, ...props }) => <li className={`marker:text-zinc-600 ${className ?? ""}`} {...props} />,
+  blockquote: ({ className, ...props }) => (
     <blockquote className={`my-8 border border-zinc-800 bg-zinc-900/40 p-6 text-zinc-300 ${className ?? ""}`} {...props} />
   ),
-  table: ({ node: _node, className, ...props }) => (
+  table: ({ className, ...props }) => (
     <div className="my-8 overflow-x-auto border border-zinc-800">
-      <table className={`w-full min-w-[720px] border-collapse text-left text-sm ${className ?? ""}`} {...props} />
+      <table className={`w-full min-w-180 border-collapse text-left text-sm ${className ?? ""}`} {...props} />
     </div>
   ),
-  thead: ({ node: _node, className, ...props }) => (
+  thead: ({ className, ...props }) => (
     <thead className={`bg-zinc-900/70 text-xs uppercase tracking-widest text-zinc-400 ${className ?? ""}`} {...props} />
   ),
-  tbody: ({ node: _node, className, ...props }) => <tbody className={`text-zinc-400 ${className ?? ""}`} {...props} />,
-  tr: ({ node: _node, className, ...props }) => (
+  tbody: ({ className, ...props }) => <tbody className={`text-zinc-400 ${className ?? ""}`} {...props} />,
+  tr: ({ className, ...props }) => (
     <tr className={`border-b border-zinc-900 last:border-b-0 ${className ?? ""}`} {...props} />
   ),
-  th: ({ node: _node, className, ...props }) => (
+  th: ({ className, ...props }) => (
     <th
       className={`border-b border-r border-zinc-800 px-4 py-3 font-mono font-normal last:border-r-0 ${className ?? ""}`}
       {...props}
     />
   ),
-  td: ({ node: _node, className, ...props }) => (
+  td: ({ className, ...props }) => (
     <td className={`border-r border-zinc-900 px-4 py-3 align-top last:border-r-0 ${className ?? ""}`} {...props} />
   ),
-  pre: ({ node: _node, className, ...props }) => (
+  pre: ({ className, ...props }) => (
     <pre
       className={`my-8 overflow-x-auto border border-zinc-800 bg-[#09090b] p-4 text-sm leading-relaxed text-zinc-300 md:p-6 ${className ?? ""}`}
       {...props}
     />
   ),
-  code: ({ node: _node, className, children, ...props }) => {
+  code: ({ className, children, ...props }) => {
     const value = String(children).replace(/\n$/, "");
     const isBlock = Boolean(className && className.startsWith("language-")) || value.includes("\n");
 
@@ -136,7 +136,7 @@ const markdownComponents: Components = {
       </code>
     );
   },
-  hr: ({ node: _node, className, ...props }) => <hr className={`my-12 border-zinc-800 ${className ?? ""}`} {...props} />,
+  hr: ({ className, ...props }) => <hr className={`my-12 border-zinc-800 ${className ?? ""}`} {...props} />,
 };
 
 export default function MarkdownDocument({ doc, source }: MarkdownDocumentProps) {
@@ -178,7 +178,7 @@ export default function MarkdownDocument({ doc, source }: MarkdownDocumentProps)
             brightness={0.95}
           />
         </div>
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#09090b]/35 via-[#09090b]/58 to-[#09090b]/88" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-[#09090b]/35 via-[#09090b]/58 to-[#09090b]/88" />
 
         <div className="relative z-10 grid gap-8 lg:grid-cols-12">
           <div className="lg:col-span-8">

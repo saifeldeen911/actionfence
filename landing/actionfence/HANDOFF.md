@@ -4,7 +4,7 @@ This document summarizes the state of the ActionFence landing page build, the ar
 
 ## 1. What We Did
 We successfully architected and implemented the entire ActionFence landing page from scratch using Next.js App Router, Tailwind CSS v4, and Framer Motion. The implementation was completed across 7 phases:
-- **Phase 1-2**: Global Theme, sticky NavBar, and Asymmetric Hero section.
+- **Phase 1-2**: Global theme, sticky `SiteHeader`, and asymmetric Hero section.
 - **Phase 3**: Problem Statement (raw structural scrolling list).
 - **Phase 4**: How It Works (pipeline UI) & Features Grid (Bento 2.0 wireframes).
 - **Phase 5**: Tabbed Code Viewer & Trust Model diagram.
@@ -29,7 +29,7 @@ We actively stripped out and banned the following patterns because they triggere
 
 ## 4. Current Gaps
 While the structural layout is 100% complete, there are a few gaps to address before a major launch:
-1. **Assets**: The site currently relies entirely on layout, typography, and Phosphor icons. We might want to inject custom, minimalist SVG assets or raw geometric animations into the Use Case sections later.
+1. **Assets**: The site currently relies entirely on layout, typography, and motion. We might want to inject custom, minimalist SVG assets or raw geometric animations into the Use Case sections later.
 2. **Syntax Highlighting**: The Code Examples (`CodeExamples.tsx`) currently use hard-coded Tailwind spans for syntax highlighting to simulate a terminal. If you add more code examples, you should integrate `shiki` or `prismjs`.
 3. **Accessibility (a11y)**: The massive decorative texts (like the `ACTIONFENCE` footer text) should have `aria-hidden="true"` added so screen readers don't yell them at the user.
 4. **Mobile Typography Tweaks**: While the grids break down cleanly to 1-column on mobile (`md:` prefixes), the massive `14vw`/`15vw` text and `text-7xl` headings should be heavily QA'd on physical iPhones to ensure word-breaking behaves perfectly.
@@ -37,5 +37,5 @@ While the structural layout is 100% complete, there are a few gaps to address be
 ## 5. Next Logical Steps
 1. **QA & Content Polish**: Run through the copy on a deployed preview link (Vercel) to ensure all text wraps exactly how you want it.
 2. **Build the Documentation**: Scaffold out the `/docs` routing using Nextra, Fumadocs, or standard Next.js dynamic routes, ensuring they inherit the same `DESIGN.md` rules.
-3. **Add Mobile Menu**: The current `NavBar.tsx` hides navigation links on mobile (`hidden md:flex`). You will need to add a Hamburger menu state for mobile users to access Docs/Examples.
+3. **Add Mobile Menu**: The current `SiteHeader` keeps navigation links inline on mobile. If the menu grows, add a compact mobile toggle for Docs/Examples.
 4. **Deploy**: Hook the repository up to Vercel and ship it!

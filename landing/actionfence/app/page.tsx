@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import NavBar from "@/components/ui/NavBar";
+import SiteHeader from "@/components/ui/SiteHeader";
 import Hero from "@/components/ui/Hero";
 import ProblemStatement from "@/components/ui/ProblemStatement";
 import HowItWorks from "@/components/ui/HowItWorks";
@@ -87,7 +87,7 @@ export default function Home() {
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <NavBar />
+      <SiteHeader variant="landing" />
       <Hero />
       <ProblemStatement />
       <HowItWorks />

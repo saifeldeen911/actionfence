@@ -10,8 +10,6 @@
     "lint:fix": "eslint --fix"
   },
   "dependencies": {
-    "@phosphor-icons/react": "^2.1.10",
-    "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "next": "16.2.6",
     "ogl": "^1.0.11",
@@ -19,8 +17,7 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
-    "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.6.0"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

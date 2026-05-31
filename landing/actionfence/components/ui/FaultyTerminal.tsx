@@ -273,7 +273,7 @@ export default function FaultyTerminal({
   const frozenTimeRef = useRef(0);
   const rafRef = useRef(0);
   const loadAnimationStartRef = useRef(0);
-  const timeOffsetRef = useRef(Math.random() * 100);
+  const timeOffsetRef = useRef(0);
 
   const resolvedDpr = useMemo(() => {
     if (typeof window === "undefined") return dpr ?? 2;
@@ -295,6 +295,10 @@ export default function FaultyTerminal({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    if (timeOffsetRef.current === 0) {
+      timeOffsetRef.current = Math.random() * 100;
+    }
 
     const renderer = new Renderer({ dpr: resolvedDpr });
     const gl = renderer.gl;
