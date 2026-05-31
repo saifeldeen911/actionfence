@@ -5,7 +5,7 @@ import LineWaves from "@/components/ui/LineWaves";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[100dvh] w-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-32 overflow-hidden">
+    <section className="relative min-h-dvh w-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-32 overflow-hidden">
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-40">
         <LineWaves 
           speed={0.15}

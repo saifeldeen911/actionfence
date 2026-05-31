@@ -32,7 +32,7 @@ export default function ReceiptChain() {
         </div>
 
         {/* Right: Brutalist Receipt Visual */}
-        <div className="col-span-1 xl:col-span-7 flex flex-col items-center justify-center relative min-h-[600px] overflow-hidden border border-zinc-800 bg-[#09090b]">
+        <div className="col-span-1 xl:col-span-7 flex flex-col items-center justify-center relative min-h-150 overflow-hidden border border-zinc-800 bg-[#09090b]">
           
           <div className="flex flex-col gap-8 w-full max-w-lg py-16 px-4">
             
@@ -61,7 +61,7 @@ export default function ReceiptChain() {
             </motion.div>
 
             {/* Connecting Chain Line */}
-            <div className="w-[1px] h-16 bg-zinc-700 mx-auto -my-10 relative z-0">
+            <div className="w-px h-16 bg-zinc-700 mx-auto -my-10 relative z-0">
               <motion.div 
                 animate={{ height: ["0%", "100%"] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}

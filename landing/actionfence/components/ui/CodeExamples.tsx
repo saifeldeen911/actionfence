@@ -157,7 +157,7 @@ export default function CodeExamples() {
                 )}
                 <span className="relative z-10">{tab}</span>
                 {/* Right border separator */}
-                <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-accent/15" />
+                <div className="absolute right-0 top-0 bottom-0 w-px bg-accent/15" />
               </button>
             ))}
           </div>
@@ -168,7 +168,7 @@ export default function CodeExamples() {
             role="tabpanel"
             aria-labelledby={getTabId(activeIndex)}
             tabIndex={0}
-            className="p-6 md:p-12 min-h-[400px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+            className="p-6 md:p-12 min-h-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
           >
             <AnimatePresence mode="wait">
               <motion.div
