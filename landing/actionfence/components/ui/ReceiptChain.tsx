@@ -18,13 +18,13 @@ export default function ReceiptChain() {
         {/* Left: Content */}
         <div className="col-span-1 xl:col-span-5 flex flex-col gap-12">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
-            Every decision leaves a <span className="text-zinc-600">cryptographic trail.</span>
+            Every decision leaves a <span className="text-accent/75">cryptographic trail.</span>
           </h2>
 
           <div className="flex flex-col border-t border-zinc-800">
             {properties.map((prop, i) => (
-              <div key={i} className="flex flex-col py-6 border-b border-zinc-800">
-                <h3 className="text-lg font-medium text-white tracking-tight">{prop.title}</h3>
+              <div key={i} className="group flex flex-col py-6 border-b border-zinc-800">
+                <h3 className="text-lg font-medium text-white tracking-tight group-hover:text-accent">{prop.title}</h3>
                 <p className="text-zinc-500 mt-2">{prop.desc}</p>
               </div>
             ))}
@@ -41,9 +41,9 @@ export default function ReceiptChain() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
-              className="w-full border border-zinc-800 bg-background p-6 font-mono text-sm relative z-10"
+              className="w-full border border-accent/20 bg-background p-6 font-mono text-sm relative z-10"
             >
-              <div className="flex justify-between border-b border-zinc-800 pb-4 mb-4">
+              <div className="flex justify-between border-b border-accent/20 pb-4 mb-4">
                 <span className="text-zinc-500">Receipt #a1b2c3d4</span>
                 <span className="text-zinc-600">2026-05-07T14:02:11Z</span>
               </div>
@@ -53,7 +53,7 @@ export default function ReceiptChain() {
                 <div className="flex justify-between"><span>Status:</span><span className="text-zinc-50">[+] ALLOWED</span></div>
                 <div className="flex justify-between"><span>Spend:</span><span className="text-white">$250.00</span></div>
               </div>
-              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-600">
+              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-600">
                 <div className="flex justify-between"><span>Payload Hash:</span><span>0x8f3a9...</span></div>
                 <div className="flex justify-between"><span>Prev Hash:</span><span>0x7e2d4...</span></div>
                 <div className="flex justify-between"><span>Signature:</span><span className="text-zinc-400">0x4f9b8...</span></div>
@@ -75,9 +75,9 @@ export default function ReceiptChain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: 0.2 }}
-              className="w-full border border-zinc-800 bg-background p-6 font-mono text-sm relative z-10 opacity-75"
+              className="w-full border border-accent/20 bg-background p-6 font-mono text-sm relative z-10 opacity-75"
             >
-              <div className="flex justify-between border-b border-zinc-800 pb-4 mb-4">
+              <div className="flex justify-between border-b border-accent/20 pb-4 mb-4">
                 <span className="text-zinc-500">Receipt #e5f6g7h8</span>
                 <span className="text-zinc-600">2026-05-07T14:05:32Z</span>
               </div>
@@ -87,7 +87,7 @@ export default function ReceiptChain() {
                 <div className="flex justify-between"><span>Status:</span><span className="text-zinc-500">[-] BLOCKED</span></div>
                 <div className="flex justify-between"><span>Spend:</span><span className="text-white">$0.00</span></div>
               </div>
-              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-zinc-800 text-xs text-zinc-600">
+              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-600">
                 <div className="flex justify-between"><span>Payload Hash:</span><span>0x1c9e2...</span></div>
                 <div className="flex justify-between"><span>Prev Hash:</span><span className="text-zinc-400">0x8f3a9...</span></div>
                 <div className="flex justify-between"><span>Signature:</span><span className="text-zinc-400">0x2a1f0...</span></div>

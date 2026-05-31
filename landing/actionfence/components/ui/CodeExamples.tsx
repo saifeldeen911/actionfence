@@ -122,7 +122,7 @@ export default function CodeExamples() {
     <section id="examples" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
       <div className="flex flex-col gap-12">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-3xl">
-          60 seconds to integrate. <span className="text-zinc-600">We mean it.</span>
+          60 seconds to integrate. <span className="text-accent/75">We mean it.</span>
         </h2>
 
         {/* Brutalist Code Terminal */}
@@ -142,22 +142,22 @@ export default function CodeExamples() {
                 }}
                 onClick={() => activateTab(index)}
                 onKeyDown={(event) => handleTabKeyDown(event, index)}
-                className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+                className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
                 style={{
-                  color: activeTab === tab ? "#fafafa" : "#52525b"
+                  color: activeTab === tab ? "#7c83ff" : "#52525b"
                 }}
               >
                 {activeTab === tab && (
                   <motion.div
                     layoutId="active-tab"
-                    className="absolute inset-0 bg-zinc-900/50"
+                    className="absolute inset-0 bg-accent/8"
                     initial={false}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   />
                 )}
                 <span className="relative z-10">{tab}</span>
                 {/* Right border separator */}
-                <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-zinc-800" />
+                <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-accent/15" />
               </button>
             ))}
           </div>
@@ -168,7 +168,7 @@ export default function CodeExamples() {
             role="tabpanel"
             aria-labelledby={getTabId(activeIndex)}
             tabIndex={0}
-            className="p-6 md:p-12 min-h-[400px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+            className="p-6 md:p-12 min-h-[400px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
           >
             <AnimatePresence mode="wait">
               <motion.div

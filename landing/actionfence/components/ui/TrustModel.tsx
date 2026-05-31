@@ -24,7 +24,7 @@ export default function TrustModel() {
       <div className="flex flex-col gap-24">
         
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-4xl">
-          Server-side enforcement. <span className="text-zinc-600">Not a client-side suggestion.</span>
+          Server-side enforcement. <span className="text-accent/75">Not a client-side suggestion.</span>
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
@@ -34,13 +34,13 @@ export default function TrustModel() {
             
             {/* How others do it */}
             <div className="flex flex-col gap-6">
-              <div className="text-sm font-mono text-zinc-500 uppercase tracking-widest pb-4 border-b border-zinc-800">
+              <div className="text-sm font-mono text-accent/75 uppercase tracking-widest pb-4 border-b border-zinc-800">
                 How Others Do It
               </div>
               <ul className="flex flex-col gap-4">
                 {others.map((item, i) => (
                   <li key={i} className="flex items-start gap-4 text-zinc-500">
-                    <span className="font-mono text-zinc-700">{"[X]"}</span>
+                    <span className="font-mono text-accent/50">{"[X]"}</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -49,7 +49,7 @@ export default function TrustModel() {
 
             {/* How ActionFence does it */}
             <div className="flex flex-col gap-6">
-              <div className="text-sm font-mono text-zinc-100 uppercase tracking-widest pb-4 border-b border-zinc-800">
+              <div className="text-sm font-mono text-accent uppercase tracking-widest pb-4 border-b border-zinc-800">
                 How ActionFence Does It
               </div>
               <ul className="flex flex-col gap-4">
@@ -62,7 +62,7 @@ export default function TrustModel() {
                     key={i} 
                     className="flex items-start gap-4 text-zinc-100"
                   >
-                    <span className="font-mono text-zinc-100">{"[+]"}</span>
+                    <span className="font-mono text-accent">{"[+]"}</span>
                     <span>{item}</span>
                   </motion.li>
                 ))}
@@ -97,13 +97,13 @@ export default function TrustModel() {
               </div>
 
               {/* ActionFence Wall Node */}
-              <div className="w-full md:w-48 py-12 border border-zinc-300 bg-zinc-100 flex flex-col items-center justify-center gap-2 relative">
+              <div className="w-full md:w-48 py-12 border border-accent/35 bg-accent/8 flex flex-col items-center justify-center gap-2 relative">
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-xs text-zinc-500">
                   GUARD-POLICY.JSON
                 </div>
-                <div className="font-mono text-zinc-500 text-xs uppercase tracking-widest">ENFORCEMENT</div>
-                <div className="font-bold text-zinc-950 text-xl tracking-tighter">ActionFence</div>
-                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                <div className="font-mono text-accent/75 text-xs uppercase tracking-widest">ENFORCEMENT</div>
+                <div className="font-bold text-zinc-50 text-xl tracking-tighter">ActionFence</div>
+                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-accent/60">
                   deny by default
                 </div>
               </div>

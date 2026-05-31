@@ -16,7 +16,7 @@ export default function Hero() {
           edgeFadeWidth={0.12}
           colorCycleSpeed={0.3}
           brightness={0.4}
-          color1="#52525b" // zinc-600 vector lines
+          color1="#7c83ff" // accent rim light
           color2="#3f3f46" // zinc-700 accents
           color3="#27272a" // zinc-800 dark bounds
           enableMouseInteraction={true}
@@ -32,7 +32,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-sm font-mono tracking-wider uppercase text-zinc-500"
+            className="text-sm font-mono tracking-wider uppercase text-accent/80"
           >
             Open-source middleware for Node.js
           </motion.div>
@@ -44,7 +44,7 @@ export default function Hero() {
             className="text-5xl md:text-7xl lg:text-[7rem] font-medium tracking-tighter leading-[0.95]"
           >
             Your AI agents are spending money.<br/>
-            <span className="text-zinc-600">Who&apos;s watching?</span>
+            <span className="text-accent/75">Who&apos;s watching?</span>
           </motion.h1>
         </div>
 
@@ -59,7 +59,7 @@ export default function Hero() {
             ActionFence is an AI action firewall that sits in front of your MCP servers and APIs. One JSON policy. Spend caps. Signed receipts. Zero trust by default.
           </p>
 
-          <div className="p-8 bg-zinc-900/50 border border-zinc-800 text-sm font-mono text-zinc-300">
+          <div className="p-8 bg-zinc-900/50 border border-accent/20 text-sm font-mono text-zinc-300">
             <pre>
 <code>{`import { withGuard } from 'actionfence';
 

@@ -41,11 +41,11 @@ export default function ProblemStatement() {
               key={i}
               className="group flex flex-col md:flex-row gap-6 md:gap-12 py-12 border-b border-zinc-800 first:pt-0"
             >
-              <div className="text-zinc-600 font-mono text-sm shrink-0 mt-1">
+              <div className="text-accent/80 font-mono text-sm shrink-0 mt-1">
                 {problem.num}
               </div>
               <div className="flex flex-col gap-4">
-                <h3 className="text-2xl font-medium tracking-tight text-zinc-100 group-hover:text-zinc-400 transition-colors">
+                <h3 className="text-2xl font-medium tracking-tight text-zinc-100 group-hover:text-accent transition-colors">
                   {problem.title}
                 </h3>
                 <p className="text-lg text-zinc-500 leading-relaxed max-w-2xl">

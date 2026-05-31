@@ -42,7 +42,7 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
         </Link>
         <button
           onClick={handleCopy}
-          className="text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 md:hidden"
+          className="text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:hidden"
         >
           {copied ? "[ COPIED ]" : "[ npm install ]"}
         </button>
@@ -52,7 +52,7 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
         {navLinks.map((link) => {
           const active = link.internal && link.activePrefix ? pathname.startsWith(link.activePrefix) : false;
           const className = [
-            "whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-zinc-400",
+            "whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60",
             active ? "font-mono text-zinc-50" : "",
           ].join(" ");
 
@@ -71,7 +71,7 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+              className="whitespace-nowrap transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
             >
               {link.label}
             </a>
@@ -81,7 +81,7 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
 
       <button
         onClick={handleCopy}
-        className="hidden text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 md:block"
+        className="hidden text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:block"
       >
         {copied ? "[ COPIED ]" : "[ npm install ]"}
       </button>

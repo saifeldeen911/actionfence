@@ -26,16 +26,16 @@ export default function Footer() {
       {/* Pre-footer: Dev Experience & LLM Box */}
       <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800 bg-background flex flex-col items-center justify-center gap-16">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight text-center">
-          Built for developers who <span className="text-zinc-600">ship fast.</span>
+          Built for developers who <span className="text-accent/75">ship fast.</span>
         </h2>
         
         {/* LLM Prompt Box */}
-        <div className="w-full max-w-3xl border border-zinc-800 bg-[#09090b] flex flex-col relative overflow-hidden">
-          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/30">
-            <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest">AI-Assistant Prompt</span>
+        <div className="w-full max-w-3xl border border-accent/20 bg-[#09090b] flex flex-col relative overflow-hidden">
+          <div className="p-4 border-b border-accent/20 flex justify-between items-center bg-accent/5">
+            <span className="font-mono text-xs text-accent/75 uppercase tracking-widest">AI-Assistant Prompt</span>
             <button 
               onClick={handleCopyPrompt}
-              className="font-mono text-xs text-white hover:opacity-50 transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+              className="font-mono text-xs text-white hover:opacity-50 transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
             >
               {copiedPrompt ? "[ COPIED ]" : "[ COPY ]"}
             </button>
@@ -66,7 +66,7 @@ export default function Footer() {
           Start protecting your AI agents in 60 seconds.
         </h2>
         
-        <div className="p-8 border border-zinc-800 bg-black font-mono text-sm md:text-base text-zinc-300 flex flex-col gap-2 min-w-75 md:min-w-125">
+        <div className="p-8 border border-zinc-800 bg-zinc-950 font-mono text-sm md:text-base text-zinc-300 flex flex-col gap-2 min-w-75 md:min-w-125">
           <div className="flex gap-4">
             <span className="text-zinc-600">$</span>
             <span className="text-white">npm install actionfence</span>
@@ -78,15 +78,15 @@ export default function Footer() {
         </div>
         
         <div className="flex flex-wrap justify-center gap-8 font-mono text-sm text-zinc-500">
-          <Link href="/docs/readme" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Read Docs →</Link>
-          <Link href="/#examples" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Examples →</Link>
-          <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub →</a>
+          <Link href="/docs/readme" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Read Docs →</Link>
+          <Link href="/#examples" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Examples →</Link>
+          <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">GitHub →</a>
         </div>
       </section>
 
       {/* Massive Branding */}
       <div className="w-full overflow-hidden flex items-center justify-center bg-[#09090b] pt-24 pb-4 border-t border-zinc-800 select-none">
-        <span aria-hidden="true" className="text-[15vw] font-bold tracking-tighter leading-none text-transparent [-webkit-text-stroke:1px_#3f3f46] md:[-webkit-text-stroke:2px_#3f3f46] opacity-80">
+        <span aria-hidden="true" className="text-[15vw] font-bold tracking-tighter leading-none text-transparent [-webkit-text-stroke:1px_#7c83ff] md:[-webkit-text-stroke:2px_#7c83ff] opacity-80">
           ACTIONFENCE
         </span>
       </div>
@@ -99,17 +99,17 @@ export default function Footer() {
             <span className="text-zinc-500">AI Action Firewall<br/>MIT License<br/>© 2026 Saifeldeen</span>
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
-            <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Resources</span>
-            <Link href="/docs/readme" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Documentation</Link>
-            <Link href="/docs/readme#api-reference" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">API Reference</Link>
-            <Link href="/docs/changelog" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Changelog</Link>
-            <Link href="/docs/security" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Security Policy</Link>
+            <span className="text-accent/75 uppercase tracking-widest text-xs mb-2">Resources</span>
+            <Link href="/docs/readme" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Documentation</Link>
+            <Link href="/docs/readme#api-reference" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">API Reference</Link>
+            <Link href="/docs/changelog" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Changelog</Link>
+            <Link href="/docs/security" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Security Policy</Link>
           </div>
           <div className="flex flex-col gap-4 text-zinc-500">
-            <span className="text-zinc-300 uppercase tracking-widest text-xs mb-2">Community</span>
-            <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">GitHub</a>
-            <a href="https://github.com/saifeldeen911/actionfence/issues" target="_blank" rel="noopener noreferrer" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Issues</a>
-            <Link href="/docs/contributing" className="hover:text-white outline-none focus-visible:ring-1 focus-visible:ring-zinc-400">Contributing</Link>
+            <span className="text-accent/75 uppercase tracking-widest text-xs mb-2">Community</span>
+            <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">GitHub</a>
+            <a href="https://github.com/saifeldeen911/actionfence/issues" target="_blank" rel="noopener noreferrer" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Issues</a>
+            <Link href="/docs/contributing" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Contributing</Link>
           </div>
         </div>
       </section>

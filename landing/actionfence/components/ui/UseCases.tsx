@@ -22,19 +22,21 @@ const useCases = [
 export default function UseCases() {
   return (
     <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-16 max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight text-center max-w-3xl mx-auto">
-          Built for anyone giving AI agents <span className="text-zinc-600">real-world permissions.</span>
-        </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
+        <div className="col-span-1 lg:col-span-4">
+          <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight lg:sticky lg:top-32">
+            Built for anyone giving AI agents <span className="text-accent/75">real-world permissions.</span>
+          </h2>
+        </div>
 
         {/* 2x2 Brutalist Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 border-l border-t border-zinc-800">
+        <div className="col-span-1 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 border-l border-t border-zinc-800">
           {useCases.map((uc, i) => (
-            <div key={i} className="flex flex-col p-8 md:p-12 border-r border-b border-zinc-800 hover:bg-zinc-900/30 transition-colors">
-              <div className="font-mono text-zinc-600 text-sm mb-12">
+            <div key={i} className="group flex min-h-72 flex-col p-8 md:p-10 border-r border-b border-zinc-800 hover:bg-zinc-900/30 transition-colors duration-500">
+              <div className="font-mono text-accent/70 text-sm mb-12">
                 [ UC_{String(i + 1).padStart(2, "0")} ]
               </div>
-              <h3 className="text-2xl font-medium tracking-tight text-white mb-4">
+              <h3 className="mt-auto text-2xl font-medium tracking-tight text-zinc-50 mb-4 transition-colors duration-300 group-hover:text-accent">
                 {uc.title}
               </h3>
               <p className="text-zinc-400 leading-relaxed">
