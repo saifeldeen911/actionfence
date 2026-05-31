@@ -3,6 +3,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import SiteContainer from "@/components/ui/SiteContainer";
 
 const TABS = ["MCP Server", "Express / Fastify", "CLI"] as const;
 type TabKey = (typeof TABS)[number];
@@ -119,72 +120,70 @@ export default function CodeExamples() {
   };
 
   return (
-    <section id="examples" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-12">
-        <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-3xl">
-          60 seconds to integrate. <span className="text-accent/75">We mean it.</span>
-        </h2>
+    <section id="examples" className="w-full border-t border-zinc-800 py-32">
+      <SiteContainer>
+        <div className="flex flex-col gap-12">
+          <h2 className="max-w-3xl text-4xl font-medium tracking-tighter leading-tight md:text-5xl">
+            60 seconds to integrate. <span className="text-accent/75">We mean it.</span>
+          </h2>
 
-        {/* Brutalist Code Terminal */}
-        <div className="w-full border border-zinc-800 bg-[#09090b] flex flex-col">
-          {/* Header Tabs */}
-          <div role="tablist" aria-label="Integration examples" className="flex overflow-x-auto border-b border-zinc-800 scrollbar-hide">
-            {TABS.map((tab, index) => (
-              <button
-                key={tab}
-                id={getTabId(index)}
-                role="tab"
-                aria-selected={activeIndex === index}
-                aria-controls={getPanelId(index)}
-                tabIndex={activeIndex === index ? 0 : -1}
-                ref={(node) => {
-                  tabRefs.current[index] = node;
-                }}
-                onClick={() => activateTab(index)}
-                onKeyDown={(event) => handleTabKeyDown(event, index)}
-                className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
-                style={{
-                  color: activeTab === tab ? "#7c83ff" : "#52525b"
-                }}
-              >
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="active-tab"
-                    className="absolute inset-0 bg-accent/8"
-                    initial={false}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                )}
-                <span className="relative z-10">{tab}</span>
-                {/* Right border separator */}
-                <div className="absolute right-0 top-0 bottom-0 w-px bg-accent/15" />
-              </button>
-            ))}
-          </div>
+          <div className="flex w-full flex-col border border-zinc-800 bg-[#09090b]">
+            <div role="tablist" aria-label="Integration examples" className="flex overflow-x-auto border-b border-zinc-800 scrollbar-hide">
+              {TABS.map((tab, index) => (
+                <button
+                  key={tab}
+                  id={getTabId(index)}
+                  role="tab"
+                  aria-selected={activeIndex === index}
+                  aria-controls={getPanelId(index)}
+                  tabIndex={activeIndex === index ? 0 : -1}
+                  ref={(node) => {
+                    tabRefs.current[index] = node;
+                  }}
+                  onClick={() => activateTab(index)}
+                  onKeyDown={(event) => handleTabKeyDown(event, index)}
+                  className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+                  style={{
+                    color: activeTab === tab ? "#7c83ff" : "#52525b"
+                  }}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="active-tab"
+                      className="absolute inset-0 bg-accent/8"
+                      initial={false}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    />
+                  )}
+                  <span className="relative z-10">{tab}</span>
+                  <div className="absolute top-0 right-0 bottom-0 w-px bg-accent/15" />
+                </button>
+              ))}
+            </div>
 
-          {/* Body */}
-          <div
-            id={getPanelId(activeIndex)}
-            role="tabpanel"
-            aria-labelledby={getTabId(activeIndex)}
-            tabIndex={0}
-            className="p-6 md:p-12 min-h-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="font-mono"
-              >
-                {CODE_BLOCKS[activeTab]}
-              </motion.div>
-            </AnimatePresence>
+            <div
+              id={getPanelId(activeIndex)}
+              role="tabpanel"
+              aria-labelledby={getTabId(activeIndex)}
+              tabIndex={0}
+              className="min-h-100 p-6 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:p-12"
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-mono"
+                >
+                  {CODE_BLOCKS[activeTab]}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
-      </div>
+      </SiteContainer>
     </section>
   );
 }

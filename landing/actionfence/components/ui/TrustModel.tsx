@@ -2,6 +2,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import SiteContainer from "@/components/ui/SiteContainer";
 
 const others = [
   "Policy lives on the client",
@@ -20,14 +21,14 @@ const us = [
 
 export default function TrustModel() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800 bg-background">
-      <div className="flex flex-col gap-24">
-        
-        <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-4xl">
-          Server-side enforcement. <span className="text-accent/75">Not a client-side suggestion.</span>
-        </h2>
+    <section className="w-full border-t border-zinc-800 bg-background py-32">
+      <SiteContainer>
+        <div className="flex flex-col gap-24">
+          <h2 className="max-w-4xl text-4xl font-medium tracking-tighter leading-tight md:text-5xl">
+            Server-side enforcement. <span className="text-accent/75">Not a client-side suggestion.</span>
+          </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-24">
           
           {/* Comparison Lists */}
           <div className="flex flex-col gap-12">
@@ -139,8 +140,9 @@ export default function TrustModel() {
             </div>
 
           </div>
+          </div>
         </div>
-      </div>
+      </SiteContainer>
     </section>
   );
 }

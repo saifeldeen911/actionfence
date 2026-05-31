@@ -1,5 +1,7 @@
 "use client";
 
+import SiteContainer from "@/components/ui/SiteContainer";
+
 const withoutFence = [
   "Any agent can call any tool",
   "No spending visibility",
@@ -22,14 +24,14 @@ const withFence = [
 
 export default function Comparison() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-16">
-        <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight text-center">
-          What changes when you add ActionFence
-        </h2>
+    <section className="w-full border-t border-zinc-800 py-32">
+      <SiteContainer>
+        <div className="flex flex-col gap-16">
+          <h2 className="text-center text-4xl font-medium tracking-tighter leading-tight md:text-5xl">
+            What changes when you add ActionFence
+          </h2>
 
-        {/* Brutalist Comparison Split */}
-        <div className="grid grid-cols-1 md:grid-cols-2 border border-zinc-800">
+          <div className="grid grid-cols-1 border border-zinc-800 md:grid-cols-2">
           
           {/* Left: Without */}
           <div className="flex flex-col bg-zinc-900/30">
@@ -61,8 +63,9 @@ export default function Comparison() {
             </ul>
           </div>
 
+          </div>
         </div>
-      </div>
+      </SiteContainer>
     </section>
   );
 }
