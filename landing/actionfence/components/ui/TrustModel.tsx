@@ -5,17 +5,17 @@ import { motion } from "framer-motion";
 import SectionShell from "./SectionShell";
 
 const others = [
-  "Policy lives on the client",
-  "Agent can read and modify rules",
+  "Client-side checks can be bypassed or skipped",
+  "Rules can drift across services and environments",
   "\"Please don't do bad things\" approach",
-  "No proof anything happened"
+  "No consistent deny-by-default behavior"
 ];
 
 const us = [
-  "Policy lives on YOUR server",
+  "One policy gate executes before every tool handler",
   "Agent never sees guard-policy.json",
-  "All tool calls pass through middleware",
-  "Signed receipts prove every decision",
+  "All tool calls must pass through middleware",
+  "Blocked requests never reach execution code",
   "Default rule: deny. Allowlist only."
 ];
 
@@ -135,7 +135,7 @@ export default function TrustModel() {
                 <span>Must pass through ↑</span>
               </div>
               <div className="flex flex-col gap-1 items-end max-w-37.5 text-right">
-                <span>Receipt generated →</span>
+                <span>Only approved calls continue →</span>
               </div>
             </div>
 
