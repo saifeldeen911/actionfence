@@ -25,7 +25,7 @@ export default function TrustModel() {
       <SectionShell className="flex flex-col gap-24">
         
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-4xl">
-          Server-side enforcement. <span className="text-accent/75">Not a client-side suggestion.</span>
+          Server-side enforcement. <span className="text-accent">Not a client-side suggestion.</span>
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
@@ -35,13 +35,13 @@ export default function TrustModel() {
             
             {/* How others do it */}
             <div className="flex flex-col gap-6">
-              <div className="text-sm font-mono text-accent/75 uppercase tracking-widest pb-4 border-b border-zinc-800">
+              <div className="text-sm font-mono text-accent uppercase tracking-widest pb-4 border-b border-zinc-800">
                 How Others Do It
               </div>
               <ul className="flex flex-col gap-4">
                 {others.map((item, i) => (
-                  <li key={i} className="flex items-start gap-4 text-zinc-500">
-                    <span className="font-mono text-accent/50">{"[X]"}</span>
+                  <li key={i} className="flex items-start gap-4 text-subtle">
+                    <span className="font-mono text-accent">{"[X]"}</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -86,32 +86,32 @@ export default function TrustModel() {
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                 className="w-full md:w-32 aspect-square border border-zinc-700 bg-zinc-900/80 flex flex-col items-center justify-center gap-2"
               >
-                <div className="font-mono text-zinc-500 text-xs">SOURCE</div>
+                <div className="font-mono text-subtle text-xs">SOURCE</div>
                 <div className="font-medium text-zinc-300">AI Agent</div>
               </motion.div>
 
               {/* Connecting path */}
               <div className="hidden md:flex flex-1 h-px bg-zinc-800 relative">
-                <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-mono text-zinc-500 bg-[#09090b] px-2">
+                <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-mono text-subtle bg-[#09090b] px-2">
                   REQUEST
                 </div>
               </div>
 
               {/* ActionFence Wall Node */}
               <div className="w-full md:w-48 py-12 border border-accent/35 bg-accent/8 flex flex-col items-center justify-center gap-2 relative">
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-xs text-zinc-500">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-xs text-subtle">
                   GUARD-POLICY.JSON
                 </div>
-                <div className="font-mono text-accent/75 text-xs uppercase tracking-widest">ENFORCEMENT</div>
+                <div className="font-mono text-accent text-xs uppercase tracking-widest">ENFORCEMENT</div>
                 <div className="font-bold text-zinc-50 text-xl tracking-tighter">ActionFence</div>
-                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-accent/60">
+                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-accent">
                   deny by default
                 </div>
               </div>
 
               {/* Connecting path */}
               <div className="hidden md:flex flex-1 h-px bg-zinc-800 relative">
-                <div className="absolute top-1/2 -translate-y-1/2 right-4 text-xs font-mono text-zinc-500 bg-[#09090b] px-2">
+                <div className="absolute top-1/2 -translate-y-1/2 right-4 text-xs font-mono text-subtle bg-[#09090b] px-2">
                   AUTHORIZED
                 </div>
               </div>
@@ -120,14 +120,14 @@ export default function TrustModel() {
               <motion.div 
                 className="w-full md:w-32 aspect-square border border-zinc-700 bg-zinc-900/80 flex flex-col items-center justify-center gap-2"
               >
-                <div className="font-mono text-zinc-500 text-xs">TARGET</div>
+                <div className="font-mono text-subtle text-xs">TARGET</div>
                 <div className="font-medium text-zinc-300">MCP Tools</div>
               </motion.div>
 
             </div>
 
             {/* Callout lines */}
-            <div className="absolute bottom-12 left-12 right-12 hidden md:flex justify-between font-mono text-xs text-zinc-600">
+            <div className="absolute bottom-12 left-12 right-12 hidden md:flex justify-between font-mono text-xs text-subtle">
               <div className="flex flex-col gap-1 max-w-37.5">
                 <span>← Can't read policy</span>
               </div>

@@ -22,7 +22,7 @@ export default function Footer() {
             {stats.map((stat, i) => (
               <div key={i} className="flex flex-col p-5 items-center justify-center text-center">
                 <span className="text-xl font-medium text-white tracking-tight md:text-2xl">{stat.value}</span>
-                <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest mt-2">{stat.label}</span>
+                <span className="text-xs font-mono text-subtle uppercase tracking-widest mt-2">{stat.label}</span>
               </div>
             ))}
           </div>
@@ -38,16 +38,16 @@ export default function Footer() {
           
           <div className="p-8 border border-zinc-800 bg-zinc-950 font-mono text-sm md:text-base text-zinc-300 flex flex-col gap-2 min-w-75 md:min-w-125">
             <div className="flex gap-4">
-              <span className="text-zinc-600">$</span>
+              <span className="text-subtle">$</span>
               <span className="text-white">npm install actionfence</span>
             </div>
             <div className="flex gap-4">
-              <span className="text-zinc-600">$</span>
+              <span className="text-subtle">$</span>
               <span className="text-white">npx actionfence init</span>
             </div>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-8 font-mono text-sm text-zinc-500">
+          <div className="flex flex-wrap justify-center gap-8 font-mono text-sm text-subtle">
             <Link href="/docs/readme" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Read Docs →</Link>
             <Link href="/#examples" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Examples →</Link>
             <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent/60">GitHub →</a>
@@ -68,17 +68,17 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 font-mono text-sm">
             <div className="flex flex-col gap-4">
               <span className="text-white">ActionFence</span>
-              <span className="text-zinc-500">AI Action Firewall<br/>MIT License<br/>© 2026 Saifeldeen</span>
+              <span className="text-subtle">AI Action Firewall<br/>MIT License<br/>© 2026 Saifeldeen</span>
             </div>
-            <div className="flex flex-col gap-4 text-zinc-500">
-              <span className="text-accent/75 uppercase tracking-widest text-xs mb-2">Resources</span>
+            <div className="flex flex-col gap-4 text-subtle">
+              <span className="text-accent uppercase tracking-widest text-xs mb-2">Resources</span>
               <Link href="/docs/readme" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Documentation</Link>
               <Link href="/docs/readme#api-reference" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">API Reference</Link>
               <Link href="/docs/changelog" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Changelog</Link>
               <Link href="/docs/security" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Security Policy</Link>
             </div>
-            <div className="flex flex-col gap-4 text-zinc-500">
-              <span className="text-accent/75 uppercase tracking-widest text-xs mb-2">Community</span>
+            <div className="flex flex-col gap-4 text-subtle">
+              <span className="text-accent uppercase tracking-widest text-xs mb-2">Community</span>
               <a href="https://github.com/saifeldeen911/actionfence" target="_blank" rel="noopener noreferrer" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">GitHub</a>
               <a href="https://github.com/saifeldeen911/actionfence/issues" target="_blank" rel="noopener noreferrer" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Issues</a>
               <Link href="/docs/contributing" className="hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60">Contributing</Link>

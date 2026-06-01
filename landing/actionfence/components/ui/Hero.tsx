@@ -97,7 +97,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-xs font-mono tracking-[0.26em] uppercase text-accent/80 md:text-sm"
+            className="text-xs font-mono tracking-[0.26em] uppercase text-accent md:text-sm"
           >
             Open-source middleware for Node.js
           </motion.div>
@@ -109,7 +109,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
             className="max-w-[10.5ch] text-[3.35rem] font-medium tracking-tighter leading-[0.9] text-balance md:max-w-none md:text-7xl md:leading-[0.95] lg:text-[7rem]"
           >
             Your AI agents are spending money.<br/>
-            <span className="text-accent/75">Who&apos;s watching?</span>
+            <span className="text-accent">Who&apos;s watching?</span>
           </motion.h1>
         </div>
 
@@ -143,10 +143,9 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
                     setCopied(false);
                   }}
                   onKeyDown={(event) => handleTabKeyDown(event, index)}
-                  className="relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
-                  style={{
-                    color: activeTab === tab ? "#7c83ff" : "#52525b",
-                  }}
+                  className={`relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60 ${
+                    activeTab === tab ? "text-accent" : "text-subtle"
+                  }`}
                 >
                     {activeTab === tab && (
                       <motion.div
@@ -164,7 +163,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
 
               <Link
                 href="/docs/readme"
-                className="shrink-0 px-4 md:px-6 font-mono text-xs uppercase tracking-[0.2em] text-accent/80 transition-colors hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+                className="shrink-0 px-4 md:px-6 font-mono text-xs uppercase tracking-[0.2em] text-accent transition-colors hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
               >
                 README
               </Link>
@@ -197,7 +196,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
                     <button
                       type="button"
                       onClick={handleCopy}
-                      className="shrink-0 font-mono text-xs tracking-[0.22em] text-accent/80 transition-colors hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+                      className="shrink-0 font-mono text-xs tracking-[0.22em] text-accent transition-colors hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
                     >
                       {copied ? "[copied]" : "[copy]"}
                     </button>
