@@ -6,6 +6,8 @@
   --foreground: #fafafa; /* zinc-50 */
   --accent: #7c83ff;
   --muted: #27272a; /* zinc-800 */
+  --secondary: #a1a1aa; /* contrast floor for secondary copy */
+  --subtle: #7a7a85; /* readable inactive / utility text */
 }
 
 @theme inline {
@@ -13,6 +15,8 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-muted: var(--muted);
+  --color-secondary: var(--secondary);
+  --color-subtle: var(--subtle);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

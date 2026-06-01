@@ -1,5 +1,7 @@
 # ActionFence Landing Page — Handoff Document
 
+> Note: this handoff predates the June 1, 2026 critique-driven brand rewrite. The current visual source of truth is [DESIGN.md](./DESIGN.md), and the active execution backlog is [CRITIQUE_FIX_PLAN.md](./CRITIQUE_FIX_PLAN.md).
+
 This document summarizes the state of the ActionFence landing page build, the architectural and design decisions made, remaining gaps, and recommended next steps for whoever takes over the codebase.
 
 ## 1. What We Did

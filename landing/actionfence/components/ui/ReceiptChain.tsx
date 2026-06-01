@@ -4,11 +4,11 @@ import { motion } from "framer-motion";
 import SectionShell from "./SectionShell";
 
 const properties = [
-  { title: "Hash-chained", desc: "Each receipt references the previous one. Deleting or modifying breaks the chain." },
-  { title: "HMAC-SHA256 signed", desc: "Tampered receipts instantly fail signature verification." },
-  { title: "Append-only", desc: "New receipts only. No updates. No deletes." },
-  { title: "Verifiable", desc: "ReceiptStore.verifyChain() validates the entire chain in one call." },
-  { title: "Redactable", desc: "Sensitive fields stripped before storage without breaking hash integrity." },
+  { title: "Hash-chained", desc: "Each receipt references the previous one, so edits or deletions break continuity immediately." },
+  { title: "HMAC-SHA256 signed", desc: "Every decision record is signed, and tampering fails verification on replay." },
+  { title: "Append-only", desc: "History grows forward only; no record updates and no silent rewrites." },
+  { title: "Verifiable", desc: "ReceiptStore.verifyChain() can validate the full timeline in a single integrity pass." },
+  { title: "Redactable", desc: "Sensitive fields can be removed for storage while preserving decision integrity." },
 ];
 
 export default function ReceiptChain() {
@@ -22,6 +22,9 @@ export default function ReceiptChain() {
           <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
             Every decision leaves a <span className="text-accent/75">cryptographic trail.</span>
           </h2>
+          <p className="max-w-xl text-base leading-relaxed text-zinc-400 md:text-lg">
+            When someone asks who approved what, when, and under which policy, the receipt chain gives a verifiable answer.
+          </p>
 
           <div className="flex flex-col border-t border-zinc-800">
             {properties.map((prop, i) => (
@@ -31,6 +34,9 @@ export default function ReceiptChain() {
               </div>
             ))}
           </div>
+          <p className="font-mono text-xs uppercase tracking-widest text-zinc-500">
+            Proof captured. Next step: install and enforce.
+          </p>
         </div>
 
         {/* Right: Brutalist Receipt Visual */}

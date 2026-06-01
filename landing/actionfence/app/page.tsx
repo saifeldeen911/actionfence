@@ -8,7 +8,6 @@ import CodeExamples from "@/components/ui/CodeExamples";
 import TrustModel from "@/components/ui/TrustModel";
 import ReceiptChain from "@/components/ui/ReceiptChain";
 import UseCases from "@/components/ui/UseCases";
-import Comparison from "@/components/ui/Comparison";
 import Footer from "@/components/ui/Footer";
 import {
   canonicalPath,
@@ -96,7 +95,6 @@ export default function Home() {
       <TrustModel />
       <ReceiptChain />
       <UseCases />
-      <Comparison />
       <Footer />
     </main>
   );
