@@ -31,7 +31,7 @@ Use it as the working log for future passes. Update `Status`, `Completed`, and `
 | AF-02 | P1 | Mobile hero | Mobile first viewport spends too much height on header and display drama before the main action. | Compress header height, reduce hero text footprint, and pull one clear action higher. | `components/ui/SiteHeader.tsx`, `components/ui/Hero.tsx` | done |
 | AF-03 | P1 | Narrative | The page repeats the same promise too many times across trust, proof, comparison, prompt, and footer sections. | Rebuild the page arc around `risk -> mechanism -> proof -> install`, then merge or remove redundant sections. | `app/page.tsx`, `components/ui/TrustModel.tsx`, `components/ui/ReceiptChain.tsx`, `components/ui/Footer.tsx` | done |
 | AF-04 | P2 | Contrast | Accent and muted text are under contrast threshold in tabs, small labels, trust markers, code tokens, and footer links. | Raise the secondary text floor, brighten inactive states, and stop using low-opacity accent as functional text. | `app/globals.css`, `components/ui/Hero.tsx`, `components/ui/CodeExamples.tsx`, `components/ui/TrustModel.tsx`, `components/ui/Footer.tsx`, Lighthouse report | done |
-| AF-05 | P2 | CTA trust | Clipboard actions can show success even when clipboard write fails. | Only show copied state after success and expose a fallback message or selectable text on failure. | `components/ui/SiteHeader.tsx`, `components/ui/Hero.tsx`, `components/ui/Footer.tsx` | not started |
+| AF-05 | P2 | CTA trust | Clipboard actions can show success even when clipboard write fails. | Only show copied state after success and expose a fallback message or selectable text on failure. | `components/ui/SiteHeader.tsx`, `components/ui/Hero.tsx`, `components/ui/Footer.tsx` | done |
 | AF-06 | P2 | Feature hierarchy | The features grid is polished but still reads as a wall of equal capability blocks. | Group features by priority or sequence, reduce sameness, and introduce stronger scan order. | `components/ui/FeaturesGrid.tsx` | not started |
 | AF-07 | P2 | Trust model clarity | The trust diagram is conceptually useful, but the accent treatment is too faint and too decorative. | Increase label contrast, simplify accent usage, and make the system read more infrastructurally. | `components/ui/TrustModel.tsx` | not started |
 | AF-08 | P2 | Receipt proof tone | The receipt chain communicates proof, but the lower-opacity second receipt makes the artifact feel less authoritative. | Increase density and legibility, remove any visual treatment that makes proof feel disposable. | `components/ui/ReceiptChain.tsx` | not started |
@@ -78,13 +78,25 @@ Use it as the working log for future passes. Update `Status`, `Completed`, and `
   - Mobile (`2026-06-01`): Accessibility `100`, Failed audits `0`.
   - Desktop (`2026-06-01`): Accessibility `100`, Failed audits `0`.
 
+### AF-05 Completed
+
+- Added a shared clipboard helper hook with explicit `idle | success | error` state and non-throwing `copy()` behavior.
+- Updated header and hero CTA copy buttons to show success only on confirmed clipboard writes and to render inline manual-copy fallback text on failure.
+- Added selectable fallback content in failure mode:
+  - Header: selectable `npm install actionfence` fallback hint for desktop and mobile menu.
+  - Hero: selectable install command for human tab, and readonly selectable prompt block for agent tab.
+- Footer required no clipboard code change because it does not include a clipboard action and already presents selectable install commands.
+- Chrome DevTools MCP verification (`2026-06-01`):
+  - Success path: desktop and mobile copy controls show temporary success state, then reset.
+  - Forced failure path (monkey-patched `navigator.clipboard.writeText`): no false-success state, no uncaught promise error, and manual-copy fallback content is shown.
+
 ## Working Checklist
 
 - [x] Rewrite the brand system around the kinetic direction
 - [x] Fix mobile hero conversion path
 - [x] Compress the page narrative
 - [x] Resolve color contrast failures
-- [ ] Harden clipboard feedback
+- [x] Harden clipboard feedback
 - [ ] Rebalance the features grid
 - [ ] Refine the trust model
 - [ ] Strengthen the receipt proof visuals
