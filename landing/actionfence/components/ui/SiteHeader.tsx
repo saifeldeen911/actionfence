@@ -95,7 +95,7 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
               <span
                 aria-hidden="true"
                 className={[
-                  "inline-block min-w-[0.75rem] text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  "inline-block min-w-3 text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
                   mobileMenuOpen ? "rotate-45" : "rotate-0",
                 ].join(" ")}
               >
