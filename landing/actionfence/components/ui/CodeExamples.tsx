@@ -3,6 +3,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import SectionShell from "./SectionShell";
 
 const TABS = ["MCP Server", "Express / Fastify", "CLI"] as const;
 type TabKey = (typeof TABS)[number];
@@ -119,8 +120,8 @@ export default function CodeExamples() {
   };
 
   return (
-    <section id="examples" className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-12">
+    <section id="examples" className="w-full py-32 border-t border-zinc-800">
+      <SectionShell className="flex flex-col gap-12">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-3xl">
           60 seconds to integrate. <span className="text-accent/75">We mean it.</span>
         </h2>
@@ -184,7 +185,7 @@ export default function CodeExamples() {
             </AnimatePresence>
           </div>
         </div>
-      </div>
+      </SectionShell>
     </section>
   );
 }

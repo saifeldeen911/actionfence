@@ -2,6 +2,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import SectionShell from "./SectionShell";
 
 const others = [
   "Policy lives on the client",
@@ -20,8 +21,8 @@ const us = [
 
 export default function TrustModel() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800 bg-background">
-      <div className="flex flex-col gap-24">
+    <section className="w-full py-32 border-t border-zinc-800 bg-background">
+      <SectionShell className="flex flex-col gap-24">
         
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-4xl">
           Server-side enforcement. <span className="text-accent/75">Not a client-side suggestion.</span>
@@ -140,7 +141,7 @@ export default function TrustModel() {
 
           </div>
         </div>
-      </div>
+      </SectionShell>
     </section>
   );
 }

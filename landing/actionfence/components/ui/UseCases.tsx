@@ -1,5 +1,7 @@
 "use client";
 
+import SectionShell from "./SectionShell";
+
 const useCases = [
   {
     title: "MCP Server Developers",
@@ -21,8 +23,9 @@ const useCases = [
 
 export default function UseCases() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
+    <section className="w-full py-32 border-t border-zinc-800">
+      <SectionShell>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12">
         <div className="col-span-1 lg:col-span-4">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight lg:sticky lg:top-32">
             Built for anyone giving AI agents <span className="text-accent/75">real-world permissions.</span>
@@ -45,7 +48,8 @@ export default function UseCases() {
             </div>
           ))}
         </div>
-      </div>
+        </div>
+      </SectionShell>
     </section>
   );
 }

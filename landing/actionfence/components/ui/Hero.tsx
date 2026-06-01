@@ -69,7 +69,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
   };
 
   return (
-    <section className="relative min-h-dvh w-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-32 overflow-hidden">
+    <section className="relative min-h-dvh w-full overflow-hidden">
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-40">
         <LineWaves 
           speed={0.15}
@@ -88,7 +88,8 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
         />
       </div>
       
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-end pointer-events-none">
+      <div className="relative z-10 flex min-h-dvh flex-col justify-end px-6 pb-24 pt-32 md:px-12 lg:px-16">
+        <div className="grid grid-cols-1 items-end gap-16 pointer-events-none lg:grid-cols-12 lg:gap-12">
         
         {/* Left massive typography */}
         <div className="col-span-1 lg:col-span-8 flex flex-col gap-8 pointer-events-auto">
@@ -207,6 +208,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
           </div>
         </motion.div>
 
+        </div>
       </div>
     </section>
   );

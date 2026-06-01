@@ -1,5 +1,7 @@
 "use client";
 
+import SectionShell from "./SectionShell";
+
 const withoutFence = [
   "Any agent can call any tool",
   "No spending visibility",
@@ -22,8 +24,8 @@ const withFence = [
 
 export default function Comparison() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-16">
+    <section className="w-full py-32 border-t border-zinc-800">
+      <SectionShell className="flex flex-col gap-16">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight text-center">
           What changes when you add ActionFence
         </h2>
@@ -62,7 +64,7 @@ export default function Comparison() {
           </div>
 
         </div>
-      </div>
+      </SectionShell>
     </section>
   );
 }

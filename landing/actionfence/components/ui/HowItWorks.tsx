@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import SectionShell from "./SectionShell";
+import { baseClassByLayout, getAssetScaleStyle, type ThreeDAssetKey } from "./threeDAssetSizing";
 
 const steps = [
   {
@@ -9,10 +11,10 @@ const steps = [
     description: "Write the allowlist, spend limits, identity tier, and rate windows in guard-policy.json.",
     asset: {
       src: "/how-it-works-assets/tablet-json.png",
+      key: "tablet-json",
       alt: "3D tablet displaying JSON policy code",
-      width: 1536,
-      height: 1024,
-      className: "w-[92%] max-w-92 md:w-[106%]",
+      width: 1254,
+      height: 1254,
     },
   },
   {
@@ -20,10 +22,10 @@ const steps = [
     description: "withGuard() and guard() intercept tool calls before handlers run, then evaluate policy on your server.",
     asset: {
       src: "/how-it-works-assets/shield-tilted.png",
+      key: "shield-tilted",
       alt: "Tilted glossy 3D shield",
       width: 1254,
       height: 1254,
-      className: "w-[78%] max-w-72 md:w-[82%]",
     },
   },
   {
@@ -31,18 +33,28 @@ const steps = [
     description: "Store hash-chained, HMAC-signed receipts in SQLite or PostgreSQL for every allow and block.",
     asset: {
       src: "/how-it-works-assets/chain-links.png",
+      key: "chain-links",
       alt: "Two glossy 3D chain links",
       width: 1254,
       height: 1254,
-      className: "w-[76%] max-w-70 md:w-[80%]",
     },
   },
-];
+] as const satisfies ReadonlyArray<{
+  title: string;
+  description: string;
+  asset: {
+    src: string;
+    key: ThreeDAssetKey;
+    alt: string;
+    width: number;
+    height: number;
+  };
+}>;
 
 export default function HowItWorks() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="flex flex-col gap-16">
+    <section className="w-full py-32 border-t border-zinc-800">
+      <SectionShell className="flex flex-col gap-16">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <div className="font-mono text-xs uppercase tracking-widest text-accent/75">
@@ -80,7 +92,8 @@ export default function HowItWorks() {
                   width={step.asset.width}
                   height={step.asset.height}
                   sizes="(min-width: 1024px) 28vw, (min-width: 768px) 48vw, 86vw"
-                  className={`relative z-10 h-auto object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.48)] transition duration-500 ease-out group-hover:scale-[1.035] ${step.asset.className}`}
+                  style={getAssetScaleStyle(step.asset.key, 1.035)}
+                  className={`relative z-10 h-auto origin-center object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.48)] transition duration-500 ease-out will-change-transform [transform:scale(var(--asset-scale))] group-hover:[transform:scale(var(--asset-hover-scale))] ${baseClassByLayout.howItWorks}`}
                   priority={i === 0}
                 />
               </div>
@@ -96,7 +109,7 @@ export default function HowItWorks() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </SectionShell>
     </section>
   );
 }

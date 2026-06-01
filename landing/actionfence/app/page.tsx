@@ -80,7 +80,7 @@ const jsonLd = {
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-start overflow-x-hidden">
+    <main className="relative flex min-h-screen flex-col overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

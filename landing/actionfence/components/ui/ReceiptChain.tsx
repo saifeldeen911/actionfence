@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import SectionShell from "./SectionShell";
 
 const properties = [
   { title: "Hash-chained", desc: "Each receipt references the previous one. Deleting or modifying breaks the chain." },
@@ -12,8 +13,9 @@ const properties = [
 
 export default function ReceiptChain() {
   return (
-    <section className="w-full px-6 md:px-12 py-32 border-t border-zinc-800">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-16 xl:gap-24">
+    <section className="w-full py-32 border-t border-zinc-800">
+      <SectionShell>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-16 xl:gap-24">
         
         {/* Left: Content */}
         <div className="col-span-1 xl:col-span-5 flex flex-col gap-12">
@@ -97,7 +99,8 @@ export default function ReceiptChain() {
           </div>
         </div>
 
-      </div>
+        </div>
+      </SectionShell>
     </section>
   );
 }
