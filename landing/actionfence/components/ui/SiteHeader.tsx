@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import SectionShell from "./SectionShell";
+import { useClipboardCopy } from "./useClipboardCopy";
 
 type SiteHeaderProps = {
   variant?: "landing" | "docs";
@@ -18,13 +19,12 @@ const navLinks = [
 
 export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
   const pathname = usePathname();
-  const [copied, setCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const installCommand = "npm install actionfence";
+  const { status: copyStatus, copy } = useClipboardCopy(2000);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText("npm install actionfence");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(installCommand);
   };
 
   const isLanding = variant === "landing";
@@ -108,10 +108,24 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
               onClick={handleCopy}
               className="hidden text-sm font-mono transition-opacity hover:opacity-50 outline-none focus-visible:ring-1 focus-visible:ring-accent/60 md:block"
             >
-              {copied ? "[ COPIED ]" : "[ npm install ]"}
+              {copyStatus === "success"
+                ? "[ COPIED ]"
+                : copyStatus === "error"
+                  ? "[ COPY MANUALLY ]"
+                  : "[ npm install ]"}
             </button>
           </div>
         </div>
+
+        {copyStatus === "error" ? (
+          <p
+            aria-live="polite"
+            className="mt-3 hidden select-text text-xs font-mono tracking-wide text-zinc-300 md:block"
+          >
+            Clipboard blocked. Copy manually:{" "}
+            <code className="select-all text-zinc-100">{installCommand}</code>
+          </p>
+        ) : null}
 
         {mobileMenuOpen ? (
           <div
@@ -157,11 +171,23 @@ export default function SiteHeader({ variant = "landing" }: SiteHeaderProps) {
               onClick={handleCopy}
               className="mt-3 flex w-full items-center justify-between border border-zinc-800/80 bg-[#111319] px-4 py-4 text-left transition-colors hover:border-accent/35 hover:bg-accent/8 outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
             >
-              <span className="font-mono text-sm text-zinc-100">{copied ? "npm install copied" : "npm install actionfence"}</span>
+              <span className="select-all font-mono text-sm text-zinc-100">
+                {copyStatus === "success" ? "npm install copied" : installCommand}
+              </span>
               <span className="font-mono text-[11px] tracking-[0.24em] text-accent/85">
-                {copied ? "DONE" : "COPY"}
+                {copyStatus === "success" ? "DONE" : copyStatus === "error" ? "MANUAL" : "COPY"}
               </span>
             </button>
+
+            {copyStatus === "error" ? (
+              <div
+                aria-live="polite"
+                className="mt-2 border border-zinc-800/80 bg-[#09090b] p-3 text-xs font-mono text-zinc-300"
+              >
+                Clipboard blocked. Select and copy manually:
+                <code className="mt-2 block select-all break-all text-zinc-100">{installCommand}</code>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </SectionShell>

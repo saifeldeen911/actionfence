@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import LineWaves from "@/components/ui/LineWaves";
+import { useClipboardCopy } from "./useClipboardCopy";
 
 const TABS = ["For Human", "For Agent"] as const;
 
@@ -11,15 +12,16 @@ export default function Hero() {
   const setupPrompt = `Install and integrate "actionfence" into my current project.
 Read the guide at https://raw.githubusercontent.com/saifeldeen911/actionfence/main/llms-full.txt
 then: install the package, create a guard-policy.json, and wire up the middleware.`;
+  const installCommand = "npm install actionfence";
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [copied, setCopied] = useState(false);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const tabsIdBase = useId().replace(/:/g, "");
+  const { status: copyStatus, copy, reset: resetCopyStatus } = useClipboardCopy(1500);
 
   const activeTab = TABS[activeIndex];
   const isHumanTab = activeTab === "For Human";
-  const copyText = isHumanTab ? "npm install actionfence" : setupPrompt;
+  const copyText = isHumanTab ? installCommand : setupPrompt;
   const panelText = isHumanTab
     ? "Install ActionFence locally in one command."
     : "Send this prompt to your agent to add ActionFence.";
@@ -59,13 +61,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
   };
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(copyText);
-    } catch {
-      // Clipboard access can be restricted in browser automation contexts.
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    await copy(copyText);
   };
 
   return (
@@ -140,7 +136,7 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
                   }}
                   onClick={() => {
                     activateTab(index);
-                    setCopied(false);
+                    resetCopyStatus();
                   }}
                   onKeyDown={(event) => handleTabKeyDown(event, index)}
                   className={`relative px-6 py-4 font-mono text-sm tracking-wide transition-colors whitespace-nowrap outline-none focus-visible:ring-1 focus-visible:ring-accent/60 ${
@@ -191,16 +187,44 @@ then: install the package, create a guard-policy.json, and wire up the middlewar
 
                   <div className="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 px-4 py-4 md:px-5">
                     <code className="min-w-0 flex-1 truncate font-mono text-sm text-zinc-100 md:text-base">
-                      {isHumanTab ? "npm install actionfence" : "copy setup instructions for my agent"}
+                      {isHumanTab ? installCommand : "copy setup instructions for my agent"}
                     </code>
                     <button
                       type="button"
                       onClick={handleCopy}
                       className="shrink-0 font-mono text-xs tracking-[0.22em] text-accent transition-colors hover:text-accent outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
                     >
-                      {copied ? "[copied]" : "[copy]"}
+                      {copyStatus === "success"
+                        ? "[copied]"
+                        : copyStatus === "error"
+                          ? "[manual copy]"
+                          : "[copy]"}
                     </button>
                   </div>
+
+                  {copyStatus === "error" ? (
+                    <div
+                      aria-live="polite"
+                      className="border border-zinc-800 bg-[#111319] p-4 text-xs leading-relaxed text-zinc-300"
+                    >
+                      <p>Clipboard access is blocked. Select and copy manually:</p>
+                      {isHumanTab ? (
+                        <code className="mt-3 block select-all break-all font-mono text-zinc-100">
+                          {installCommand}
+                        </code>
+                      ) : (
+                        <textarea
+                          readOnly
+                          id="hero-agent-setup-prompt"
+                          name="hero-agent-setup-prompt"
+                          value={setupPrompt}
+                          rows={6}
+                          className="mt-3 w-full resize-y border border-zinc-700 bg-zinc-950 p-3 font-mono text-xs text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
+                          aria-label="Agent setup prompt for manual copy"
+                        />
+                      )}
+                    </div>
+                  ) : null}
                 </motion.div>
               </AnimatePresence>
             </div>
