@@ -35,7 +35,7 @@ Use it as the working log for future passes. Update `Status`, `Completed`, and `
 | AF-06 | P2 | Feature hierarchy | The features grid is polished but still reads as a wall of equal capability blocks. | Group features by priority or sequence, reduce sameness, and introduce stronger scan order. | `components/ui/FeaturesGrid.tsx` | done |
 | AF-07 | P2 | Trust model clarity | The trust diagram is conceptually useful, but the accent treatment is too faint and too decorative. | Increase label contrast, simplify accent usage, and make the system read more infrastructurally. | `components/ui/TrustModel.tsx` | not started |
 | AF-08 | P2 | Receipt proof tone | The receipt chain communicates proof, but the lower-opacity second receipt makes the artifact feel less authoritative. | Increase density and legibility, remove any visual treatment that makes proof feel disposable. | `components/ui/ReceiptChain.tsx` | not started |
-| AF-09 | P2 | Footer duplication | The prompt box, stats bar, and final shell CTA create multiple overlapping conversion endings. | Decide on one dominant closing conversion pattern and simplify the rest. | `components/ui/Footer.tsx` | not started |
+| AF-09 | P2 | Footer duplication | The prompt box, stats bar, and final shell CTA create multiple overlapping conversion endings. | Decide on one dominant closing conversion pattern and simplify the rest. | `components/ui/Footer.tsx` | done |
 | AF-10 | P3 | Supporting copy | The page introduces technical terms too early for first-time visitors. | Add a slightly clearer plain-language bridge in the hero and tighten jargon density in early sections. | `components/ui/Hero.tsx`, `components/ui/ProblemStatement.tsx`, `components/ui/HowItWorks.tsx` | not started |
 
 ## Recommended Order
@@ -103,6 +103,12 @@ Use it as the working log for future passes. Update `Status`, `Completed`, and `
   - Mobile (`~390px`): each group renders as `header → cards` in the intended sequence with no mixed ordering.
   - A11y snapshot: heading flow remains valid (`h2` section heading, `h3` feature titles), and text readability remains intact.
 
+### AF-09 Completed
+
+- Removed the stats bar and the oversized `ACTIONFENCE` wordmark strip so the footer no longer reads like multiple closing screens.
+- Kept the install CTA as the only dominant conversion block and tightened its vertical weight so the lower footer now functions as support navigation.
+- Folded the trust signal into the compact metadata line in the lower footer instead of reintroducing another CTA-like band.
+
 ## Working Checklist
 
 - [x] Rewrite the brand system around the kinetic direction
@@ -113,7 +119,7 @@ Use it as the working log for future passes. Update `Status`, `Completed`, and `
 - [x] Rebalance the features grid
 - [ ] Refine the trust model
 - [ ] Strengthen the receipt proof visuals
-- [ ] Simplify the footer conversion stack
+- [x] Simplify the footer conversion stack
 - [ ] Clarify early-stage copy
 
 ## How To Continue
