@@ -1,8 +1,12 @@
+import Image from "next/image";
+
 export default function TrustModelDiagram() {
   return (
-    <div className="relative w-full border border-zinc-800 flex items-center justify-center p-3 md:p-8 lg:p-12 bg-[#09090b] overflow-hidden rounded-xl">
-      {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
+    <div className="w-full flex flex-col border border-zinc-800 bg-[#09090b] rounded-xl overflow-hidden shadow-2xl">
+      {/* Top Half: Diagram */}
+      <div className="relative w-full flex items-center justify-center p-3 md:p-8 lg:p-12 overflow-hidden">
+        {/* Background grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
 
       {/* Diagram Container */}
       <div className="w-full overflow-x-auto pb-6 -mb-6 md:pb-0 md:mb-0">
@@ -26,7 +30,7 @@ export default function TrustModelDiagram() {
             <div className="relative flex items-center justify-center w-16 h-16 md:w-28 md:h-28 bg-[#09090b] border-2 border-accent rounded-xl md:rounded-4xl shadow-[0_0_30px_rgba(124,131,255,0.2)]">
               <div className="absolute -left-1 md:-left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 bg-[#09090b] border border-accent rounded-sm" />
               {/* Enlarged Logo */}
-              <img src="/icon-work/actionfence-favicon-master.png" alt="ActionFence" className="w-12 h-12 md:w-20 md:h-20 object-contain" />
+              <Image src="/icon-work/actionfence-favicon-master.png" alt="ActionFence" width={80} height={80} className="w-12 h-12 md:w-20 md:h-20 object-contain" />
               <div className="absolute -right-1 md:-right-1.5 top-1/2 -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 bg-[#09090b] border border-accent rounded-sm" />
             </div>
           </div>
@@ -58,6 +62,17 @@ export default function TrustModelDiagram() {
           </div>
 
         </div>
+      </div>
+      </div>
+
+      {/* Bottom Half: Cloudflare-style description */}
+      <div className="w-full border-t border-zinc-800 p-6 md:p-8 bg-zinc-900/20">
+        <h3 className="text-zinc-100 font-medium text-lg md:text-xl mb-2 tracking-tight">Zero-Trust Architecture</h3>
+        <p className="text-zinc-400 text-sm md:text-base max-w-3xl leading-relaxed">
+          Policy lives entirely on your server. Agents cannot bypass the middleware, read the 
+          <code className="mx-1.5 px-1.5 py-0.5 bg-zinc-800 border border-zinc-700/50 rounded-md text-accent text-[13px] font-mono">guard-policy.json</code>, 
+          or tamper with the cryptographic receipt chain.
+        </p>
       </div>
     </div>
   );
