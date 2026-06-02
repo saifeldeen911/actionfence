@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function TrustModelDiagram() {
   return (
-    <div className="w-full flex flex-col border border-zinc-800 bg-[#09090b] rounded-xl overflow-hidden shadow-2xl">
+    <div className="w-full flex flex-col border border-zinc-800 bg-[#09090b] overflow-hidden shadow-2xl">
       {/* Top Half: Diagram */}
       <div className="relative w-full flex items-center justify-center p-3 md:p-8 lg:p-12 overflow-hidden">
         {/* Background grid pattern */}
