@@ -1,5 +1,3 @@
-"use client";
-
 import SectionShell from "./SectionShell";
 
 const withoutFence = [

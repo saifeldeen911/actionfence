@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 export default async function ReadmePage() {
   const source = await readRepoDoc(repoDocs.readme);
 
-  return <MarkdownDocument doc={repoDocs.readme} source={source} />;
+  return <MarkdownDocument source={source} />;
 }

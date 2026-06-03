@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import SectionShell from "./SectionShell";
 
 const properties = [
@@ -45,15 +42,12 @@ export default function ReceiptChain() {
           <div className="flex flex-col gap-8 w-full max-w-lg py-16 px-4">
             
             {/* Receipt 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
+            <div
               className="w-full border border-accent/20 bg-background p-6 font-mono text-sm relative z-10"
             >
               <div className="flex justify-between border-b border-accent/20 pb-4 mb-4">
-                <span className="text-zinc-500">Receipt #a1b2c3d4</span>
-                <span className="text-zinc-600">2026-05-07T14:02:11Z</span>
+                <span className="text-zinc-400">Receipt #a1b2c3d4</span>
+                <span className="text-zinc-400">2026-05-07T14:02:11Z</span>
               </div>
               <div className="flex flex-col gap-2 text-zinc-300">
                 <div className="flex justify-between"><span>Agent:</span><span className="text-white">agt_7x9f2k</span></div>
@@ -61,46 +55,38 @@ export default function ReceiptChain() {
                 <div className="flex justify-between"><span>Status:</span><span className="text-zinc-50">[+] ALLOWED</span></div>
                 <div className="flex justify-between"><span>Spend:</span><span className="text-white">$250.00</span></div>
               </div>
-              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-600">
+              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-400">
                 <div className="flex justify-between"><span>Payload Hash:</span><span>0x8f3a9...</span></div>
                 <div className="flex justify-between"><span>Prev Hash:</span><span>0x7e2d4...</span></div>
                 <div className="flex justify-between"><span>Signature:</span><span className="text-zinc-400">0x4f9b8...</span></div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Connecting Chain Line */}
             <div className="w-px h-16 bg-zinc-700 mx-auto -my-10 relative z-0">
-              <motion.div 
-                animate={{ height: ["0%", "100%"] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="w-full bg-zinc-300"
-              />
+              <div className="h-full w-full bg-zinc-300/80" />
             </div>
 
             {/* Receipt 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ delay: 0.2 }}
-              className="w-full border border-accent/20 bg-background p-6 font-mono text-sm relative z-10 opacity-75"
+            <div
+              className="w-full border border-accent/20 bg-background p-6 font-mono text-sm relative z-10"
             >
               <div className="flex justify-between border-b border-accent/20 pb-4 mb-4">
-                <span className="text-zinc-500">Receipt #e5f6g7h8</span>
-                <span className="text-zinc-600">2026-05-07T14:05:32Z</span>
+                <span className="text-zinc-400">Receipt #e5f6g7h8</span>
+                <span className="text-zinc-400">2026-05-07T14:05:32Z</span>
               </div>
               <div className="flex flex-col gap-2 text-zinc-300">
                 <div className="flex justify-between"><span>Agent:</span><span className="text-white">agt_7x9f2k</span></div>
                 <div className="flex justify-between"><span>Action:</span><span className="text-white">delete_db</span></div>
-                <div className="flex justify-between"><span>Status:</span><span className="text-zinc-500">[-] BLOCKED</span></div>
+                <div className="flex justify-between"><span>Status:</span><span className="text-zinc-300">[-] BLOCKED</span></div>
                 <div className="flex justify-between"><span>Spend:</span><span className="text-white">$0.00</span></div>
               </div>
-              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-600">
+              <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-accent/20 text-xs text-zinc-400">
                 <div className="flex justify-between"><span>Payload Hash:</span><span>0x1c9e2...</span></div>
                 <div className="flex justify-between"><span>Prev Hash:</span><span className="text-zinc-400">0x8f3a9...</span></div>
                 <div className="flex justify-between"><span>Signature:</span><span className="text-zinc-400">0x2a1f0...</span></div>
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>

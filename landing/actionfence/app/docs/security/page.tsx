@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 export default async function SecurityPage() {
   const source = await readRepoDoc(repoDocs.security);
 
-  return <MarkdownDocument doc={repoDocs.security} source={source} />;
+  return <MarkdownDocument source={source} />;
 }

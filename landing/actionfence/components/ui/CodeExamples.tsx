@@ -2,7 +2,6 @@
 "use client";
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import SectionShell from "./SectionShell";
 
 const TABS = ["MCP Server", "Express / Fastify", "CLI"] as const;
@@ -129,7 +128,11 @@ export default function CodeExamples() {
         {/* Brutalist Code Terminal */}
         <div className="w-full border border-zinc-800 bg-[#09090b] flex flex-col">
           {/* Header Tabs */}
-          <div role="tablist" aria-label="Integration examples" className="flex overflow-x-auto border-b border-zinc-800 scrollbar-hide">
+          <div
+            role="tablist"
+            aria-label="Integration examples"
+            className="flex overflow-x-auto border-b border-zinc-800 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {TABS.map((tab, index) => (
               <button
                 key={tab}
@@ -148,12 +151,7 @@ export default function CodeExamples() {
                 }`}
               >
                 {activeTab === tab && (
-                  <motion.div
-                    layoutId="active-tab"
-                    className="absolute inset-0 bg-accent/8"
-                    initial={false}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  />
+                  <div className="absolute inset-0 bg-accent/8" />
                 )}
                 <span className="relative z-10">{tab}</span>
                 {/* Right border separator */}
@@ -170,18 +168,9 @@ export default function CodeExamples() {
             tabIndex={0}
             className="p-6 md:p-12 min-h-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60"
           >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="font-mono"
-              >
-                {CODE_BLOCKS[activeTab]}
-              </motion.div>
-            </AnimatePresence>
+            <div key={activeTab} className="font-mono">
+              {CODE_BLOCKS[activeTab]}
+            </div>
           </div>
         </div>
       </SectionShell>

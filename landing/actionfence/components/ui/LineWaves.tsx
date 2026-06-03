@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+"use client";
+
+import { useEffect, useRef, useState } from 'react';
 
 interface LineWavesProps {
   speed?: number;
@@ -193,8 +195,33 @@ export default function LineWaves({
   className = ''
 }: LineWavesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldRunWebGl, setShouldRunWebGl] = useState(false);
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isCompactViewport = window.matchMedia('(max-width: 767px)').matches;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+
+    if (prefersReducedMotion || isCompactViewport || saveData) {
+      return;
+    }
+
+    const win = window as Window & typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (win.requestIdleCallback) {
+      const idleId = win.requestIdleCallback(() => setShouldRunWebGl(true), { timeout: 1800 });
+      return () => win.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(() => setShouldRunWebGl(true), 900);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldRunWebGl) return;
     if (!containerRef.current) return;
     const container = containerRef.current;
     const canvas = document.createElement('canvas');
@@ -210,13 +237,17 @@ export default function LineWaves({
                canvas.getContext('experimental-webgl', { alpha: true, premultipliedAlpha: false }) as WebGLRenderingContext;
     if (!gl) {
       console.error('WebGL not supported');
+      container.removeChild(canvas);
       return;
     }
 
     gl.clearColor(0, 0, 0, 0);
 
     const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
-    if (!program) return;
+    if (!program) {
+      container.removeChild(canvas);
+      return;
+    }
 
     gl.useProgram(program);
 
@@ -332,9 +363,12 @@ export default function LineWaves({
       container.removeEventListener('pointerleave', handlePointerLeave);
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
-      container.removeChild(canvas);
+      if (canvas.parentElement === container) {
+        container.removeChild(canvas);
+      }
     };
   }, [
+    shouldRunWebGl,
     speed,
     innerLineCount,
     outerLineCount,
@@ -350,5 +384,12 @@ export default function LineWaves({
     mouseInfluence
   ]);
 
-  return <div ref={containerRef} className={`w-full h-full relative overflow-hidden ${className}`} />;
+  return (
+    <div ref={containerRef} className={`w-full h-full relative overflow-hidden ${className}`}>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(125deg,transparent_0%,rgba(124,131,255,0.28)_28%,rgba(63,63,70,0.18)_46%,transparent_68%),repeating-linear-gradient(125deg,rgba(124,131,255,0.16)_0_1px,transparent_1px_9px)] opacity-80 [mask-image:radial-gradient(ellipse_80%_70%_at_50%_50%,#000_42%,transparent_78%)]"
+      />
+    </div>
+  );
 }

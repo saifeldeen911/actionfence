@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import SectionShell from "./SectionShell";
 
 const problems = [
@@ -35,11 +32,7 @@ export default function ProblemStatement() {
 
         <div className="col-span-1 lg:col-span-8 flex flex-col">
           {problems.map((problem, i) => (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+            <div
               key={i}
               className="group flex flex-col md:flex-row gap-6 md:gap-12 py-12 border-b border-zinc-800 first:pt-0"
             >
@@ -54,7 +47,7 @@ export default function ProblemStatement() {
                   {problem.description}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

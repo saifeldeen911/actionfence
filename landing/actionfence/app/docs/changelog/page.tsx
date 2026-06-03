@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 export default async function ChangelogPage() {
   const source = await readRepoDoc(repoDocs.changelog);
 
-  return <MarkdownDocument doc={repoDocs.changelog} source={source} />;
+  return <MarkdownDocument source={source} />;
 }

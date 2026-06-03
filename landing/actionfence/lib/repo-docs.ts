@@ -1,41 +1,26 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { repoDocMeta, type RepoDocMeta } from "@/lib/docs-meta";
 
-export type RepoDoc = {
-  title: string;
-  description: string;
-  fileName: string;
-  route: string;
+export type RepoDoc = RepoDocMeta & {
   sourcePath: string;
 };
 
 export const repoDocs = {
   readme: {
-    title: "Documentation",
-    description: "Install, integrate, and operate ActionFence.",
-    fileName: "README.md",
-    route: "/docs/readme",
+    ...repoDocMeta.readme,
     sourcePath: path.resolve(process.cwd(), "../../README.md"),
   },
   changelog: {
-    title: "Changelog",
-    description: "Release notes, fixes, and security changes.",
-    fileName: "CHANGELOG.md",
-    route: "/docs/changelog",
+    ...repoDocMeta.changelog,
     sourcePath: path.resolve(process.cwd(), "../../CHANGELOG.md"),
   },
   security: {
-    title: "Security Policy",
-    description: "Supported versions and vulnerability reporting.",
-    fileName: "SECURITY.md",
-    route: "/docs/security",
+    ...repoDocMeta.security,
     sourcePath: path.resolve(process.cwd(), "../../SECURITY.md"),
   },
   contributing: {
-    title: "Contributing",
-    description: "Development workflow and pull request expectations.",
-    fileName: "CONTRIBUTING.md",
-    route: "/docs/contributing",
+    ...repoDocMeta.contributing,
     sourcePath: path.resolve(process.cwd(), "../../CONTRIBUTING.md"),
   },
 } satisfies Record<string, RepoDoc>;

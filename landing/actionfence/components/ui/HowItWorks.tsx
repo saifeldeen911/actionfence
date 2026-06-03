@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import Image from "next/image";
 import SectionShell from "./SectionShell";
 import { baseClassByLayout, getAssetScaleStyle, type ThreeDAssetKey } from "./threeDAssetSizing";
@@ -74,12 +71,8 @@ export default function HowItWorks() {
         </div>
 
         <div className="grid grid-cols-1 border-l border-t border-zinc-800 lg:grid-cols-3">
-          {steps.map((step, i) => (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.55, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+          {steps.map((step) => (
+            <div
               key={step.title}
               className="group flex min-h-136 flex-col overflow-hidden border-r border-b border-zinc-800 transition-colors duration-500 hover:bg-zinc-900/25"
             >
@@ -94,7 +87,6 @@ export default function HowItWorks() {
                   sizes="(min-width: 1024px) 28vw, (min-width: 768px) 48vw, 86vw"
                   style={getAssetScaleStyle(step.asset.key, 1.035)}
                   className={`relative z-10 h-auto origin-center object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.48)] transition duration-500 ease-out will-change-transform [transform:scale(var(--asset-scale))] group-hover:[transform:scale(var(--asset-hover-scale))] ${baseClassByLayout.howItWorks}`}
-                  priority={i === 0}
                 />
               </div>
 
@@ -106,7 +98,7 @@ export default function HowItWorks() {
                   {step.description}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </SectionShell>

@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import Image from "next/image";
 import SectionShell from "./SectionShell";
 import { baseClassByLayout, getAssetScaleStyle, type ThreeDAssetKey } from "./threeDAssetSizing";
@@ -138,7 +135,7 @@ export default function FeaturesGrid() {
         </div>
 
         <div className="flex flex-col gap-8">
-          {featureGroups.map((group, groupIndex) => (
+          {featureGroups.map((group) => (
             <div key={group.id} className="border border-zinc-800">
               <div className="grid grid-cols-1 border-b border-zinc-800 md:grid-cols-12">
                 <div className="border-b border-zinc-800 bg-zinc-950/65 px-6 py-5 md:col-span-3 md:border-b-0 md:border-r">
@@ -157,15 +154,10 @@ export default function FeaturesGrid() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4">
-                {group.features.map((feature, featureIndex) => (
-                  <motion.div
-                    initial={{ opacity: 0, backgroundColor: "rgba(39,39,42,0)" }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, delay: groupIndex * 0.12 + featureIndex * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                    whileHover={{ backgroundColor: feature.variant === "primary" ? "rgba(39,39,42,0.2)" : "rgba(39,39,42,0.13)" }}
+                {group.features.map((feature) => (
+                  <div
                     key={feature.title}
-                    className={`group flex flex-col overflow-hidden border-r border-b border-zinc-800 ${feature.colSpan} ${feature.variant === "primary" ? "min-h-96" : "min-h-88"}`}
+                    className={`group flex flex-col overflow-hidden border-r border-b border-zinc-800 transition-colors duration-500 ${feature.colSpan} ${feature.variant === "primary" ? "min-h-96 hover:bg-zinc-800/20" : "min-h-88 hover:bg-zinc-800/15"}`}
                   >
                     <div className={`relative flex items-center justify-center overflow-hidden bg-[#09090b] p-6 ${feature.variant === "primary" ? "min-h-56" : "min-h-48"}`}>
                       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(63,63,70,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(63,63,70,0.2)_1px,transparent_1px)] bg-size-[2rem_2rem] opacity-30" />
@@ -188,7 +180,7 @@ export default function FeaturesGrid() {
                         {feature.description}
                       </p>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>

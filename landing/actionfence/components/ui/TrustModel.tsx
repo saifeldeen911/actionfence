@@ -1,7 +1,5 @@
-/* eslint-disable react/no-unescaped-entities */
-"use client";
+ 
 
-import { motion } from "framer-motion";
 import SectionShell from "./SectionShell";
 import TrustModelDiagram from "./TrustModelDiagram";
 
@@ -56,17 +54,13 @@ export default function TrustModel() {
               </div>
               <ul className="flex flex-col gap-4">
                 {us.map((item, i) => (
-                  <motion.li 
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                  <li
                     key={i} 
                     className="flex items-start gap-4 text-zinc-100"
                   >
                     <span className="font-mono text-accent">{"[+]"}</span>
                     <span>{item}</span>
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </div>

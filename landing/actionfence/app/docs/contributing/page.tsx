@@ -26,5 +26,5 @@ export const metadata: Metadata = {
 export default async function ContributingPage() {
   const source = await readRepoDoc(repoDocs.contributing);
 
-  return <MarkdownDocument doc={repoDocs.contributing} source={source} />;
+  return <MarkdownDocument source={source} />;
 }
