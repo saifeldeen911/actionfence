@@ -25,7 +25,7 @@ export type {
 
 export type { DecisionStatus, EvaluationDecision } from './types/decision.js';
 
-export type { GuardOptions } from './types/config.js';
+export type { GuardOptions, ReceiptFailureMode } from './types/config.js';
 
 export type {
   ActionReceipt,

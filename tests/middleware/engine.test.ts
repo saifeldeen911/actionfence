@@ -48,10 +48,40 @@ function createStore(): {
   return { tempDir, store };
 }
 
+function createFailingStore(): {
+  readonly tempDir: string;
+  readonly store: ReceiptStore;
+  readonly adapter: StorageAdapter;
+} {
+  const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-fail-'));
+  const adapter = {
+    insert: vi.fn(async () => {
+      throw new Error('receipt insert failed');
+    }),
+    getLastHash: vi.fn().mockResolvedValue(''),
+    getById: vi.fn().mockResolvedValue(null),
+    listByAgent: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+    query: vi.fn().mockResolvedValue([]),
+    getAllOrdered: vi.fn().mockResolvedValue([]),
+    close: vi.fn().mockResolvedValue(undefined),
+  } satisfies StorageAdapter;
+  const store = new ReceiptStore({
+    adapter,
+    signerOptions: {
+      secret: FIXED_SECRET,
+      keyFilePath: join(tempDir, 'key'),
+    },
+  });
+
+  return { tempDir, store, adapter };
+}
+
 describe('GuardEngine', () => {
   let cleanupDirs: string[] = [];
 
   afterEach(() => {
+    vi.restoreAllMocks();
     for (const dir of cleanupDirs) {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -292,27 +322,47 @@ describe('GuardEngine', () => {
     store.close();
   });
 
-  it('should commit spend even when receipt insertion fails', async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-engine-fail-'));
+  it('should store receipts for passed actions when receiptFailureMode is block', async () => {
+    const { tempDir, store } = createStore();
     cleanupDirs.push(tempDir);
-    const store = new ReceiptStore({
-      adapter: {
-        insert: vi.fn(async () => {
-          throw new Error('receipt insert failed');
-        }),
-        getLastHash: vi.fn().mockResolvedValue(''),
-        getById: vi.fn(),
-        listByAgent: vi.fn(),
-        count: vi.fn(),
-        query: vi.fn(),
-        getAllOrdered: vi.fn(),
-        close: vi.fn(),
-      } satisfies StorageAdapter,
-      signerOptions: {
-        secret: FIXED_SECRET,
-        keyFilePath: join(tempDir, 'key'),
-      },
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'strict-agent',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      silent: true,
+      receiptFailureMode: 'block',
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
     });
+
+    const result = await engine.evaluate({
+      toolName: 'book_flight',
+      params: { amount: 150 },
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.statusCode).toBe(200);
+    expect(result.receipt).not.toBeNull();
+    expect(result.error).toBeNull();
+    expect((await store.listByAgent('strict-agent'))[0]?.status).toBe('PASSED');
+
+    engine.dispose();
+    await store.close();
+  });
+
+  it('should commit spend and allow by default when receipt insertion fails', async () => {
+    const { tempDir, store } = createFailingStore();
+    cleanupDirs.push(tempDir);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const identityReader: IdentityReaderLike = {
       readIdentity: async () => ({
         classification: 'verified',
@@ -340,8 +390,122 @@ describe('GuardEngine', () => {
       params: { amount: 150 },
     });
 
+    expect(result.allowed).toBe(true);
+    expect(result.statusCode).toBe(200);
     expect(result.receipt).toBeNull();
+    expect(result.error).toBeNull();
     expect(spendTracker.getTotals('spender').sessionTotal).toBe(150);
+
+    engine.dispose();
+    await store.close();
+  });
+
+  it('should fail closed for passed actions when receipt insertion fails in block mode', async () => {
+    const { tempDir, store, adapter } = createFailingStore();
+    cleanupDirs.push(tempDir);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const identityReader: IdentityReaderLike = {
+      readIdentity: async () => ({
+        classification: 'verified',
+        agentId: 'strict-spender',
+        ownerId: 'owner-1',
+        capabilities: ['book_flight'],
+        rawToken: 'token',
+      }),
+    };
+    const spendTracker = new SpendTracker(POLICY.spend_limits);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      identityReader,
+      spendTracker,
+      silent: true,
+      receiptFailureMode: 'block',
+      spendExtractor: (params) => (params as { amount: number }).amount,
+      transactionResolver: () => false,
+    });
+
+    const result = await engine.evaluate({
+      toolName: 'book_flight',
+      params: { amount: 150 },
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.statusCode).toBe(503);
+    expect(result.receipt).toBeNull();
+    expect(result.decision.status).toBe('BLOCKED');
+    expect(result.decision.reason).toBe(
+      'ActionFence blocked execution because receipt persistence failed',
+    );
+    expect(result.error).toMatchObject({
+      error: {
+        code: 'ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED',
+        message: 'ActionFence blocked execution because receipt persistence failed',
+        action: 'book_flight',
+        toolName: 'book_flight',
+        policyRef: 'EngineTest v1.0',
+        receiptId: null,
+      },
+    });
+    expect(spendTracker.getTotals('strict-spender').sessionTotal).toBe(150);
+    expect(adapter.insert).toHaveBeenCalledTimes(1);
+
+    engine.dispose();
+    await store.close();
+  });
+
+  it('should fail closed for blocked actions when receipt insertion fails in block mode', async () => {
+    const { tempDir, store, adapter } = createFailingStore();
+    cleanupDirs.push(tempDir);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+      receiptFailureMode: 'block',
+    });
+
+    const result = await engine.evaluate({
+      toolName: 'unknown_action',
+      params: {},
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.statusCode).toBe(503);
+    expect(result.receipt).toBeNull();
+    expect(result.decision.reason).toBe(
+      'ActionFence blocked execution because receipt persistence failed',
+    );
+    expect(result.error?.error.code).toBe('ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED');
+    expect(result.error?.error.action).toBe('unknown_action');
+    expect(result.error?.error.toolName).toBe('unknown_action');
+    expect(adapter.insert).toHaveBeenCalledTimes(1);
+
+    engine.dispose();
+    await store.close();
+  });
+
+  it('should keep simulation mode side-effect free when receipt storage would fail', async () => {
+    const { tempDir, store, adapter } = createFailingStore();
+    cleanupDirs.push(tempDir);
+    const engine = new GuardEngine({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+      receiptFailureMode: 'block',
+      simulate: true,
+    });
+
+    const result = await engine.evaluate({
+      toolName: 'search_flights',
+      params: { q: 'CAI' },
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.mode).toBe('simulate');
+    expect(result.receipt).toBeNull();
+    expect(result.preview?.receiptStored).toBe(false);
+    expect(adapter.insert).not.toHaveBeenCalled();
 
     engine.dispose();
     await store.close();

@@ -51,7 +51,11 @@ export interface GuardErrorBody {
 export type GuardErrorCode =
   | 'ACTIONFENCE_BLOCKED'
   | 'ACTIONFENCE_RATE_LIMITED'
+  | 'ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED'
   | 'ACTIONFENCE_INTERNAL_ERROR';
+
+const RECEIPT_PERSISTENCE_FAILURE_MESSAGE =
+  'ActionFence blocked execution because receipt persistence failed';
 
 /** Result returned by the shared guard pipeline. */
 export interface GuardEvaluationResult {
@@ -479,7 +483,7 @@ export class GuardEngine {
     }
 
     // Insert receipt after spend is recorded. If insertion fails, log the error
-    // but don't re-throw since spend was already committed.
+    // and either preserve backward-compatible allow mode or fail closed.
     let receipt: ActionReceipt | null = null;
     if (input.mode === 'enforce') {
       try {
@@ -495,6 +499,33 @@ export class GuardEngine {
         });
       } catch (err: unknown) {
         console.error('[actionfence] Receipt insertion failed after spend was recorded:', err);
+        if ((this.options.receiptFailureMode ?? 'allow') === 'block') {
+          const failureDecision = createReceiptPersistenceFailureDecision(input.decision);
+          this.reporter.report({
+            decision: failureDecision,
+            spendSnapshot: spendSnapshot ?? undefined,
+          });
+          this.notifyDecision(failureDecision);
+
+          return Object.freeze({
+            allowed: false,
+            mode: input.mode,
+            statusCode: 503,
+            decision: failureDecision,
+            identity: sanitizeIdentity(input.identity),
+            receipt: null,
+            spendSnapshot,
+            preview,
+            error: createErrorBody({
+              code: 'ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED',
+              message: RECEIPT_PERSISTENCE_FAILURE_MESSAGE,
+              action: input.decision.action,
+              toolName: input.decision.toolName,
+              policyRef: this.policyRef,
+              receiptId: null,
+            }),
+          });
+        }
       }
     }
 
@@ -779,6 +810,20 @@ export class GuardEngine {
   private get policyRef(): string {
     return `${this.policyRefBase} v${this.policy.version}`;
   }
+}
+
+function createReceiptPersistenceFailureDecision(decision: EvaluationDecision): EvaluationDecision {
+  return Object.freeze({
+    ...decision,
+    status: 'BLOCKED',
+    reason: RECEIPT_PERSISTENCE_FAILURE_MESSAGE,
+    requiresHumanApproval: false,
+    metadata: Object.freeze({
+      ...decision.metadata,
+      receipt_persistence_failed: true,
+      original_status: decision.status,
+    }),
+  });
 }
 
 function getPolicyRefBase(policySource: GuardOptions['policy'], policy: GuardPolicy): string {

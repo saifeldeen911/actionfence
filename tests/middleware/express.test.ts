@@ -8,6 +8,7 @@ import {
   type GuardHttpRequest,
   type GuardHttpResponse,
 } from '../../src/middleware/express.js';
+import type { StorageAdapter } from '../../src/storage/adapter.js';
 import type { GuardPolicy } from '../../src/types/policy.js';
 
 const FIXED_SECRET = Buffer.alloc(32, 8).toString('base64url');
@@ -90,6 +91,35 @@ function createStore(): {
   return { tempDir, store };
 }
 
+function createFailingStore(): {
+  readonly tempDir: string;
+  readonly store: ReceiptStore;
+  readonly adapter: StorageAdapter;
+} {
+  const tempDir = mkdtempSync(join(tmpdir(), 'actionfence-http-fail-'));
+  const adapter = {
+    insert: vi.fn(async () => {
+      throw new Error('receipt insert failed');
+    }),
+    getLastHash: vi.fn().mockResolvedValue(''),
+    getById: vi.fn().mockResolvedValue(null),
+    listByAgent: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+    query: vi.fn().mockResolvedValue([]),
+    getAllOrdered: vi.fn().mockResolvedValue([]),
+    close: vi.fn().mockResolvedValue(undefined),
+  } satisfies StorageAdapter;
+  const store = new ReceiptStore({
+    adapter,
+    signerOptions: {
+      secret: FIXED_SECRET,
+      keyFilePath: join(tempDir, 'key'),
+    },
+  });
+
+  return { tempDir, store, adapter };
+}
+
 function makeRequest(overrides: Partial<GuardHttpRequest> = {}): GuardHttpRequest {
   return {
     method: 'GET',
@@ -118,6 +148,7 @@ describe('guard Express middleware', () => {
   let cleanupDirs: string[] = [];
 
   afterEach(() => {
+    vi.restoreAllMocks();
     for (const dir of cleanupDirs) {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -179,6 +210,39 @@ describe('guard Express middleware', () => {
         receiptId: expect.any(String),
       },
     });
+
+    await store.close();
+    middleware.dispose();
+  });
+
+  it('should return 503 JSON and skip next when receipt storage fails in block mode', async () => {
+    const { tempDir, store, adapter } = createFailingStore();
+    cleanupDirs.push(tempDir);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const middleware = guard({
+      policy: POLICY,
+      receiptStore: store,
+      silent: true,
+      receiptFailureMode: 'block',
+      actionResolver: () => 'search_flights',
+    });
+    const res = new FakeResponse();
+    const next = vi.fn();
+
+    middleware(makeRequest(), res, next);
+    await flushMiddleware();
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toMatchObject({
+      error: {
+        code: 'ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED',
+        action: 'search_flights',
+        toolName: 'GET /search',
+        receiptId: null,
+      },
+    });
+    expect(adapter.insert).toHaveBeenCalledTimes(1);
 
     await store.close();
     middleware.dispose();

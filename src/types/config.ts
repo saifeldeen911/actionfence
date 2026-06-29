@@ -34,6 +34,9 @@ export interface PostgresStorageConfig {
 
 export type StorageConfig = SqliteStorageConfig | PostgresStorageConfig;
 
+/** Behavior when enforced receipt persistence fails. */
+export type ReceiptFailureMode = 'allow' | 'block';
+
 /**
  * Options passed to `withGuard()` or `guard()` middleware.
  */
@@ -93,6 +96,12 @@ export interface GuardOptions {
 
   /** Options used when ActionFence creates its default ReceiptStore. */
   readonly receiptStoreOptions?: ReceiptStoreOptions;
+
+  /**
+   * Behavior when receipt persistence fails in enforce mode.
+   * Defaults to 'allow' for backward compatibility. Set to 'block' to fail closed.
+   */
+  readonly receiptFailureMode?: ReceiptFailureMode;
 
   /**
    * Storage backend configuration. Defaults to a SQLite backend if undefined.

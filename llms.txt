@@ -8,6 +8,7 @@
 - `@modelcontextprotocol/sdk` is an optional peer dependency (only needed for MCP usage)
 - `pg` is an optional peer dependency (only needed for PostgreSQL storage)
 - Receipts default to SQLite; set `storage: { adapter: 'postgres', connectionString: '...' }` for horizontally-scaled deployments
+- Receipt persistence failures default to backward-compatible allow mode (`receipt: null`); set `receiptFailureMode: 'block'` to return `ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED` and prevent handler execution when storage is unavailable
 - Security: HMAC signing secrets must be ≥16 bytes; `payloadRedactor` strips sensitive fields before receipt storage; `maxPayloadBytes` (default 64 KB) truncates oversized payloads
 - Trust Model: ActionFence is server-side middleware. Requests routed through ActionFence are evaluated before they reach real handlers. Agents cannot read the policy file or tamper with receipts. Keep guard-policy.json outside tool-accessible directories. ActionFence does not replace branch protection, deploy approvals, or scoped infrastructure tokens.
 - Tool params must be JSON-serializable (BigInt, Symbols, circular refs will throw)

@@ -148,6 +148,17 @@ For serverless or horizontally-scaled deployments, use PostgreSQL:
 
 ActionFence auto-creates the `actionfence_receipts` table on first use.
 
+By default, receipt persistence failures are logged and the guard preserves
+backward-compatible allow mode, returning `receipt: null` if execution is still
+allowed by policy. To fail closed when receipt storage is unavailable, opt in:
+
+```typescript
+withGuard(server, {
+  policy: './guard-policy.json',
+  receiptFailureMode: 'block',
+});
+```
+
 ## Policy File
 
 `guard-policy.json` defines what agents can do in your system.
@@ -375,6 +386,12 @@ Receipts are:
 
 > **Note:** Receipts are stored in a local SQLite file (`.actionfence/receipts.db`) by default. This works perfectly for single-instance deployments. If you run multiple server instances, use the `postgres` storage adapter to maintain a single global receipt chain.
 
+Receipt persistence defaults to allow mode for backward compatibility. Set
+`receiptFailureMode: 'block'` to make ActionFence return
+`ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED` with HTTP 503/MCP error output and
+prevent handler execution when receipt storage is unavailable. Simulation mode
+never stores receipts.
+
 Signing key resolution order:
 
 1. `options.secret`
@@ -437,6 +454,7 @@ const middleware = guard({
 | `approvalTimeoutMs`     | `number`                                  | `30000` | Timeout for approval in milliseconds     |
 | `watchPolicy`           | `boolean`                                 | `false` | Hot-reload file-backed policies          |
 | `storage`               | `StorageConfig`                           | -       | Storage backend (SQLite/PostgreSQL)      |
+| `receiptFailureMode`    | `'allow' \| 'block'`                      | `'allow'` | Use `'block'` to fail closed when receipt persistence fails |
 | `payloadRedactor`       | `(params: unknown) => unknown`            | -       | Strip sensitive fields before receipt storage |
 | `maxPayloadBytes`       | `number`                                  | `65536` | Max stored `payload_json` size; larger payloads are truncated |
 
@@ -454,7 +472,7 @@ const middleware = guard({
 - No APoP / LAS-WG adapters yet
 - No path-policy DSL
 - `requires_human_approval` pauses execution only when `onApprovalRequired` is configured; there is no built-in approval UI or queue
-- Receipt persistence failures are logged and return `receipt: null`; a fail-closed receipt persistence mode is planned
+- Receipt persistence fail-closed behavior is opt-in via `receiptFailureMode: 'block'`; default allow mode can still return `receipt: null`
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 - SQLite storage is single-instance only (use the `postgres` adapter for multi-instance deployments)
 

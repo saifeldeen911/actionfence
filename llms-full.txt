@@ -207,6 +207,7 @@ All options for both `withGuard()` and `guard()`:
 | `silent` | `boolean` | `false` | Suppress console output |
 | `secret` | `string` | - | HMAC signing secret |
 | `storage` | `StorageConfig` | `sqlite` | Backend selection |
+| `receiptFailureMode` | `'allow' \| 'block'` | `'allow'` | Use `'block'` to fail closed when receipt persistence fails |
 | `identityReaderOptions` | `object` | - | JWKS settings |
 | `actionResolver` | `(toolName, params) => string` | - | Map tools/routes to policy keys |
 | `spendExtractor` | `(params) => number` | - | Extract spend from params |
@@ -373,6 +374,8 @@ In normal operation, every enforced decision stores a signed receipt. Receipts a
 - **SQLite (default):** `.actionfence/receipts.db` — single-instance, zero-config.
 - **PostgreSQL:** `actionfence_receipts` table — multi-instance, horizontally-scaled.
 
+Receipt persistence defaults to backward-compatible allow mode: failures are logged and successful policy decisions can return `receipt: null`. Set `receiptFailureMode: 'block'` to return `ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED` (HTTP 503 for Express or an MCP error result) and prevent handler execution when receipt storage is unavailable. Simulation mode never writes receipts.
+
 Signing key resolution order:
 1. `options.secret`
 2. `ACTIONFENCE_SECRET` environment variable
@@ -474,6 +477,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - Policy file paths that resolve outside `process.cwd()` are rejected (path traversal guard)
 - JWT `sub` and `owner`/`azp` claims are sanitized: control characters stripped, length capped at 256
 - Spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails
+- `receiptFailureMode: 'block'` can fail closed when receipt persistence fails, returning `ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED`
 - Map size caps and periodic eviction for SpendTracker, RateLimiter, and engine mutexes prevent unbounded memory growth
 - `engine.dispose()` closes any Postgres adapter the engine created
 - Postgres connection errors mask passwords in connection strings
@@ -485,7 +489,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - No APoP / LAS-WG adapters yet
 - No path-policy DSL
 - `requires_human_approval` can now pause requests if `onApprovalRequired` is configured, though there is no built-in UI
-- Receipt persistence failures are logged and return `receipt: null`; a fail-closed receipt persistence mode is planned
+- Receipt persistence fail-closed behavior is opt-in via `receiptFailureMode: 'block'`; default allow mode can still return `receipt: null`
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 - SQLite receipt store is single-instance only (use PostgreSQL for multi-instance)
 
