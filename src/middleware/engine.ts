@@ -461,6 +461,10 @@ export class GuardEngine {
     readonly receiptId?: string;
   }): Promise<GuardEvaluationResult> {
     let spendSnapshot: SpendSnapshot | null = null;
+    const shouldDeferSpendUntilReceipt =
+      input.mode === 'enforce' &&
+      input.decision.status === 'PASSED' &&
+      (this.options.receiptFailureMode ?? 'allow') === 'block';
 
     if (input.mode === 'simulate') {
       spendSnapshot = await this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
@@ -476,14 +480,16 @@ export class GuardEngine {
           })
         : null;
 
-    // Record spend FIRST (for enforce mode) to ensure spend tracking is the source of truth.
-    // If receipt insertion fails afterward, spend has already been committed.
-    if (input.mode === 'enforce') {
+    // In default allow mode, record spend first so limits remain conservative if
+    // receipt persistence fails. In fail-closed mode, defer spend until the
+    // receipt is stored because a storage failure prevents execution.
+    if (input.mode === 'enforce' && !shouldDeferSpendUntilReceipt) {
       spendSnapshot = await this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
     }
 
-    // Insert receipt after spend is recorded. If insertion fails, log the error
-    // and either preserve backward-compatible allow mode or fail closed.
+    // Insert the receipt. If insertion fails, log the error and either preserve
+    // backward-compatible allow mode or fail closed for decisions that would
+    // otherwise execute.
     let receipt: ActionReceipt | null = null;
     if (input.mode === 'enforce') {
       try {
@@ -498,8 +504,8 @@ export class GuardEngine {
           receiptId: input.receiptId,
         });
       } catch (err: unknown) {
-        console.error('[actionfence] Receipt insertion failed after spend was recorded:', err);
-        if ((this.options.receiptFailureMode ?? 'allow') === 'block') {
+        console.error('[actionfence] Receipt insertion failed:', err);
+        if (shouldDeferSpendUntilReceipt) {
           const failureDecision = createReceiptPersistenceFailureDecision(input.decision);
           this.reporter.report({
             decision: failureDecision,
@@ -527,6 +533,10 @@ export class GuardEngine {
           });
         }
       }
+    }
+
+    if (shouldDeferSpendUntilReceipt) {
+      spendSnapshot = await this.resolveSpendSnapshot(input.identity.agentId, input.decision, input.mode);
     }
 
     this.reporter.report({

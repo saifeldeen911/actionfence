@@ -415,7 +415,14 @@ describe('GuardEngine', () => {
     };
     const spendTracker = new SpendTracker(POLICY.spend_limits);
     const engine = new GuardEngine({
-      policy: POLICY,
+      policy: {
+        ...POLICY,
+        circuit_breaker: {
+          global_max_spend: 500,
+          action: 'block_all',
+          currency: 'USD',
+        },
+      },
       receiptStore: store,
       identityReader,
       spendTracker,
@@ -433,6 +440,7 @@ describe('GuardEngine', () => {
     expect(result.allowed).toBe(false);
     expect(result.statusCode).toBe(503);
     expect(result.receipt).toBeNull();
+    expect(result.spendSnapshot).toBeNull();
     expect(result.decision.status).toBe('BLOCKED');
     expect(result.decision.reason).toBe(
       'ActionFence blocked execution because receipt persistence failed',
@@ -447,7 +455,10 @@ describe('GuardEngine', () => {
         receiptId: null,
       },
     });
-    expect(spendTracker.getTotals('strict-spender').sessionTotal).toBe(150);
+    expect(spendTracker.getTotals('strict-spender').sessionTotal).toBe(0);
+    expect(
+      (await engine.getAgentStatus('strict-spender', 'verified')).circuitBreaker.globalSpent,
+    ).toBe(0);
     expect(adapter.insert).toHaveBeenCalledTimes(1);
 
     engine.dispose();
@@ -471,14 +482,15 @@ describe('GuardEngine', () => {
     });
 
     expect(result.allowed).toBe(false);
-    expect(result.statusCode).toBe(503);
+    expect(result.statusCode).toBe(403);
     expect(result.receipt).toBeNull();
     expect(result.decision.reason).toBe(
-      'ActionFence blocked execution because receipt persistence failed',
+      'Action "unknown_action" is not listed in the policy (default: deny)',
     );
-    expect(result.error?.error.code).toBe('ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED');
+    expect(result.error?.error.code).toBe('ACTIONFENCE_BLOCKED');
     expect(result.error?.error.action).toBe('unknown_action');
     expect(result.error?.error.toolName).toBe('unknown_action');
+    expect(result.error?.error.receiptId).toBeNull();
     expect(adapter.insert).toHaveBeenCalledTimes(1);
 
     engine.dispose();

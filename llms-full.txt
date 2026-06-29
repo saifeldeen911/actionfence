@@ -476,7 +476,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - Postgres receipt inserts use advisory-lock transactions to prevent hash-chain fork under concurrent writers
 - Policy file paths that resolve outside `process.cwd()` are rejected (path traversal guard)
 - JWT `sub` and `owner`/`azp` claims are sanitized: control characters stripped, length capped at 256
-- Spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails
+- In default allow mode, spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails; in `receiptFailureMode: 'block'`, spend is committed only after the receipt is stored
 - `receiptFailureMode: 'block'` can fail closed when receipt persistence fails, returning `ACTIONFENCE_RECEIPT_PERSISTENCE_FAILED`
 - Map size caps and periodic eviction for SpendTracker, RateLimiter, and engine mutexes prevent unbounded memory growth
 - `engine.dispose()` closes any Postgres adapter the engine created
