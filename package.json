@@ -1,6 +1,6 @@
 {
   "name": "actionfence",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Server-side policy middleware for MCP servers and Node APIs with spend limits, approvals, schema drift checks, and signed receipts",
   "type": "module",
   "exports": {
@@ -70,7 +70,13 @@
     "ai",
     "agent",
     "mcp",
+    "mcp server",
     "mcp-server",
+    "agent middleware",
+    "tool calling",
+    "express middleware",
+    "langgraph",
+    "langchain",
     "firewall",
     "action-firewall",
     "ai-security",
@@ -93,7 +99,7 @@
     "url": "git+https://github.com/saifeldeen911/actionfence.git"
   },
   "author": "Saifeldeen",
-  "homepage": "https://www.actionfence.dev",
+  "homepage": "https://actionfence.dev",
   "bugs": {
     "url": "https://github.com/saifeldeen911/actionfence/issues"
   }

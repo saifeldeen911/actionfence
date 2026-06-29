@@ -458,10 +458,6 @@ const middleware = guard({
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 - SQLite storage is single-instance only (use the `postgres` adapter for multi-instance deployments)
 
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for the current repo state, priority features, and suggested delivery order.
-
 ## CLI Reference
 
 ### `actionfence init`
