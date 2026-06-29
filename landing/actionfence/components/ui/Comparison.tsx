@@ -18,7 +18,7 @@ const withFence = [
   "Three-tier identity system with JWKS JWT verification",
   "Hash-chained, signed receipts for every decision",
   "Real-time rate limiting and circuit breaker protection",
-  "Server-side enforcement — agents can't bypass it",
+  "Server-side enforcement for protected MCP/API calls",
   "One JSON file. One line of code."
 ];
 

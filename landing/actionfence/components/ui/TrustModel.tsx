@@ -1,4 +1,3 @@
- 
 "use client";
 
 import { motion } from "framer-motion";
@@ -15,7 +14,7 @@ const others = [
 const us = [
   "One policy gate executes before every tool handler",
   "Agent never sees guard-policy.json",
-  "All tool calls must pass through middleware",
+  "Protected tool calls pass through middleware",
   "Blocked requests never reach execution code",
   "Default rule: deny. Allowlist only."
 ];

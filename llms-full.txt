@@ -153,8 +153,8 @@ Create with `npx actionfence init` or write manually:
 - `actions` (object, required): Map of action name to rule object.
 - `rate_limits` (object, optional): `requests_per_minute` and `transactions_per_day`.
 - `spend_limits` (object, optional): `session_max`, `daily_max`, `window` (rolling-window cap), and `currency`.
-- `schema_enforcement` (object, optional): `mode` — `"warn"` (default) or `"block"`.
-- `regulations` (string[], optional): Stored in receipts but not enforced in v0.1.
+- `schema_enforcement` (object, optional): `on_mismatch` — `"warn"` (default) or `"block"`.
+- `regulations` (string[], optional): Parsed as policy metadata but not enforced.
 
 ### Rolling-window spend caps
 
@@ -185,7 +185,7 @@ Behavior:
 - `identity` ("any" | "token" | "verified", optional): Minimum identity tier. Default "any".
 - `max_spend` (number, optional): Per-invocation spend cap in major currency units.
 - `currency` (string, optional): ISO 4217 currency code.
-- `requires_human_approval` | `boolean` | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement.
+- `requires_human_approval` | `boolean` | `false` | When true, pauses evaluation only if `onApprovalRequired` is configured; otherwise the decision records the requirement and proceeds.
 - `schema_hash` (string, optional): Pinned SHA-256 hash of the tool's input schema. Set via `actionfence pin-schemas`.
 
 ### Identity tiers
@@ -368,7 +368,7 @@ Per-request (Express): Send `X-ActionFence-Simulation: true` header.
 
 ## Receipts
 
-Every enforced decision stores a signed receipt. Receipts are HMAC-SHA256 signed, hash-chained, and append-only. The storage backend is determined by `options.storage`:
+In normal operation, every enforced decision stores a signed receipt. Receipts are HMAC-SHA256 signed, hash-chained, and append-only. The storage backend is determined by `options.storage`:
 
 - **SQLite (default):** `.actionfence/receipts.db` — single-instance, zero-config.
 - **PostgreSQL:** `actionfence_receipts` table — multi-instance, horizontally-scaled.
@@ -387,12 +387,14 @@ to the policy file or the enforcement engine.
 This is server-side enforcement, not a client-side honor system.
 
 - The agent **cannot** read `guard-policy.json` — it's a file on your server
-- The agent **cannot** bypass the middleware — all tool calls pass through it
+- Tool calls routed through ActionFence are evaluated before they reach your real handlers
 - The agent **cannot** tamper with receipts — they're signed with your secret key
 
 > **Tip:** Keep `guard-policy.json` outside any tool-accessible directories.
 > If your MCP server has a `read_file` tool, make sure it can't access
 > the directory where your policy file lives.
+
+ActionFence only enforces actions that pass through the protected MCP or HTTP boundary. It does not replace branch protection, deploy approvals, scoped cloud tokens, scoped GitHub App permissions, or other infrastructure-level controls.
 
 ### Payload Requirements
 
@@ -430,17 +432,17 @@ Configure `schema_enforcement` in your policy:
 ```json
 {
   "schema_enforcement": {
-    "mode": "warn"
+    "on_mismatch": "warn"
   }
 }
 ```
 
-| Mode     | Behavior                                                                 |
-| -------- | ------------------------------------------------------------------------ |
-| `"warn"` | Logs a warning on drift but allows the action (default if not configured) |
-| `"block"`| Blocks the action if the schema has drifted from the pinned hash          |
+| `on_mismatch` | Behavior                                                                 |
+| ------------- | ------------------------------------------------------------------------ |
+| `"warn"`      | Logs a warning on drift but allows the action (default if not configured) |
+| `"block"`     | Blocks the action if the schema has drifted from the pinned hash          |
 
-When `schema_enforcement` is omitted, drift is not checked at runtime.
+When `schema_enforcement` is omitted, pinned schema hashes are still checked with warning behavior. Set `on_mismatch` to `"block"` to deny drifted tools at runtime.
 
 ## Scope Enforcement
 
@@ -471,7 +473,7 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - Postgres receipt inserts use advisory-lock transactions to prevent hash-chain fork under concurrent writers
 - Policy file paths that resolve outside `process.cwd()` are rejected (path traversal guard)
 - JWT `sub` and `owner`/`azp` claims are sanitized: control characters stripped, length capped at 256
-- Spend is committed only after receipt insertion succeeds (atomicity)
+- Spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails
 - Map size caps and periodic eviction for SpendTracker, RateLimiter, and engine mutexes prevent unbounded memory growth
 - `engine.dispose()` closes any Postgres adapter the engine created
 - Postgres connection errors mask passwords in connection strings
@@ -483,7 +485,8 @@ If a verified JWT includes a `capabilities` claim (string array), ActionFence tr
 - No APoP / LAS-WG adapters yet
 - No path-policy DSL
 - `requires_human_approval` can now pause requests if `onApprovalRequired` is configured, though there is no built-in UI
-- Money is major-unit only; mixed-currency accounting is out of scope for one policy is not supported
+- Receipt persistence failures are logged and return `receipt: null`; a fail-closed receipt persistence mode is planned
+- Money is major-unit only; mixed-currency accounting is out of scope for one policy
 - SQLite receipt store is single-instance only (use PostgreSQL for multi-instance)
 
 ## Common Integration Patterns

@@ -69,7 +69,7 @@ export default function TrustModelDiagram() {
       <div className="w-full border-t border-zinc-800 p-6 md:p-8 bg-zinc-900/20">
         <h3 className="text-zinc-100 font-medium text-lg md:text-xl mb-2 tracking-tight">Zero-Trust Architecture</h3>
         <p className="text-zinc-400 text-sm md:text-base max-w-3xl leading-relaxed">
-          Policy lives entirely on your server. Agents cannot bypass the middleware, read the 
+          Policy lives entirely on your server. Requests routed through ActionFence cannot reach MCP tools or APIs without policy evaluation. Agents cannot read the
           <code className="mx-1.5 px-1.5 py-0.5 bg-zinc-800 border border-zinc-700/50 rounded-md text-accent text-[13px] font-mono">guard-policy.json</code>, 
           or tamper with the cryptographic receipt chain.
         </p>

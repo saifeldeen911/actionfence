@@ -1,7 +1,7 @@
 {
   "name": "actionfence",
   "version": "0.2.0",
-  "description": "Embeddable AI action firewall for MCP servers and APIs with JSON policies, signed receipts, spend caps, and simulation mode",
+  "description": "Server-side policy middleware for MCP servers and Node APIs with spend limits, approvals, schema drift checks, and signed receipts",
   "type": "module",
   "exports": {
     ".": {
@@ -70,15 +70,21 @@
     "ai",
     "agent",
     "mcp",
+    "mcp-server",
     "firewall",
     "action-firewall",
     "ai-security",
+    "agent-middleware",
+    "tool-calling",
     "actionfence",
     "policy",
     "security",
     "middleware",
+    "express-middleware",
     "receipts",
     "spend-caps",
+    "human-approval",
+    "schema-drift",
     "simulation"
   ],
   "license": "MIT",
@@ -87,7 +93,7 @@
     "url": "git+https://github.com/saifeldeen911/actionfence.git"
   },
   "author": "Saifeldeen",
-  "homepage": "https://github.com/saifeldeen911/actionfence#readme",
+  "homepage": "https://www.actionfence.dev",
   "bugs": {
     "url": "https://github.com/saifeldeen911/actionfence/issues"
   }

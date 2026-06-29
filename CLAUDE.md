@@ -250,7 +250,7 @@ npm run format && npm run lint && npm run typecheck
 - **Atomic Postgres inserts**: `PostgresAdapter.insertAtomic()` prevents hash-chain fork under concurrent writers (advisory lock)
 - **Path traversal guard**: `loadPolicy()` rejects paths that resolve outside `process.cwd()`
 - **Agent ID sanitization**: JWT `sub` and `azp`/`owner` claims are stripped of control characters and length-capped at 256
-- **Spend/receipt atomicity**: In enforce mode, spend is committed only after receipt insertion succeeds
+- **Spend/receipt consistency**: In enforce mode, spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails. Receipt insert failures are logged and the evaluation returns `receipt: null`
 - **Map eviction**: `SpendTracker` (50k cap, 5 min cleanup), `RateLimiter` (50k cap, 60s cleanup), and `GuardEngine.agentMutexes` (10k cap, on-access eviction) prevent unbounded memory growth
 - **Postgres pool lifecycle**: `engine.dispose()` explicitly closes any Postgres adapter the engine created
 - **Credential masking**: Postgres connection errors mask passwords in `postgres://` connection strings

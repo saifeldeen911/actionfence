@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **H5 — Postgres receipt chain fork:** `PostgresAdapter.insertAtomic()` uses `BEGIN` → `pg_advisory_xact_lock` → read last hash → insert → `COMMIT` to prevent concurrent writers from forking the hash chain. `ReceiptStore.insert()` auto-detects and prefers the atomic path.
 - **H6 — Policy file path traversal:** `loadPolicy()` now rejects policy paths that resolve outside the working directory, preventing `../../` directory escapes.
 - **H7 — Agent ID injection via JWT:** `agentId` and `ownerId` extracted from JWT claims are now sanitized: control characters stripped, length capped at 256, empty values default to `'unknown'`.
-- **M3 — Spend/receipt atomicity:** In enforce mode, spend is now committed only after receipt insertion succeeds. If receipt insertion fails, spend totals are not advanced.
+- **M3 — Spend/receipt consistency:** In enforce mode, spend is committed before receipt insertion so spend caps remain conservative if receipt persistence fails. Receipt insert failures are logged and the evaluation returns `receipt: null`.
 - **M5 — Unbounded map growth:** `SpendTracker`, `RateLimiter`, and `GuardEngine.agentMutexes` now enforce map size caps with periodic or on-access idle eviction to prevent memory exhaustion from many distinct agent IDs.
 - **M7 — Weak migrated key permissions:** Legacy signing key migration now forces `0o600` file permissions (best-effort on non-POSIX platforms).
 - **M8 — Postgres pool not closed:** `GuardEngine.dispose()` now explicitly closes any Postgres adapter it created, preventing connection pool leaks.

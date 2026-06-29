@@ -25,7 +25,7 @@ export interface EvaluationDecision {
   readonly reason: string | null;
   /** Spend amount for this action, if applicable. */
   readonly spendAmount: number | null;
-  /** Whether human approval is required (informational in v1). */
+  /** Whether human approval is required before execution. */
   readonly requiresHumanApproval: boolean;
   /** ISO 8601 timestamp of the evaluation. */
   readonly timestamp: string;

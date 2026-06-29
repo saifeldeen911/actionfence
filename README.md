@@ -111,8 +111,12 @@ to the policy file or the enforcement engine.
 This is server-side enforcement, not a client-side honor system.
 
 - The agent **cannot** read `guard-policy.json` — it's a file on your server
-- The agent **cannot** bypass the middleware — all tool calls pass through it
+- Tool calls routed through ActionFence are evaluated before they reach your real handlers
 - The agent **cannot** tamper with receipts — they're signed with your secret key
+
+ActionFence only enforces actions that pass through the protected MCP or HTTP
+boundary. It does not replace branch protection, deploy approvals, scoped cloud
+tokens, scoped GitHub App permissions, or other infrastructure-level controls.
 
 > **Tip:** Keep `guard-policy.json` outside any tool-accessible directories.
 > If your MCP server has a `read_file` tool, make sure it can't access
@@ -204,7 +208,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `spend_limits` | `object`            | No       | Session, daily, and rolling-window spend limits |
 | `circuit_breaker`| `object`          | No       | Global maximum spend kill-switch                |
 | `schema_enforcement` | `object`      | No       | Tool schema drift detection and enforcement     |
-| `regulations`  | `string[]`          | No       | Stored (persisted) in `v0.1.0` but not enforced |
+| `regulations`  | `string[]`          | No       | Parsed as policy metadata but not enforced      |
 
 ### Action Rule Fields
 
@@ -214,7 +218,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `identity`                | `"any" \| "token" \| "verified"` | `"any"` | Minimum identity tier                                                                                                                                                                  |
 | `max_spend`               | `number`                         | -       | Per-invocation cap in major units                                                                                                                                                      |
 | `currency`                | `string`                         | -       | ISO 4217 currency code                                                                                                                                                                 |
-| `requires_human_approval` | `boolean`                        | `false` | When true, pauses evaluation and fires `onApprovalRequired` if configured, otherwise falls back to logging the requirement. |
+| `requires_human_approval` | `boolean`                        | `false` | When true, pauses evaluation only if `onApprovalRequired` is configured; otherwise the decision records the requirement and proceeds. |
 | `schema_hash`             | `string`                         | -       | Pinned SHA-256 hash of the tool's input schema. Set via `actionfence pin-schemas`.                                                                                                     |
 
 ### Identity Tiers
@@ -225,7 +229,7 @@ ActionFence auto-creates the `actionfence_receipts` table on first use.
 | `token`     | Bearer token present but not signature-verified |
 | `verified`  | JWT passed JWKS verification                    |
 
-Verified identity is built in when you configure `identityReaderOptions.jwksUri` and JWKS lookup succeeds from cache or the remote endpoint. If JWKS retrieval or network access fails, ActionFence may fall back to `token` identity; invalid signatures, wrong issuers or audiences, unknown kids, and other cryptographic verification failures stay anonymous or rejected.
+Verified identity is built in when you configure `identityReaderOptions.jwksUri` and JWKS lookup succeeds from cache or the remote endpoint. When JWKS verification is configured, verification failures, wrong issuers or audiences, unknown kids, and JWKS retrieval errors return `anonymous` identity. The unverified `token` tier is used only when no JWKS verifier is configured.
 
 ### Scope Enforcement
 
@@ -258,17 +262,17 @@ Configure `schema_enforcement` in your policy to control drift behavior at runti
 ```json
 {
   "schema_enforcement": {
-    "mode": "warn"
+    "on_mismatch": "warn"
   }
 }
 ```
 
-| Mode     | Behavior                                                                 |
-| -------- | ------------------------------------------------------------------------ |
-| `"warn"` | Logs a warning on drift but allows the action (default if not configured) |
-| `"block"`| Blocks the action if the schema has drifted from the pinned hash          |
+| `on_mismatch` | Behavior                                                                 |
+| ------------- | ------------------------------------------------------------------------ |
+| `"warn"`      | Logs a warning on drift but allows the action (default if not configured) |
+| `"block"`     | Blocks the action if the schema has drifted from the pinned hash          |
 
-When `schema_enforcement` is omitted, drift is not checked at runtime (pinned hashes are still validated by CLI).
+When `schema_enforcement` is omitted, pinned schema hashes are still checked with warning behavior. Set `on_mismatch` to `"block"` to deny drifted tools at runtime.
 
 ## Payload Processing
 
@@ -347,7 +351,7 @@ SIMULATION - actionfence
 
 ## Action Receipts
 
-Every enforced decision stores a signed receipt in SQLite.
+In normal operation, every enforced decision stores a signed receipt in SQLite.
 
 Stored payloads may be redacted or truncated before persistence. The receipt binds the original request hash and the stored payload-view hash so chain verification can still detect tampering.
 
@@ -449,9 +453,14 @@ const middleware = guard({
 - Capability checks are exact string matches only
 - No APoP / LAS-WG adapters yet
 - No path-policy DSL
-- `requires_human_approval` flags the receipt and fires `onDecision` — no built-in approval workflow yet (use the callback to build your own)
+- `requires_human_approval` pauses execution only when `onApprovalRequired` is configured; there is no built-in approval UI or queue
+- Receipt persistence failures are logged and return `receipt: null`; a fail-closed receipt persistence mode is planned
 - Money is major-unit only; mixed-currency accounting is out of scope for one policy
 - SQLite storage is single-instance only (use the `postgres` adapter for multi-instance deployments)
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the current repo state, priority features, and suggested delivery order.
 
 ## CLI Reference
 
