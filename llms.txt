@@ -4,6 +4,7 @@
 
 - ActionFence uses `withGuard(server, options)` for MCP servers and `guard(options)` for Express middleware
 - Policy rules are defined in a `guard-policy.json` file with JSON Schema validation and support for wildcard prefix matching (e.g., `action_*`)
+- CLI can generate a conservative starter policy from an MCP server: `npx actionfence generate "node server.js" --output guard-policy.json --pin-schemas`. Generated actions are blocked with `allowed: false` and must be reviewed before use.
 - The package supports ESM and CJS dual-format output
 - `@modelcontextprotocol/sdk` is an optional peer dependency (only needed for MCP usage)
 - `pg` is an optional peer dependency (only needed for PostgreSQL storage)

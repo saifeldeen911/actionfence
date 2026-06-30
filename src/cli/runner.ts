@@ -12,6 +12,7 @@ import { runInit } from './init.js';
 import { runValidate } from './validate.js';
 import { runSimulate } from './simulate.js';
 import { runPinSchemas } from './pin-schemas.js';
+import { runGenerate } from './generate.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -70,6 +71,8 @@ export async function run(argv: readonly string[], context?: Partial<CliContext>
       return runInit(args, ctx);
     case 'validate':
       return await runValidate(args, ctx);
+    case 'generate':
+      return await runGenerate(args, ctx);
     case 'pin-schemas':
       return await runPinSchemas(args, ctx);
     case 'simulate':
@@ -176,6 +179,7 @@ ${chalk.yellow('Usage:')}
 
 ${chalk.yellow('Commands:')}
   ${chalk.cyan('init')}                  Generate a starter guard-policy.json
+  ${chalk.cyan('generate')} <server>     Generate a reviewable policy from MCP tools
   ${chalk.cyan('validate')} <path>       Validate a policy file against the schema
   ${chalk.cyan('simulate')} <path>       Dry-run a policy evaluation
   ${chalk.cyan('pin-schemas')} <path>    Update policy with tool schema hashes
@@ -186,6 +190,7 @@ ${chalk.yellow('Options:')}
 
 ${chalk.yellow('Examples:')}
   actionfence init --service MyAPI
+  actionfence generate "node server.js" --output guard-policy.json --pin-schemas
   actionfence validate guard-policy.json "node server.js"
   actionfence pin-schemas guard-policy.json "node server.js"
   actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250 --tool do_search_v2

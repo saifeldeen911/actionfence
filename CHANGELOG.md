@@ -5,6 +5,16 @@ All notable changes to ActionFence will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- New `actionfence generate <server-command>` CLI command that discovers MCP tools and writes a conservative, reviewable starter `guard-policy.json`.
+  - Generated policies default to `default_rule: "deny"` and write every discovered action with `allowed: false`.
+  - `--pin-schemas` includes deterministic tool input schema hashes during generation.
+  - `--service`, `--output`, and `--default-rule` customize the generated policy.
+  - Existing output files are refused instead of overwritten.
+
 ## [0.2.0] — 2026-05-10
 
 ### Added

@@ -352,6 +352,7 @@ import { SQLiteAdapter, PostgresAdapter, MemoryAdapter } from 'actionfence';
 npx actionfence init                                    # Create starter guard-policy.json
 npx actionfence init --service MyAPI                    # With custom service name
 npx actionfence init --output ./policies/policy.json    # Custom output path
+npx actionfence generate "node server.js" --output guard-policy.json --pin-schemas  # Discover tools and generate a blocked review policy
 npx actionfence validate guard-policy.json              # Validate policy against JSON Schema
 npx actionfence validate guard-policy.json "node server.js"  # Also check schema drift
 npx actionfence pin-schemas guard-policy.json "node server.js"  # Pin tool schema hashes
@@ -411,6 +412,15 @@ ActionFence only enforces actions that pass through the protected MCP or HTTP bo
 ## Tool Schema Drift Detection
 
 ActionFence can detect when an MCP server's tool schemas change after you've pinned them. This catches silent breaking changes that could cause agent failures or enable payload injection.
+
+### Generating Starter Policies
+
+```bash
+actionfence generate "node server.js" --output guard-policy.json --pin-schemas
+actionfence validate guard-policy.json "node server.js"
+```
+
+`actionfence generate` connects to the MCP server, discovers tools, and writes a valid starter `guard-policy.json`. The generated policy uses `default_rule: "deny"` by default, writes each discovered tool as an action with `allowed: false`, refuses to overwrite an existing output file, and only includes `schema_hash` values when `--pin-schemas` is passed. Treat the output as a review starting point, not a completed security review.
 
 ### Pinning Schemas
 

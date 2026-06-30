@@ -90,7 +90,9 @@ app.use(
 
 ```bash
 npx actionfence init
+npx actionfence generate "node server.js" --output guard-policy.json --pin-schemas
 npx actionfence validate guard-policy.json
+npx actionfence validate guard-policy.json "node server.js"
 npx actionfence simulate guard-policy.json --action book_flight --identity verified --spend 250
 ```
 
@@ -249,6 +251,15 @@ If a decoded or verified token includes a `capabilities` claim, ActionFence trea
 ## Tool Schema Drift Detection
 
 ActionFence can detect when an MCP server's tool schemas change after you've pinned them. This catches silent breaking changes that could cause agent failures or enable payload injection.
+
+### Generating a Starter Policy
+
+```bash
+actionfence generate "node server.js" --output guard-policy.json --pin-schemas
+actionfence validate guard-policy.json "node server.js"
+```
+
+`generate` connects to the MCP server, discovers tools, and writes a reviewable starter policy. The generated policy defaults to `default_rule: "deny"` and every discovered action is written with `allowed: false`; it is a starting point for review, not a completed security policy. Pass `--pin-schemas` to include current tool schema hashes during generation.
 
 ### Pinning Schemas
 
@@ -485,6 +496,16 @@ actionfence init
 actionfence init --service MyAPI
 actionfence init --output ./policies/guard-policy.json
 ```
+
+### `actionfence generate <server-command>`
+
+```bash
+actionfence generate "node server.js"
+actionfence generate "node server.js" --default-rule deny --output guard-policy.json --service MyAPI
+actionfence generate "node server.js" --pin-schemas
+```
+
+Discovers tools from an MCP server and writes a reviewable `guard-policy.json`. The command refuses to overwrite an existing output file, writes discovered actions as blocked (`allowed: false`), and only adds `schema_hash` values when `--pin-schemas` is passed.
 
 ### `actionfence validate <path>`
 
